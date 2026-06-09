@@ -1,8 +1,10 @@
 """UData API client for Serbian data portal."""
 
 import asyncio
+import re
 import time
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 import httpx
 
@@ -44,26 +46,77 @@ class UDataClient:
             await asyncio.sleep(self.rate_limit - time_since_last)
         self._last_request_time = time.time()
 
+    def _validate_url_safe(self, url: str) -> None:
+        """Validate URL to prevent SSRF attacks.
+
+        Args:
+            url: URL to validate
+
+        Raises:
+            ConnectionError: If URL is potentially malicious
+        """
+        try:
+            parsed = urlparse(url)
+
+            # Only allow HTTP/HTTPS schemes
+            if parsed.scheme not in ("http", "https"):
+                raise ConnectionError(
+                    url, f"Blocked: URL scheme '{parsed.scheme}' is not allowed. Only HTTP and HTTPS are permitted."
+                )
+
+            # Block private/local network addresses
+            hostname = parsed.hostname or ""
+
+            # Block localhost and local IP addresses
+            local_patterns = [
+                r"^(localhost|127\.|0\.0\.0\.0|::1|localhost\.localdomain)$",
+                r"^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$",  # 10.0.0.0/8
+                r"^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$",  # 172.16.0.0/12
+                r"^192\.168\.\d{1,3}\.\d{1,3}$",  # 192.168.0.0/16
+                r"^169\.254\.\d{1,3}\.\d{1,3}$",  # 169.254.0.0/16 (link-local)
+            ]
+
+            for pattern in local_patterns:
+                if re.match(pattern, hostname, re.IGNORECASE):
+                    raise ConnectionError(
+                        url, f"Blocked: Access to private/local network '{hostname}' is not permitted."
+                    )
+
+            # Validate the base URL is from the expected domain
+            base_parsed = urlparse(self.base_url)
+            if base_parsed.hostname and hostname != base_parsed.hostname:
+                # Only allow requests to the same domain as the API base
+                raise ConnectionError(
+                    url, f"Blocked: URL hostname '{hostname}' does not match API base '{base_parsed.hostname}'."
+                )
+
+        except Exception as e:
+            if isinstance(e, ConnectionError):
+                raise
+            raise ConnectionError(url, f"Invalid URL: {str(e)}")
+
     async def _request(
         self,
         method: str,
         endpoint: str,
         params: Optional[dict[str, Any]] = None,
         json_data: Optional[dict[str, Any]] = None,
+        max_retries: int = 3,
     ) -> dict[str, Any]:
-        """Make an API request with rate limiting.
+        """Make an API request with rate limiting and retry logic.
 
         Args:
             method: HTTP method
             endpoint: API endpoint path
             params: Query parameters
             json_data: JSON request body
+            max_retries: Maximum number of retry attempts for transient failures
 
         Returns:
             Response data as dictionary
 
         Raises:
-            ConnectionError: If the API cannot be reached
+            ConnectionError: If the API cannot be reached after all retries
             RateLimitError: If rate limit is exceeded
         """
         await self._rate_limit_wait()
@@ -71,22 +124,63 @@ class UDataClient:
         client = await self._get_client()
         url = endpoint if endpoint.startswith("/") else f"/{endpoint}"
 
-        try:
-            response = await client.request(method, url, params=params, json=json_data)
-            response.raise_for_status()
-            return response.json()
+        # Retry logic with exponential backoff for transient failures
+        retry_delay = 1.0  # Initial retry delay in seconds
 
-        except httpx.ConnectError as e:
-            raise ConnectionError(str(self.base_url), f"Connection failed: {str(e)}")
+        for attempt in range(max_retries):
+            try:
+                response = await client.request(method, url, params=params, json=json_data)
+                response.raise_for_status()
+                return response.json()
 
-        except httpx.TimeoutException:
-            raise ConnectionError(str(self.base_url), f"Request timed out after {self.timeout} seconds")
+            except httpx.ConnectError as e:
+                if attempt < max_retries - 1:
+                    # Log warning on first retry attempt
+                    if attempt == 0:
+                        import logging
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 429:
-                retry_after = e.response.headers.get("Retry-After", str(self.rate_limit))
-                raise RateLimitError(self.rate_limit, float(retry_after))
-            raise
+                        logging.getLogger(__name__).warning(
+                            f"Connection error to {self.base_url} - retrying. "
+                            f"This may be due to transient network issues."
+                        )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                    continue
+                raise ConnectionError(str(self.base_url), f"Connection failed after {max_retries} retries: {str(e)}")
+
+            except httpx.TimeoutException:
+                if attempt < max_retries - 1:
+                    if attempt == 0:
+                        import logging
+
+                        logging.getLogger(__name__).warning(
+                            f"Request timeout to {self.base_url} - retrying. "
+                            f"This may be due to temporary network congestion."
+                        )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                raise ConnectionError(str(self.base_url), f"Request timed out after {max_retries} retries")
+
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    retry_after = e.response.headers.get("Retry-After", str(self.rate_limit))
+                    raise RateLimitError(self.rate_limit, float(retry_after))
+                if e.response.status_code >= 500 and attempt < max_retries - 1:
+                    # Retry server errors (5xx)
+                    if attempt == 0:
+                        import logging
+
+                        logging.getLogger(__name__).warning(
+                            f"Server error {e.response.status_code} from {self.base_url} - retrying."
+                        )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                raise
+
+        # Should not reach here, but just in case
+        raise ConnectionError(str(self.base_url), "Request failed after all retry attempts")
 
     async def search_datasets(
         self,
@@ -165,6 +259,9 @@ class UDataClient:
             # Fetch actual data file
             client = await self._get_client()
             if resource.url and resource.format:
+                # Validate URL to prevent SSRF attacks
+                self._validate_url_safe(resource.url)
+
                 response = await client.get(resource.url)
                 try:
                     return await parse_resource(response, resource.format)
@@ -228,5 +325,4 @@ class UDataClient:
     async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         """Async context manager exit."""
         # Close the client even if exceptions occurred
-        await self.close()
         await self.close()

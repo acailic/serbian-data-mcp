@@ -7,10 +7,24 @@ with helpful error messages.
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator, HttpUrl, confloat, conint
+from pydantic import BaseModel, ConfigDict, Field, field_validator, HttpUrl, confloat, conint
 
 
 class ServerConfig(BaseModel):
+    """Validated configuration for Serbian Data MCP Server."""
+
+    model_config = ConfigDict(
+        json_encoders={Path: str},
+        json_schema_extra={
+            "example": {
+                "api_base": "https://data.gov.rs",
+                "rate_limit": 1.0,
+                "timeout": 30,
+                "cache_dir": ".cache",
+                "export_dir": "exports",
+            }
+        },
+    )
     """Validated configuration for Serbian Data MCP Server."""
 
     api_base: HttpUrl = Field(default="https://data.gov.rs", description="Base URL for the Serbian data portal API")
@@ -44,24 +58,6 @@ class ServerConfig(BaseModel):
             # Allow custom URLs but warn
             pass
         return v
-
-    class Config:
-        """Pydantic configuration."""
-
-        json_encoders = {
-            Path: str,
-        }
-
-        @classmethod
-        def schema_extra(cls, schema: dict) -> None:
-            """Add extra schema information."""
-            schema["example"] = {
-                "api_base": "https://data.gov.rs",
-                "rate_limit": 1.0,
-                "timeout": 30,
-                "cache_dir": ".cache",
-                "export_dir": "exports",
-            }
 
 
 def validate_config(config_dict: dict) -> tuple[bool, str, Optional[ServerConfig]]:

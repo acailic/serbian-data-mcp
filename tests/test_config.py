@@ -4,6 +4,7 @@ import pytest
 import json
 from pathlib import Path
 from serbian_data_mcp.config import Config, config
+from serbian_data_mcp.config_validation import validate_config, ServerConfig
 
 
 @pytest.fixture
@@ -80,3 +81,115 @@ def test_config_type_validation():
     assert isinstance(config_with_bad_types.api_base, str)
     assert isinstance(config_with_bad_types.rate_limit, (int, float))
     assert isinstance(config_with_bad_types.timeout, int)
+
+
+def test_config_validation_function():
+    """Test the validate_config function."""
+    # Valid configuration
+    valid_config = {
+        "api_base": "https://data.gov.rs",
+        "rate_limit": 1.0,
+        "timeout": 30,
+        "cache_dir": ".cache",
+        "export_dir": "exports",
+    }
+    is_valid, error_msg, validated_config = validate_config(valid_config)
+    assert is_valid
+    assert not error_msg
+    assert isinstance(validated_config, ServerConfig)
+
+
+def test_config_validation_invalid_rate_limit():
+    """Test validation rejects invalid rate limit."""
+    invalid_config = {
+        "api_base": "https://data.gov.rs",
+        "rate_limit": 15.0,  # Too high (max 10.0)
+        "timeout": 30,
+        "cache_dir": ".cache",
+        "export_dir": "exports",
+    }
+    is_valid, error_msg, validated_config = validate_config(invalid_config)
+    assert not is_valid
+    assert "rate_limit" in error_msg
+    assert validated_config is None
+
+
+def test_config_validation_invalid_timeout():
+    """Test validation rejects invalid timeout."""
+    invalid_config = {
+        "api_base": "https://data.gov.rs",
+        "rate_limit": 1.0,
+        "timeout": 2,  # Too low (min 5)
+        "cache_dir": ".cache",
+        "export_dir": "exports",
+    }
+    is_valid, error_msg, validated_config = validate_config(invalid_config)
+    assert not is_valid
+    assert "timeout" in error_msg
+    assert validated_config is None
+
+
+def test_config_validation_invalid_directory():
+    """Test validation rejects invalid directory names."""
+    invalid_config = {
+        "api_base": "https://data.gov.rs",
+        "rate_limit": 1.0,
+        "timeout": 30,
+        "cache_dir": "invalid/dir",  # Contains invalid character
+        "export_dir": "exports",
+    }
+    is_valid, error_msg, validated_config = validate_config(invalid_config)
+    assert not is_valid
+    assert "cache_dir" in error_msg or "Directory name" in error_msg
+    assert validated_config is None
+
+
+def test_config_validation_invalid_url():
+    """Test validation rejects invalid URLs."""
+    invalid_config = {
+        "api_base": "not-a-url",
+        "rate_limit": 1.0,
+        "timeout": 30,
+        "cache_dir": ".cache",
+        "export_dir": "exports",
+    }
+    is_valid, error_msg, validated_config = validate_config(invalid_config)
+    assert not is_valid
+    assert "api_base" in error_msg or "URL" in error_msg
+    assert validated_config is None
+
+
+def test_config_validated_methods():
+    """Test config validation methods."""
+    test_config = Config()
+
+    # Test is_valid method
+    assert test_config.is_valid()
+
+    # Test get_validated_config method
+    validated = test_config.get_validated_config()
+    assert isinstance(validated, ServerConfig)
+    assert str(validated.api_base) == "https://data.gov.rs/"
+    assert validated.rate_limit == 1.0
+    assert validated.timeout == 30
+
+
+def test_config_with_invalid_file(tmp_path):
+    """Test config behavior when loading invalid configuration file."""
+    invalid_file = tmp_path / "invalid_config.json"
+    invalid_config = {
+        "api_base": "https://data.gov.rs",
+        "rate_limit": 20.0,  # Invalid: exceeds maximum
+        "timeout": 30,
+        "cache_dir": ".cache",
+        "export_dir": "exports",
+    }
+    with open(invalid_file, "w") as f:
+        json.dump(invalid_config, f)
+
+    # Config should still load but with validation warnings
+    test_config = Config(config_path=str(invalid_file))
+
+    # Should fall back to defaults for invalid values
+    assert test_config.rate_limit == 1.0  # Default value
+    assert test_config.api_base == "https://data.gov.rs"
