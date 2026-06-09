@@ -1,12 +1,35 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.pyc
-.pytest_cache/
-.env
+
+# Virtual environments
 .venv/
 venv/
-dist/
-*.egg-info/
+ENV/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Type checking
+.pyright/
+.ruff_cache/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Project specific
 config.json
-*.db
-.html
-data/
+.cache/
+exports/
+*.xlsx
+*.csv
+*.json
+!config.example.json
+!pyproject.toml

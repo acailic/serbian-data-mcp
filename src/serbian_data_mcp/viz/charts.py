@@ -22,11 +22,7 @@ class ChartBuilder:
             self.data = data
 
     def line_chart(
-        self,
-        x_column: str,
-        y_column: str,
-        title: str = "",
-        color_column: Optional[str] = None
+        self, x_column: str, y_column: str, title: str = "", color_column: Optional[str] = None
     ) -> go.Figure:
         """Create a line chart.
 
@@ -40,30 +36,14 @@ class ChartBuilder:
             Plotly Figure object
         """
         if color_column:
-            fig = px.line(
-                self.data,
-                x=x_column,
-                y=y_column,
-                color=color_column,
-                title=title
-            )
+            fig = px.line(self.data, x=x_column, y=y_column, color=color_column, title=title)
         else:
-            fig = px.line(
-                self.data,
-                x=x_column,
-                y=y_column,
-                title=title
-            )
+            fig = px.line(self.data, x=x_column, y=y_column, title=title)
 
         return fig
 
     def bar_chart(
-        self,
-        x_column: str,
-        y_column: str,
-        title: str = "",
-        color_column: Optional[str] = None,
-        orientation: str = "v"
+        self, x_column: str, y_column: str, title: str = "", color_column: Optional[str] = None, orientation: str = "v"
     ) -> go.Figure:
         """Create a bar chart.
 
@@ -78,31 +58,13 @@ class ChartBuilder:
             Plotly Figure object
         """
         if orientation == "h":
-            fig = px.bar(
-                self.data,
-                x=y_column,
-                y=x_column,
-                color=color_column,
-                title=title,
-                orientation="h"
-            )
+            fig = px.bar(self.data, x=y_column, y=x_column, color=color_column, title=title, orientation="h")
         else:
-            fig = px.bar(
-                self.data,
-                x=x_column,
-                y=y_column,
-                color=color_column,
-                title=title
-            )
+            fig = px.bar(self.data, x=x_column, y=y_column, color=color_column, title=title)
 
         return fig
 
-    def pie_chart(
-        self,
-        values_column: str,
-        names_column: str,
-        title: str = ""
-    ) -> go.Figure:
+    def pie_chart(self, values_column: str, names_column: str, title: str = "") -> go.Figure:
         """Create a pie chart.
 
         Args:
@@ -113,12 +75,7 @@ class ChartBuilder:
         Returns:
             Plotly Figure object
         """
-        fig = px.pie(
-            self.data,
-            values=values_column,
-            names=names_column,
-            title=title
-        )
+        fig = px.pie(self.data, values=values_column, names=names_column, title=title)
 
         return fig
 
@@ -128,7 +85,7 @@ class ChartBuilder:
         y_column: str,
         title: str = "",
         color_column: Optional[str] = None,
-        size_column: Optional[str] = None
+        size_column: Optional[str] = None,
     ) -> go.Figure:
         """Create a scatter plot.
 
@@ -142,23 +99,11 @@ class ChartBuilder:
         Returns:
             Plotly Figure object
         """
-        fig = px.scatter(
-            self.data,
-            x=x_column,
-            y=y_column,
-            color=color_column,
-            size=size_column,
-            title=title
-        )
+        fig = px.scatter(self.data, x=x_column, y=y_column, color=color_column, size=size_column, title=title)
 
         return fig
 
-    def histogram(
-        self,
-        column: str,
-        title: str = "",
-        bins: Optional[int] = None
-    ) -> go.Figure:
+    def histogram(self, column: str, title: str = "", bins: Optional[int] = None) -> go.Figure:
         """Create a histogram.
 
         Args:
@@ -169,21 +114,11 @@ class ChartBuilder:
         Returns:
             Plotly Figure object
         """
-        fig = px.histogram(
-            self.data,
-            x=column,
-            title=title,
-            nbins=bins
-        )
+        fig = px.histogram(self.data, x=column, title=title, nbins=bins)
 
         return fig
 
-    def box_plot(
-        self,
-        y_column: str,
-        x_column: Optional[str] = None,
-        title: str = ""
-    ) -> go.Figure:
+    def box_plot(self, y_column: str, x_column: Optional[str] = None, title: str = "") -> go.Figure:
         """Create a box plot.
 
         Args:
@@ -194,11 +129,6 @@ class ChartBuilder:
         Returns:
             Plotly Figure object
         """
-        fig = px.box(
-            self.data,
-            x=x_column,
-            y=y_column,
-            title=title
-        )
+        fig = px.box(self.data, x=x_column, y=y_column, title=title)
 
         return fig

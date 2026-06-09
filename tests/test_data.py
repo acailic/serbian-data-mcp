@@ -40,7 +40,7 @@ async def test_parse_csv():
 @pytest.mark.asyncio
 async def test_parse_csv_with_utf8_bom():
     """Test CSV parsing with UTF-8 BOM."""
-    content = b'\xef\xbb\xbfname,value\nTest,123'
+    content = b"\xef\xbb\xbfname,value\nTest,123"
     df = await parse_csv(content)
 
     assert len(df) == 1
@@ -49,10 +49,7 @@ async def test_parse_csv_with_utf8_bom():
 
 def test_filter_data():
     """Test data filtering."""
-    data = pd.DataFrame({
-        "category": ["A", "B", "A", "C"],
-        "value": [10, 20, 30, 40]
-    })
+    data = pd.DataFrame({"category": ["A", "B", "A", "C"], "value": [10, 20, 30, 40]})
 
     result = filter_data(data, {"category": "A"})
 
@@ -62,10 +59,7 @@ def test_filter_data():
 
 def test_filter_data_with_list():
     """Test filtering with list of values."""
-    data = pd.DataFrame({
-        "category": ["A", "B", "A", "C"],
-        "value": [10, 20, 30, 40]
-    })
+    data = pd.DataFrame({"category": ["A", "B", "A", "C"], "value": [10, 20, 30, 40]})
 
     result = filter_data(data, {"category": ["A", "B"]})
 
@@ -74,9 +68,7 @@ def test_filter_data_with_list():
 
 def test_filter_data_with_operators():
     """Test filtering with comparison operators."""
-    data = pd.DataFrame({
-        "value": [10, 20, 30, 40]
-    })
+    data = pd.DataFrame({"value": [10, 20, 30, 40]})
 
     result = filter_data(data, {"value": {">": 15}})
 
@@ -86,10 +78,7 @@ def test_filter_data_with_operators():
 
 def test_group_data():
     """Test data grouping."""
-    data = pd.DataFrame({
-        "category": ["A", "B", "A", "B"],
-        "value": [10, 20, 30, 40]
-    })
+    data = pd.DataFrame({"category": ["A", "B", "A", "B"], "value": [10, 20, 30, 40]})
 
     result = group_data(data, "category")
 
@@ -99,9 +88,7 @@ def test_group_data():
 
 def test_aggregate_data():
     """Test data aggregation."""
-    data = pd.DataFrame({
-        "value": [10, 20, 30, 40]
-    })
+    data = pd.DataFrame({"value": [10, 20, 30, 40]})
 
     result = aggregate_data(data, "value", "sum")
 
@@ -110,9 +97,7 @@ def test_aggregate_data():
 
 def test_aggregate_mean():
     """Test mean aggregation."""
-    data = pd.DataFrame({
-        "value": [10, 20, 30, 40]
-    })
+    data = pd.DataFrame({"value": [10, 20, 30, 40]})
 
     result = aggregate_data(data, "value", "mean")
 
@@ -121,11 +106,7 @@ def test_aggregate_mean():
 
 def test_filter_with_list_input():
     """Test filtering with list input."""
-    data = [
-        {"category": "A", "value": 10},
-        {"category": "B", "value": 20},
-        {"category": "A", "value": 30}
-    ]
+    data = [{"category": "A", "value": 10}, {"category": "B", "value": 20}, {"category": "A", "value": 30}]
 
     result = filter_data(data, {"category": "A"})
 

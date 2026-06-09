@@ -25,4 +25,108 @@ build-backend = "hatchling.build"
 dev-dependencies = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "coverage>=7.3.0",
+    "pyright>=1.1.350",
+    "ruff>=0.1.0",
+    "bandit>=1.7.0",
+    "mypy>=1.8.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+]
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = [".venv", "**/__pycache__"]
+pythonVersion = "3.11"
+pythonPlatform = "All"
+typeCheckingMode = "basic"
+reportMissingImports = "warning"
+reportMissingTypeStubs = false
+reportUnknownMemberType = "warning"
+reportUnknownArgumentType = "warning"
+reportUnknownVariableType = "warning"
+stubPath = ""
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults
+    "B017",   # assert raises exception (pytest compatibility)
+    "B019",   # use of assertion in except (pytest compatibility)
+    "SIM108", # use ternary operator (can reduce clarity)
+    "UP045",  # Use X | None (let's use Optional for clarity)
+    "I001",   # Import block unsorted (auto-fixable, not critical)
+    "B904",   # raise ... from err (can add complexity in error handling)
+    "UP007",  # Use X | Y for type annotations (Union is clearer for complex types)
+    "UP024",  # Replace aliased errors (IOError is more readable than OSError)
+    "E722",   # bare except (needed for generic error handling)
+    "F401",   # unused imports (some needed for type exports)
+    "UP035",  # typing module deprecations (Optional/List clearer than builtins)
+    "UP006",  # Dict/List -> dict/list (style preference)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "ARG",     # unused arguments in test fixtures
+    "S101",    # assert statements in tests
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+parallel = true
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true

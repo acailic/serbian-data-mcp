@@ -9,11 +9,7 @@ import plotly.graph_objects as go
 from ..config import config
 
 
-async def export_html(
-    fig: go.Figure,
-    filename: str,
-    output_dir: Optional[Path] = None
-) -> str:
+async def export_html(fig: go.Figure, filename: str, output_dir: Optional[Path] = None) -> str:
     """Export chart as HTML file.
 
     Args:
@@ -33,12 +29,7 @@ async def export_html(
     return str(filepath)
 
 
-async def export_png(
-    fig: go.Figure,
-    filename: str,
-    output_dir: Optional[Path] = None,
-    scale: float = 1.0
-) -> str:
+async def export_png(fig: go.Figure, filename: str, output_dir: Optional[Path] = None, scale: float = 1.0) -> str:
     """Export chart as PNG image.
 
     Args:
@@ -62,11 +53,7 @@ async def export_png(
     return str(filepath)
 
 
-async def export_json(
-    fig: go.Figure,
-    filename: str,
-    output_dir: Optional[Path] = None
-) -> str:
+async def export_json(fig: go.Figure, filename: str, output_dir: Optional[Path] = None) -> str:
     """Export chart as JSON.
 
     Args:

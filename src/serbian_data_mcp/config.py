@@ -1,9 +1,9 @@
 """Configuration management for Serbian Data MCP server."""
 
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
+
 import json
-import os
 
 
 class Config:
@@ -18,14 +18,14 @@ class Config:
         self.config_path = Path(config_path or "config.json")
         self._config = self._load_config()
 
-    def _load_config(self) -> dict:
+    def _load_config(self) -> dict[str, Any]:
         """Load configuration from file or use defaults."""
         defaults = {
             "api_base": "https://data.gov.rs",
             "rate_limit": 1.0,
             "timeout": 30,
             "cache_dir": ".cache",
-            "export_dir": "exports"
+            "export_dir": "exports",
         }
 
         if self.config_path.exists():
@@ -38,7 +38,7 @@ class Config:
 
         return defaults
 
-    def get(self, key: str, default=None):
+    def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value."""
         return self._config.get(key, default)
 

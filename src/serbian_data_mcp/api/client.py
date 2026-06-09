@@ -2,23 +2,20 @@
 
 import asyncio
 import time
-from typing import Optional, List, Dict, Any
-from urllib.parse import urljoin
+from typing import Any, Optional
 
 import httpx
 
-from .models import Dataset, Resource, Organization, SearchResult
+from .models import Dataset, Organization, Resource, SearchResult
 from ..config import config
+from ..exceptions import ConnectionError, DatasetNotFoundError, DataParsingError, RateLimitError, ResourceNotFoundError
 
 
 class UDataClient:
     """Client for accessing Serbian data portal (data.gov.rs)."""
 
     def __init__(
-        self,
-        base_url: Optional[str] = None,
-        rate_limit: Optional[float] = None,
-        timeout: Optional[int] = None
+        self, base_url: Optional[str] = None, rate_limit: Optional[float] = None, timeout: Optional[int] = None
     ):
         """Initialize the API client.
 
@@ -36,10 +33,7 @@ class UDataClient:
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client."""
         if self._client is None:
-            self._client = httpx.AsyncClient(
-                base_url=self.base_url,
-                timeout=self.timeout
-            )
+            self._client = httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout)
         return self._client
 
     async def _rate_limit_wait(self):
@@ -54,9 +48,9 @@ class UDataClient:
         self,
         method: str,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        json_data: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        params: Optional[dict[str, Any]] = None,
+        json_data: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         """Make an API request with rate limiting.
 
         Args:
@@ -67,20 +61,32 @@ class UDataClient:
 
         Returns:
             Response data as dictionary
+
+        Raises:
+            ConnectionError: If the API cannot be reached
+            RateLimitError: If rate limit is exceeded
         """
         await self._rate_limit_wait()
 
         client = await self._get_client()
         url = endpoint if endpoint.startswith("/") else f"/{endpoint}"
 
-        response = await client.request(
-            method,
-            url,
-            params=params,
-            json=json_data
-        )
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = await client.request(method, url, params=params, json=json_data)
+            response.raise_for_status()
+            return response.json()
+
+        except httpx.ConnectError as e:
+            raise ConnectionError(str(self.base_url), f"Connection failed: {str(e)}")
+
+        except httpx.TimeoutException:
+            raise ConnectionError(str(self.base_url), f"Request timed out after {self.timeout} seconds")
+
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                retry_after = e.response.headers.get("Retry-After", str(self.rate_limit))
+                raise RateLimitError(self.rate_limit, float(retry_after))
+            raise
 
     async def search_datasets(
         self,
@@ -88,7 +94,7 @@ class UDataClient:
         format: Optional[str] = None,
         organization: Optional[str] = None,
         page_size: int = 10,
-        page: int = 1
+        page: int = 1,
     ) -> SearchResult:
         """Search for datasets.
 
@@ -102,11 +108,7 @@ class UDataClient:
         Returns:
             SearchResult with list of Dataset objects
         """
-        params = {
-            "q": query,
-            "rows": page_size,
-            "start": (page - 1) * page_size
-        }
+        params = {"q": query, "rows": page_size, "start": (page - 1) * page_size}
 
         if format:
             params["format"] = format
@@ -115,17 +117,9 @@ class UDataClient:
 
         data = await self._request("GET", "/api/1/datasets/", params=params)
 
-        datasets = [
-            Dataset.from_dict(ds_data)
-            for ds_data in data.get("data", [])
-        ]
+        datasets = [Dataset.from_dict(ds_data) for ds_data in data.get("data", [])]
 
-        return SearchResult(
-            datasets=datasets,
-            total=data.get("total", 0),
-            page=page,
-            page_size=page_size
-        )
+        return SearchResult(datasets=datasets, total=data.get("total", 0), page=page, page_size=page_size)
 
     async def get_dataset(self, dataset_id: str) -> Optional[Dataset]:
         """Get complete dataset details.
@@ -135,19 +129,20 @@ class UDataClient:
 
         Returns:
             Dataset object or None if not found
+
+        Raises:
+            DatasetNotFoundError: If dataset doesn't exist
+            ConnectionError: If API cannot be reached
         """
         try:
             data = await self._request("GET", f"/api/1/datasets/{dataset_id}/")
             return Dataset.from_dict(data)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                return None
+                raise DatasetNotFoundError(dataset_id)
             raise
 
-    async def get_resource_data(
-        self,
-        resource_id: str
-    ) -> Any:
+    async def get_resource_data(self, resource_id: str) -> Any:
         """Download and parse resource data.
 
         Args:
@@ -155,6 +150,11 @@ class UDataClient:
 
         Returns:
             Parsed data (dict for JSON, DataFrame for CSV/Excel, etc.)
+
+        Raises:
+            ResourceNotFoundError: If resource doesn't exist
+            DataParsingError: If data cannot be parsed
+            ConnectionError: If API cannot be reached
         """
         from ..data.parsers import parse_resource
 
@@ -166,16 +166,18 @@ class UDataClient:
             client = await self._get_client()
             if resource.url and resource.format:
                 response = await client.get(resource.url)
-                return await parse_resource(response, resource.format)
-            return None
-        except httpx.HTTPStatusError:
+                try:
+                    return await parse_resource(response, resource.format)
+                except Exception as e:
+                    raise DataParsingError(resource.format, f"Failed to parse resource data: {str(e)}")
             return None
 
-    async def list_organizations(
-        self,
-        page_size: int = 50,
-        page: int = 1
-    ) -> List[Organization]:
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise ResourceNotFoundError(resource_id)
+            raise
+
+    async def list_organizations(self, page_size: int = 50, page: int = 1) -> list[Organization]:
         """List all organizations.
 
         Args:
@@ -185,24 +187,13 @@ class UDataClient:
         Returns:
             List of Organization objects
         """
-        params = {
-            "rows": page_size,
-            "start": (page - 1) * page_size
-        }
+        params = {"rows": page_size, "start": (page - 1) * page_size}
 
         data = await self._request("GET", "/api/1/organizations/", params=params)
 
-        return [
-            Organization.from_dict(org_data)
-            for org_data in data.get("data", [])
-        ]
+        return [Organization.from_dict(org_data) for org_data in data.get("data", [])]
 
-    async def suggest_datasets(
-        self,
-        query: str,
-        format: Optional[str] = None,
-        size: int = 10
-    ) -> List[str]:
+    async def suggest_datasets(self, query: str, format: Optional[str] = None, size: int = 10) -> list[str]:
         """Get autocomplete suggestions for search.
 
         Args:
@@ -213,10 +204,7 @@ class UDataClient:
         Returns:
             List of suggestion strings
         """
-        params = {
-            "q": query,
-            "size": size
-        }
+        params = {"q": query, "size": size}
 
         if format:
             params["format"] = format
@@ -237,6 +225,8 @@ class UDataClient:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         """Async context manager exit."""
+        # Close the client even if exceptions occurred
+        await self.close()
         await self.close()

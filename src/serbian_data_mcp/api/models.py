@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any, Optional
 
 
 @dataclass
@@ -20,12 +20,12 @@ class Resource:
     checksum: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Resource":
+    def from_dict(cls, data: dict[str, Any]) -> "Resource":
         """Create Resource from API response dictionary."""
         created_at = data.get("created_at")
         if created_at and isinstance(created_at, str):
             try:
-                created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
             except ValueError:
                 created_at = None
 
@@ -38,7 +38,7 @@ class Resource:
             created_at=created_at,
             size=data.get("size"),
             mime_type=data.get("mime"),
-            checksum=data.get("checksum")
+            checksum=data.get("checksum"),
         )
 
 
@@ -53,14 +53,14 @@ class Organization:
     logo: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Organization":
+    def from_dict(cls, data: dict[str, Any]) -> "Organization":
         """Create Organization from API response dictionary."""
         return cls(
             id=data.get("id", ""),
             name=data.get("name", ""),
             description=data.get("description"),
             url=data.get("url"),
-            logo=data.get("logo")
+            logo=data.get("logo"),
         )
 
 
@@ -72,8 +72,8 @@ class Dataset:
     title: str
     description: Optional[str] = None
     organization: Optional[Organization] = None
-    resources: List[Resource] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
+    resources: list[Resource] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     created_at: Optional[datetime] = None
     modified_at: Optional[datetime] = None
     frequency: Optional[str] = None
@@ -82,7 +82,7 @@ class Dataset:
     license: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Dataset":
+    def from_dict(cls, data: dict[str, Any]) -> "Dataset":
         """Create Dataset from API response dictionary."""
         # Parse organization
         org_data = data.get("organization")
@@ -99,14 +99,14 @@ class Dataset:
         created_at = data.get("created_at")
         if created_at and isinstance(created_at, str):
             try:
-                created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
             except ValueError:
                 created_at = None
 
         modified_at = data.get("modified_at") or data.get("last_modified")
         if modified_at and isinstance(modified_at, str):
             try:
-                modified_at = datetime.fromisoformat(modified_at.replace('Z', '+00:00'))
+                modified_at = datetime.fromisoformat(modified_at.replace("Z", "+00:00"))
             except ValueError:
                 modified_at = None
 
@@ -130,7 +130,7 @@ class Dataset:
             frequency=data.get("frequency"),
             temporal_coverage=data.get("temporal_coverage"),
             spatial_coverage=data.get("spatial_coverage"),
-            license=data.get("license")
+            license=data.get("license"),
         )
 
 
@@ -138,7 +138,7 @@ class Dataset:
 class SearchResult:
     """Results from a dataset search."""
 
-    datasets: List[Dataset]
+    datasets: list[Dataset]
     total: int
     page: int
     page_size: int

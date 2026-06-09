@@ -1,0 +1,3 @@
+[bandit]
+exclude_dirs = ['/home/nistrator/Documents/github/amplifier/serbian-data-mcp/tests']
+skips = ['B101', 'B601']
