@@ -1,0 +1,7 @@
+{
+  "api_base": "https://data.gov.rs",
+  "rate_limit": 1.0,
+  "timeout": 30,
+  "cache_dir": ".cache",
+  "export_dir": "exports"
+}
