@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -21,6 +22,8 @@ import pandas as pd
 from . import mcp
 from .api.client import UDataClient
 from .api.models import Dataset, Organization, SearchResult
+from .catalog import DatasetCatalog, SearchEngine, AlternativeSuggestions, DatasetPreview
+from .catalog.exceptions import DatasetNotFound
 from .config import config
 from .data.transformers import aggregate_data, filter_data, group_data, select_columns, sort_data
 from .exceptions import VisualizationError
@@ -1158,6 +1161,233 @@ async def dataset_resource(dataset_id: str) -> str:
     if dataset is None:
         return json.dumps({"error": "Dataset not found", "id": dataset_id})
     return json.dumps(_dataset_to_dict(dataset), indent=2)
+
+
+# =========================================================================
+# Intelligent Search & Catalog Tools
+# =========================================================================
+
+
+_catalog_instance: Optional[DatasetCatalog] = None
+
+
+async def _get_catalog() -> DatasetCatalog:
+    """Get or create shared catalog instance."""
+    global _catalog_instance
+    if _catalog_instance is None:
+        _catalog_instance = DatasetCatalog()
+        await _catalog_instance.initialize()
+    if _catalog_instance is None:  # Type guard for pyright
+        _catalog_instance = DatasetCatalog()
+        await _catalog_instance.initialize()
+    return _catalog_instance
+
+
+@mcp.tool()
+async def intelligent_search(
+    query: str,
+    suggest_alternatives: bool = True,
+    max_results: int = 10,
+    min_score: float = 0.3
+) -> dict[str, Any]:
+    """Search datasets with semantic understanding and fallback suggestions.
+
+    Uses cached catalog for fast results without API rate limits.
+    Automatically expands queries with synonyms and translations (Serbian↔English).
+    Provides alternative suggestions when no exact match found.
+
+    This is the RECOMMENDED way to search for datasets. Use search_datasets()
+    only if you need live API results or specific filters (organization, format).
+
+    Example:
+        intelligent_search("population by age")
+        intelligent_search("stanovništvo")
+        intelligent_search("budžet", suggest_alternatives=True)
+
+    Args:
+        query: Search query (Serbian or English both work)
+        suggest_alternatives: If True, provide suggestions when no exact match
+        max_results: Maximum number of results (1-50, default 10)
+        min_score: Minimum relevance score (0.0-1.0, default 0.3)
+
+    Returns:
+        Dict with 'results' (list of datasets with relevance scores),
+              'total_found', 'query_used', 'expanded_terms',
+              and 'suggestions' (if no exact match and suggest_alternatives=True)
+    """
+    catalog = await _get_catalog()
+    search_engine = SearchEngine(catalog)
+
+    # Search with semantic understanding
+    results = await search_engine.search(
+        query,
+        max_results=max_results,
+        min_score=min_score
+    )
+
+    response: dict[str, Any] = {
+        "results": [r.to_dict() for r in results],
+        "total_found": len(results),
+        "query": query,
+        "expanded_terms": await search_engine.query_expander.expand(query),
+    }
+
+    # Provide alternatives if no results
+    if not results and suggest_alternatives:
+        suggestions = AlternativeSuggestions(catalog, search_engine)
+        suggestion_result = await suggestions.suggest(query, max_alternatives=max_results)
+        response["suggestions"] = suggestion_result.to_dict()
+        response["note"] = "No exact match found. See 'suggestions' for related datasets."
+
+    return response
+
+
+@mcp.tool()
+async def preview_dataset(dataset_id: str, nrows: int = 10) -> dict[str, Any]:
+    """Show dataset info with data preview (first N rows).
+
+    Displays dataset metadata and sample data from the first downloadable resource.
+    Use this BEFORE downloading full data to understand the structure.
+
+    Workflow:
+        1. intelligent_search() → find dataset_id
+        2. preview_dataset(dataset_id) → understand structure
+        3. get_resource_data(resource_id) → download full data if useful
+
+    Args:
+        dataset_id: Dataset identifier (from intelligent_search or search_datasets)
+        nrows: Number of rows to preview (1-100, default 10)
+
+    Returns:
+        Dict with 'metadata' (dataset info), 'sample_data' (first N rows),
+              'columns' (field names), and 'preview_reason'
+
+    Example:
+        >>> preview = await preview_dataset("abc123")
+        >>> preview["metadata"]["title"]
+        "Population by Age"
+        >>> preview["sample_data"][0]
+        {"age": "0-18", "count": 12345}
+        >>> preview["preview_reason"]
+        "Showing first 10 rows from CSV resource"
+    """
+    catalog = await _get_catalog()
+    preview = DatasetPreview(catalog)
+
+    try:
+        result = await preview.preview_dataset(dataset_id, nrows=nrows)
+        return result
+    except DatasetNotFound as e:
+        return {
+            "error": True,
+            "message": str(e),
+            "dataset_id": dataset_id,
+            "note": "Dataset not found in catalog. Try intelligent_search() to find it."
+        }
+    except Exception as e:
+        return {
+            "error": True,
+            "message": f"Preview failed: {str(e)[:200]}",
+            "dataset_id": dataset_id
+        }
+
+
+@mcp.tool()
+async def refresh_catalog(force: bool = False) -> dict[str, Any]:
+    """Refresh dataset catalog cache from data.gov.rs API.
+
+    Fetches all datasets from the API and updates the local cache.
+    Use this to get the latest datasets or if the cache is stale.
+
+    Automatic refresh: Cache auto-refreshes every 24 hours on server start.
+    Manual refresh: Use this tool when you need fresh data immediately.
+
+    Args:
+        force: If True, rebuild catalog even if cache is recent (default False)
+
+    Returns:
+        Dict with 'total_datasets', 'cache_path', 'built_at', and 'duration_seconds'
+
+    Example:
+        >>> result = await refresh_catalog()
+        >>> result["total_datasets"]
+        3430
+        >>> result["duration_seconds"]
+        45.2
+    """
+    import time
+
+    catalog = await _get_catalog()
+    start = time.time()
+
+    try:
+        result = await catalog.refresh() if force else await catalog.refresh()
+        duration = time.time() - start
+
+        return {
+            **result,
+            "duration_seconds": round(duration, 2),
+            "timestamp": datetime.now(UTC).isoformat()
+        }
+    except Exception as e:
+        duration = time.time() - start
+        return {
+            "error": True,
+            "message": f"Catalog refresh failed: {str(e)[:200]}",
+            "duration_seconds": round(duration, 2),
+            "note": "The API may be rate-limited or unavailable. Try again later."
+        }
+
+
+@mcp.tool()
+async def get_catalog_stats() -> dict[str, Any]:
+    """Get statistics about the cached dataset catalog.
+
+    Returns information about the catalog including total datasets,
+    organizations, formats, and cache age without triggering a refresh.
+
+    Example:
+        >>> stats = await get_catalog_stats()
+        >>> stats["total_datasets"]
+        3430
+        >>> stats["total_organizations"]
+        182
+        >>> stats["cache_age_hours"]
+        2.5
+    """
+    catalog = await _get_catalog()
+
+    # Get organization and format stats
+    organizations: set[str] = set()
+    formats: set[str] = set()
+    downloadable = 0
+
+    for dataset in catalog.get_all():
+        if dataset.organization:
+            organizations.add(dataset.organization)
+        formats.update(dataset.formats)
+        if dataset.has_downloadable:
+            downloadable += 1
+
+    # Calculate cache age
+    cache_age_hours = None
+    if catalog.cache_path.exists():
+        import os
+        cache_mtime = catalog.cache_path.stat().st_mtime
+        cache_age = time.time() - cache_mtime
+        cache_age_hours = round(cache_age / 3600, 2)
+
+    return {
+        "total_datasets": len(catalog),
+        "total_organizations": len(organizations),
+        "total_formats": len(formats),
+        "downloadable_datasets": downloadable,
+        "formats": sorted(formats),
+        "organizations": sorted(organizations)[:20],  # Show first 20
+        "cache_path": str(catalog.cache_path),
+        "cache_age_hours": cache_age_hours,
+        "cache_exists": catalog.cache_path.exists()
+    }
 
 
 # =========================================================================
