@@ -308,7 +308,12 @@ class UDataClient:
 
         try:
             data = await self._request("GET", "/api/1/datasets/suggest/", params=params)
-            return data.get("results", [])
+            # API returns list directly or dict with "results" key
+            if isinstance(data, list):
+                return data
+            if isinstance(data, dict):
+                return data.get("results", [])
+            return []
         except httpx.HTTPStatusError:
             return []
 

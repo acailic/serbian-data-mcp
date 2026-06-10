@@ -13,8 +13,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from serbian_data_mcp.api.client import UDataClient
-from serbian_data_mcp.viz.charts import create_chart
-from serbian_data_mcp.viz.exporters import export_chart
+from serbian_data_mcp.viz.charts import ChartBuilder
+from serbian_data_mcp.viz.exporters import export_html
 
 
 async def example_search_datasets():
@@ -126,20 +126,20 @@ async def example_visualization():
     print("Year vs Population")
 
     try:
-        # Create chart
-        chart = create_chart(
-            data=data,
-            chart_type="line",
-            title="Serbian Population Trend (Sample)",
+        # Create chart using ChartBuilder
+        builder = ChartBuilder(data)
+        chart = builder.line_chart(
             x_column="year",
-            y_column="population"
+            y_column="population",
+            title="Serbian Population Trend (Sample)"
         )
 
         # Export to HTML
-        output_path = Path("exports/sample_chart.html")
-        output_path.parent.mkdir(exist_ok=True)
+        output_path = "sample_chart.html"
 
-        export_chart(chart, str(output_path), format="html")
+        # Export using async function
+        result = await export_html(chart, output_path)
+        print(f"Chart exported to: {result}")
 
         print(f"\n✅ Chart saved to: {output_path}")
         print(f"   Open it in your browser to view the interactive chart")
