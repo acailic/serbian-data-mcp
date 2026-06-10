@@ -72,11 +72,24 @@ echo "   ✅ Created .cache and exports directories"
 # Test installation
 echo ""
 echo "🧪 Testing installation..."
-if python3 -c "import serbian_data_mcp" 2>/dev/null; then
-    echo "   ✅ serbian_data_mcp module imports successfully"
+if [ "$INSTALL_METHOD" = "uv" ]; then
+    # uv creates a virtual environment
+    if .venv/bin/python -c "import serbian_data_mcp" 2>/dev/null; then
+        echo "   ✅ serbian_data_mcp module imports successfully"
+    else
+        echo "   ❌ Error: Failed to import serbian_data_mcp"
+        .venv/bin/python -c "import serbian_data_mcp" 2>&1 | head -5
+        exit 1
+    fi
 else
-    echo "   ❌ Error: Failed to import serbian_data_mcp"
-    exit 1
+    # pip installs to system Python
+    if python3 -c "import serbian_data_mcp" 2>/dev/null; then
+        echo "   ✅ serbian_data_mcp module imports successfully"
+    else
+        echo "   ❌ Error: Failed to import serbian_data_mcp"
+        python3 -c "import serbian_data_mcp" 2>&1 | head -5
+        exit 1
+    fi
 fi
 
 echo ""
