@@ -1,7 +1,11 @@
 """Data transformation utilities."""
 
+import logging
 from typing import Any, Dict, List, Optional, Callable, Union
+
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def filter_data(data: Union[pd.DataFrame, List[Dict[str, Any]]], filters: Dict[str, Any]) -> pd.DataFrame:
@@ -160,3 +164,176 @@ def select_columns(data: Union[pd.DataFrame, List[Dict[str, Any]]], columns: Lis
 
     available_cols = [col for col in columns if col in df.columns]
     return df[available_cols]
+
+
+def pivot_table(
+    data: Union[pd.DataFrame, List[Dict[str, Any]]],
+    index: Union[str, List[str]],
+    columns: str,
+    values: str,
+    aggfunc: str = "mean",
+) -> pd.DataFrame:
+    """Create a pivot table from data.
+
+    Args:
+        data: DataFrame or list of dictionaries
+        index: Column name(s) to use as index
+        columns: Column name to use as columns
+        values: Column name to aggregate
+        aggfunc: Aggregation function ('mean', 'sum', 'count', 'min', 'max')
+
+    Returns:
+        Pivot table as DataFrame
+    """
+    if isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        df = data.copy()
+
+    valid_funcs = {"mean", "sum", "count", "min", "max", "median", "std", "var"}
+    if aggfunc not in valid_funcs:
+        aggfunc = "mean"
+        logger.warning("Unknown aggfunc, defaulting to 'mean'")
+
+    try:
+        result = df.pivot_table(index=index, columns=columns, values=values, aggfunc=aggfunc)
+        return result.reset_index()
+    except Exception as e:
+        logger.error(f"Failed to create pivot table: {e}")
+        raise
+
+
+def rename_columns(
+    data: Union[pd.DataFrame, List[Dict[str, Any]]],
+    mapping: Dict[str, str],
+) -> pd.DataFrame:
+    """Rename columns using a mapping dict.
+
+    Args:
+        data: DataFrame or list of dictionaries
+        mapping: Dictionary mapping old names to new names
+
+    Returns:
+        DataFrame with renamed columns
+    """
+    if isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        df = data.copy()
+
+    existing = {k: v for k, v in mapping.items() if k in df.columns}
+    df = df.rename(columns=existing)
+    logger.debug(f"Renamed {len(existing)} columns")
+    return df
+
+
+def drop_columns(
+    data: Union[pd.DataFrame, List[Dict[str, Any]]],
+    columns: List[str],
+) -> pd.DataFrame:
+    """Drop specified columns from data.
+
+    Args:
+        data: DataFrame or list of dictionaries
+        columns: Column names to drop
+
+    Returns:
+        DataFrame with specified columns removed
+    """
+    if isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        df = data.copy()
+
+    cols_to_drop = [col for col in columns if col in df.columns]
+    df = df.drop(columns=cols_to_drop)
+    logger.debug(f"Dropped {len(cols_to_drop)} columns")
+    return df
+
+
+def head(
+    data: Union[pd.DataFrame, List[Dict[str, Any]]],
+    n: int = 5,
+) -> pd.DataFrame:
+    """Return first n rows.
+
+    Args:
+        data: DataFrame or list of dictionaries
+        n: Number of rows to return
+
+    Returns:
+        DataFrame with first n rows
+    """
+    if isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        df = data
+
+    return df.head(n)
+
+
+def tail(
+    data: Union[pd.DataFrame, List[Dict[str, Any]]],
+    n: int = 5,
+) -> pd.DataFrame:
+    """Return last n rows.
+
+    Args:
+        data: DataFrame or list of dictionaries
+        n: Number of rows to return
+
+    Returns:
+        DataFrame with last n rows
+    """
+    if isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        df = data
+
+    return df.tail(n)
+
+
+def describe_data(
+    data: Union[pd.DataFrame, List[Dict[str, Any]]],
+) -> pd.DataFrame:
+    """Generate statistical summary of numeric columns.
+
+    Args:
+        data: DataFrame or list of dictionaries
+
+    Returns:
+        DataFrame with statistical summary (count, mean, std, min, 25%, 50%, 75%, max)
+    """
+    if isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        df = data
+
+    return df.describe()
+
+
+def count_unique(
+    data: Union[pd.DataFrame, List[Dict[str, Any]]],
+    column: str,
+) -> pd.DataFrame:
+    """Count unique values in a column.
+
+    Args:
+        data: DataFrame or list of dictionaries
+        column: Column name to count unique values for
+
+    Returns:
+        DataFrame with columns: the specified column name and 'count', sorted by count descending
+    """
+    if isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        df = data.copy()
+
+    if column not in df.columns:
+        logger.warning(f"Column '{column}' not found in data")
+        return pd.DataFrame(columns=[column, "count"])
+
+    result = df[column].value_counts().reset_index()
+    result.columns = [column, "count"]
+    return result

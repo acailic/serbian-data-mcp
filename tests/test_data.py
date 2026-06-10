@@ -111,3 +111,99 @@ def test_filter_with_list_input():
     result = filter_data(data, {"category": "A"})
 
     assert len(result) == 2
+
+
+# -- CSV parsing additional tests ----------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_parse_csv_latin1_fallback() -> None:
+    """CSV with non-UTF-8 content should fallback to latin1."""
+    content = b"name,city\r\nTest,\xe9\xe8"  # latin1 encoded e-acute, e-grave
+    df = await parse_csv(content)
+    assert len(df) == 1
+    assert "name" in df.columns
+
+
+@pytest.mark.asyncio
+async def test_parse_csv_empty() -> None:
+    """Empty CSV should produce empty DataFrame (header only)."""
+    content = b"name,value\n"
+    df = await parse_csv(content)
+    assert len(df) == 0
+    assert "name" in df.columns
+
+
+# -- JSON parsing additional tests ---------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_parse_json_nested() -> None:
+    """JSON with nested structure."""
+    content = b'{"outer": {"inner": "value"}}'
+    result = await parse_json(content)
+    assert result["outer"]["inner"] == "value"
+
+
+@pytest.mark.asyncio
+async def test_parse_json_empty_object() -> None:
+    """Empty JSON object."""
+    content = b"{}"
+    result = await parse_json(content)
+    assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_parse_json_empty_array() -> None:
+    """Empty JSON array."""
+    content = b"[]"
+    result = await parse_json(content)
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_parse_json_invalid_raises() -> None:
+    """Invalid JSON should raise an exception."""
+    content = b"{invalid json}"
+    with pytest.raises(Exception):
+        await parse_json(content)
+
+
+# -- Excel parsing (skip if openpyxl not installed) ------------------------------
+
+
+@pytest.mark.asyncio
+async def test_parse_excel_not_implemented() -> None:
+    """Excel parsing should work when openpyxl is available, but we can't generate a real xlsx here."""
+    from serbian_data_mcp.data.parsers import parse_excel as _parse_excel
+
+    # Create a minimal invalid xlsx to test error handling
+    content = b"not-a-real-xlsx"
+    with pytest.raises(Exception):
+        await _parse_excel(content)
+
+
+# -- parse_resource dispatch ----------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_parse_resource_xml_fallback() -> None:
+    """XML format should return raw text."""
+    from serbian_data_mcp.data.parsers import parse_resource
+
+    content = b"<root><item>test</item></root>"
+    mock_resp = type("obj", (), {"content": content})()
+    result = await parse_resource(mock_resp, "xml")
+    assert isinstance(result, str)
+    assert "<root>" in result
+
+
+@pytest.mark.asyncio
+async def test_parse_resource_unknown_format_fallback() -> None:
+    """Unknown format should attempt JSON parse then raw text fallback."""
+    from serbian_data_mcp.data.parsers import parse_resource
+
+    content = b"some plain text data"
+    mock_resp = type("obj", (), {"content": content})()
+    result = await parse_resource(mock_resp, "txt")
+    assert isinstance(result, str)

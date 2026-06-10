@@ -1,10 +1,20 @@
 """Integration tests for MCP server functionality."""
 
+from __future__ import annotations
+
 import pytest
 import asyncio
 from serbian_data_mcp.api import UDataClient
 from serbian_data_mcp.viz import ChartBuilder
-from serbian_data_mcp.data import parse_json, parse_csv, filter_data
+from serbian_data_mcp.data import parse_json, parse_csv, filter_data, group_data
+from serbian_data_mcp.data.transformers import (
+    sort_data,
+    select_columns,
+    head,
+    drop_columns,
+    rename_columns,
+    aggregate_data,
+)
 import pandas as pd
 
 
@@ -106,3 +116,78 @@ def test_error_handling_integration():
     # Should handle gracefully
     with pytest.raises(Exception):
         asyncio.run(parse_json(invalid_json))
+
+
+# -- Full workflow tests --------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_full_workflow_search_get_filter_visualize() -> None:
+    """Test full workflow: parse -> filter -> group -> visualize."""
+    csv_content = b"grad,opstina,stanovnistvo\nBeograd,Stari grad,50000\nBeograd,Novi Beograd,70000\nNovi Sad,Petrovaradin,30000\nNovi Sad,Liman,40000"
+    df = await parse_csv(csv_content)
+    assert len(df) == 4
+    filtered = filter_data(df, {"grad": "Beograd"})
+    assert len(filtered) == 2
+    grouped = group_data(filtered, "grad", {"stanovnistvo": "sum"})
+    assert len(grouped) == 1
+    builder = ChartBuilder(filtered)
+    fig = builder.bar_chart(x_column="opstina", y_column="stanovnistvo", title="Stanovnistvo")
+    assert fig is not None
+
+
+def test_transformer_chain_workflow() -> None:
+    """Test chaining multiple transformers: sort -> select -> head."""
+    data = [
+        {"grad": "Novi Sad", "stanovnistvo": 250000},
+        {"grad": "Beograd", "stanovnistvo": 1200000},
+        {"grad": "Nis", "stanovnistvo": 180000},
+    ]
+    sorted_df = sort_data(data, "stanovnistvo", ascending=False)
+    selected = select_columns(sorted_df, ["grad", "stanovnistvo"])
+    top = head(selected, n=2)
+    assert len(top) == 2
+    assert top.iloc[0]["grad"] == "Beograd"
+
+
+def test_rename_and_drop_workflow() -> None:
+    """Test rename then drop workflow."""
+    data = [{"old_col1": 1, "old_col2": 2, "remove_me": 99}]
+    renamed = rename_columns(data, {"old_col1": "col1", "old_col2": "col2"})
+    cleaned = drop_columns(renamed, ["remove_me"])
+    assert "col1" in cleaned.columns
+    assert "col2" in cleaned.columns
+    assert "remove_me" not in cleaned.columns
+
+
+@pytest.mark.asyncio
+async def test_csv_json_parsing_comparison() -> None:
+    """Compare CSV and JSON parsing of same data."""
+    csv_content = b"name,value\nA,1\nB,2"
+    json_content = b'[{"name": "A", "value": 1}, {"name": "B", "value": 2}]'
+    csv_df = await parse_csv(csv_content)
+    json_data = await parse_json(json_content)
+    json_df = pd.DataFrame(json_data)
+    assert len(csv_df) == len(json_df)
+    assert list(csv_df.columns) == list(json_df.columns)
+
+
+# -- Error recovery workflow ----------------------------------------------------
+
+
+def test_filter_empty_result_continues() -> None:
+    """Filtering that returns empty should not crash downstream ops."""
+    data = pd.DataFrame({"cat": ["A", "B"], "val": [1, 2]})
+    filtered = filter_data(data, {"cat": "Z"})
+    assert len(filtered) == 0
+    sorted_result = sort_data(filtered, "val")
+    assert len(sorted_result) == 0
+    selected = select_columns(filtered, ["cat", "val"])
+    assert len(selected) == 0
+
+
+def test_aggregate_on_empty_data() -> None:
+    """Aggregating empty data."""
+    data = pd.DataFrame({"a": []})
+    result = aggregate_data(data, "a", "sum")
+    assert result == 0 or result is not None

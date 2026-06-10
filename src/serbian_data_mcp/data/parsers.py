@@ -2,10 +2,13 @@
 
 from typing import Any, Union
 import json
+import logging
 import io
 
 import pandas as pd
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 async def parse_resource(response: httpx.Response, format: str) -> Union[pd.DataFrame, dict, list]:
@@ -19,6 +22,7 @@ async def parse_resource(response: httpx.Response, format: str) -> Union[pd.Data
         Parsed data as DataFrame, dict, or list
     """
     content = response.content
+    logger.info(f"Parsing {format} data ({len(content)} bytes)")
 
     if format == "json":
         return await parse_json(content)
@@ -27,13 +31,13 @@ async def parse_resource(response: httpx.Response, format: str) -> Union[pd.Data
     elif format in ("xlsx", "xls", "excel"):
         return await parse_excel(content)
     elif format == "xml":
-        # Return as text for XML (would need lxml for full parsing)
+        logger.info("Parsing XML data as raw text (no lxml for full parsing)")
         return content.decode("utf-8")
     else:
-        # Try to parse as JSON by default
+        logger.warning(f"Unknown format '{format}', attempting JSON parse as fallback")
         try:
             return await parse_json(content)
-        except:
+        except Exception:
             return content.decode("utf-8", errors="replace")
 
 
@@ -48,11 +52,15 @@ async def parse_csv(content: bytes) -> pd.DataFrame:
     """
     # Handle UTF-8 BOM and different encodings
     try:
-        return pd.read_csv(io.BytesIO(content), encoding="utf-8-sig")
+        result = pd.read_csv(io.BytesIO(content), encoding="utf-8-sig")
+        logger.info(f"CSV parsed successfully: {len(result)} rows, {len(result.columns)} columns")
+        return result
     except UnicodeDecodeError:
+        logger.warning("Encoding fallback to latin1 for CSV")
         try:
             return pd.read_csv(io.BytesIO(content), encoding="latin1")
-        except:
+        except Exception:
+            logger.error("Failed to parse CSV with latin1, using replacement encoding")
             return pd.read_csv(io.BytesIO(content), encoding="utf-8", errors="replace")
 
 

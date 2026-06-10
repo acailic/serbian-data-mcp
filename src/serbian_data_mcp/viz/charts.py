@@ -1,10 +1,13 @@
 """Chart building using Plotly."""
 
+import logging
 from typing import Optional, List, Dict, Any, Union
 
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+
+logger = logging.getLogger(__name__)
 
 
 class ChartBuilder:
@@ -20,6 +23,7 @@ class ChartBuilder:
             self.data = pd.DataFrame(data)
         else:
             self.data = data
+        logger.debug(f"ChartBuilder initialized with {len(self.data)} rows, {len(self.data.columns)} columns")
 
     def line_chart(
         self, x_column: str, y_column: str, title: str = "", color_column: Optional[str] = None

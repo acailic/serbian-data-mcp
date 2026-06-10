@@ -9,6 +9,9 @@ from fastmcp import FastMCP
 
 mcp = FastMCP("serbian-data")
 
+# Import tools, resources, and prompts to register them on the MCP server
+from . import tools  # noqa: F401, E402
+
 
 def main():
     """Entry point for the MCP server."""
