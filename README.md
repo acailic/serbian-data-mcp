@@ -12,6 +12,7 @@ MCP server for accessing Serbian open data portal (data.gov.rs) with built-in vi
 - 🚀 Built-in rate limiting and caching
 - 📖 Comprehensive documentation with 24+ examples
 - 🛠️ Data transformation tools (filter, group, aggregate, sort, select)
+- 🔧 Git repository visualization and analysis
 
 ## 🚀 Quick Start
 
@@ -140,6 +141,48 @@ Add to Claude Desktop config:
 - `create_visualization` - Create charts from data
 - `list_organizations` - Browse data providers
 - `suggest_datasets` - Autocomplete for search
+- `get_git_stats` - Get git repository statistics
+- `get_git_history` - Retrieve commit history
+- `visualize_git_data` - Create git repository visualizations
+
+## 📊 Visualization Gallery
+
+The MCP server supports 6 types of interactive charts with automatic styling and Serbian language support.
+
+### Line Charts
+![Line chart showing trends over time](docs/images/line_chart.gif)
+
+*Perfect for time series data and trends*
+
+### Bar Charts
+![Bar chart comparing categories](docs/images/bar_chart.gif)
+
+*Compare values across categories*
+
+### Horizontal Bar Charts
+![Horizontal bar chart for category comparison](docs/images/bar_chart_horizontal.gif)
+
+*Ideal for long category names*
+
+### Pie Charts
+![Pie chart showing proportional distribution](docs/images/pie_chart.gif)
+
+*Show parts of a whole*
+
+### Scatter Plots
+![Scatter plot showing correlations](docs/images/scatter_plot.gif)
+
+*Explore relationships between variables*
+
+### Histograms
+![Histogram showing distribution](docs/images/histogram.gif)
+
+*Analyze frequency distributions*
+
+### Box Plots
+![Box plot showing statistical distribution](docs/images/box_plot.gif)
+
+*Display statistical summaries and outliers*
 
 ## Examples
 
@@ -159,6 +202,33 @@ chart = await mcp.call_tool("create_visualization", {
     "x_column": "year",
     "y_column": "population",
     "export_format": "html"
+})
+```
+
+### Git Visualization Examples
+
+```python
+# Get git repository statistics
+stats = await mcp.call_tool("get_git_stats", {
+    "repo_path": "/path/to/repo",
+    "metrics": ["commits", "authors", "files", "activity"]
+})
+
+# Get commit history
+history = await mcp.call_tool("get_git_history", {
+    "repo_path": "/path/to/repo",
+    "author": "John Doe",  # optional
+    "since_date": "2024-01-01",  # optional
+    "limit": 100
+})
+
+# Create visualization
+chart = await mcp.call_tool("visualize_git_data", {
+    "repo_path": "/path/to/repo",
+    "viz_type": "activity",  # options: activity, authors, files, timeline
+    "title": "Repository Activity",
+    "author": "John Doe",  # optional filter
+    "since_date": "2024-01-01"  # optional filter
 })
 ```
 
@@ -250,6 +320,7 @@ serbian-data-mcp/
 ├── src/serbian_data_mcp/
 │   ├── api/              # API client and models
 │   ├── data/             # Data parsing and transformation
+│   ├── git/              # Git repository analysis tools
 │   ├── viz/              # Visualization tools
 │   └── config.py         # Configuration management
 ├── tests/                # Comprehensive test suite
