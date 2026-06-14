@@ -32,12 +32,7 @@ class SearchEngine:
         self.catalog = catalog
         self.query_expander = QueryExpander()
 
-    async def search(
-        self,
-        query: str,
-        max_results: int = 10,
-        min_score: float = 0.3
-    ) -> list[SearchResult]:
+    async def search(self, query: str, max_results: int = 10, min_score: float = 0.3) -> list[SearchResult]:
         """Search catalog with semantic understanding.
 
         Args:
@@ -71,7 +66,7 @@ class SearchEngine:
                     dataset=dataset,
                     relevance_score=score,
                     matched_keywords=matched_keywords,
-                    match_reason=self._explain_match(score, matched_keywords)
+                    match_reason=self._explain_match(score, matched_keywords),
                 )
                 scored_results.append(result)
 
@@ -81,11 +76,7 @@ class SearchEngine:
         # Return top N results
         return scored_results[:max_results]
 
-    def _calculate_relevance(
-        self,
-        dataset: CachedDataset,
-        terms: list[str]
-    ) -> tuple[float, list[str]]:
+    def _calculate_relevance(self, dataset: CachedDataset, terms: list[str]) -> tuple[float, list[str]]:
         """Calculate relevance score for dataset.
 
         Args:
@@ -156,11 +147,7 @@ class SearchEngine:
         else:
             return strength
 
-    async def search_by_organization(
-        self,
-        organization: str,
-        max_results: int = 20
-    ) -> list[SearchResult]:
+    async def search_by_organization(self, organization: str, max_results: int = 20) -> list[SearchResult]:
         """Search all datasets from a specific organization.
 
         Args:
@@ -179,7 +166,7 @@ class SearchEngine:
                     dataset=dataset,
                     relevance_score=1.0,  # Exact organization match
                     matched_keywords=[organization],
-                    match_reason=f"from organization: {dataset.organization}"
+                    match_reason=f"from organization: {dataset.organization}",
                 )
                 results.append(result)
 

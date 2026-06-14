@@ -88,10 +88,7 @@ class DatasetPreview:
 
                 if full_dataset and full_dataset.resources:
                     # Find CSV/JSON resource
-                    csv_resource = next(
-                        (r for r in full_dataset.resources if r.format in ["csv", "json"]),
-                        None
-                    )
+                    csv_resource = next((r for r in full_dataset.resources if r.format in ["csv", "json"]), None)
 
                     if csv_resource:
                         # Download sample data
@@ -126,12 +123,7 @@ class DatasetPreview:
         else:
             preview_reason = "Dataset has no downloadable resources (metadata only)"
 
-        return {
-            "metadata": metadata,
-            "sample_data": sample_data,
-            "columns": columns,
-            "preview_reason": preview_reason
-        }
+        return {"metadata": metadata, "sample_data": sample_data, "columns": columns, "preview_reason": preview_reason}
 
     async def preview_by_query(self, query: str, max_results: int = 3) -> dict[str, Any]:
         """Preview multiple datasets matching a query.
@@ -165,16 +157,18 @@ class DatasetPreview:
             except Exception as e:
                 logger.warning(f"Failed to preview {result.dataset.id}: {e}")
                 # Still include metadata-only preview
-                previews.append({
-                    "metadata": result.dataset.to_dict(),
-                    "sample_data": None,
-                    "columns": None,
-                    "preview_reason": f"Preview failed: {str(e)[:100]}"
-                })
+                previews.append(
+                    {
+                        "metadata": result.dataset.to_dict(),
+                        "sample_data": None,
+                        "columns": None,
+                        "preview_reason": f"Preview failed: {str(e)[:100]}",
+                    }
+                )
 
         return {
             "query": query,
             "total_matches": len(results),
             "previews": previews,
-            "note": f"Showing top {len(previews)} of {len(results)} matches"
+            "note": f"Showing top {len(previews)} of {len(results)} matches",
         }

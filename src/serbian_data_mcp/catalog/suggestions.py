@@ -31,11 +31,7 @@ class AlternativeSuggestions:
         self.catalog = catalog
         self.search_engine = search_engine
 
-    async def suggest(
-        self,
-        query: str,
-        max_alternatives: int = 5
-    ) -> Suggestion:
+    async def suggest(self, query: str, max_alternatives: int = 5) -> Suggestion:
         """Suggest alternative datasets when no exact match found.
 
         Args:
@@ -57,7 +53,7 @@ class AlternativeSuggestions:
         partial_results = await self.search_engine.search(
             query,
             max_results=max_alternatives * 2,
-            min_score=0.1  # Lower threshold for partial matches
+            min_score=0.1,  # Lower threshold for partial matches
         )
         alternatives.extend(partial_results)
 
@@ -65,11 +61,7 @@ class AlternativeSuggestions:
         if not alternatives:
             terms = query.split()
             for term in terms:
-                term_results = await self.search_engine.search(
-                    term,
-                    max_results=3,
-                    min_score=0.2
-                )
+                term_results = await self.search_engine.search(term, max_results=3, min_score=0.2)
                 alternatives.extend(term_results)
                 if len(alternatives) >= max_alternatives:
                     break
@@ -85,9 +77,7 @@ class AlternativeSuggestions:
         explanation = self._explain_suggestion(query, unique_alternatives)
 
         return Suggestion(
-            datasets=unique_alternatives,
-            explanation=explanation,
-            total_alternatives=len(unique_alternatives)
+            datasets=unique_alternatives, explanation=explanation, total_alternatives=len(unique_alternatives)
         )
 
     def _deduplicate(self, results: list[SearchResult]) -> list[SearchResult]:
@@ -142,11 +132,7 @@ class AlternativeSuggestions:
         else:
             return f"No exact match for '{query}', but found {len(datasets)} potentially relevant datasets."
 
-    async def suggest_by_format(
-        self,
-        query: str,
-        preferred_format: str = "csv"
-    ) -> Suggestion:
+    async def suggest_by_format(self, query: str, preferred_format: str = "csv") -> Suggestion:
         """Suggest datasets with specific format priority.
 
         Args:
@@ -157,17 +143,10 @@ class AlternativeSuggestions:
             Suggestion with format-prioritized results
         """
         # Get all results
-        all_results = await self.search_engine.search(
-            query,
-            max_results=50,
-            min_score=0.1
-        )
+        all_results = await self.search_engine.search(query, max_results=50, min_score=0.1)
 
         # Prioritize by format
-        results_with_format = [
-            r for r in all_results
-            if preferred_format in r.dataset.formats
-        ]
+        results_with_format = [r for r in all_results if preferred_format in r.dataset.formats]
 
         # Fill with other formats if needed
         other_results = [r for r in all_results if preferred_format not in r.dataset.formats]
@@ -178,7 +157,5 @@ class AlternativeSuggestions:
             explanation += f" (prioritizing {preferred_format.upper()} format)"
 
         return Suggestion(
-            datasets=results_with_format[:5],
-            explanation=explanation,
-            total_alternatives=len(results_with_format)
+            datasets=results_with_format[:5], explanation=explanation, total_alternatives=len(results_with_format)
         )

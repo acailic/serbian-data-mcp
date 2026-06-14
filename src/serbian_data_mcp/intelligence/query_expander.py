@@ -107,7 +107,8 @@ class QueryExpander:
         """
         # Simple tokenization: split on whitespace and punctuation
         import re
-        terms = re.findall(r'\w+', query.lower())
+
+        terms = re.findall(r"\w+", query.lower())
         return terms
 
     def detect_language(self, query: str) -> str:

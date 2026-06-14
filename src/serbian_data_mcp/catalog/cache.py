@@ -113,10 +113,7 @@ class DatasetCatalog:
 
             # Load datasets
             datasets_data = data.get("datasets", {})
-            self.datasets = {
-                dataset_id: CachedDataset(**ds_data)
-                for dataset_id, ds_data in datasets_data.items()
-            }
+            self.datasets = {dataset_id: CachedDataset(**ds_data) for dataset_id, ds_data in datasets_data.items()}
 
             logger.info(f"Loaded {len(self.datasets)} datasets from cache")
             return True
@@ -149,10 +146,7 @@ class DatasetCatalog:
             page = 1
             while len(all_datasets) < total:
                 try:
-                    result = await client.search_datasets(
-                        page_size=page_size,
-                        page=page
-                    )
+                    result = await client.search_datasets(page_size=page_size, page=page)
 
                     if not result.datasets:
                         break
@@ -211,7 +205,7 @@ class DatasetCatalog:
             created_at=ds.created_at.isoformat() if ds.created_at else "",
             modified_at=ds.modified_at.isoformat() if ds.modified_at else "",
             resource_count=len(ds.resources),
-            has_downloadable=any(f in ["csv", "json", "xlsx", "xls"] for f in formats)
+            has_downloadable=any(f in ["csv", "json", "xlsx", "xls"] for f in formats),
         )
 
     async def _save_cache(self) -> None:
@@ -229,10 +223,7 @@ class DatasetCatalog:
                 "version": CACHE_VERSION,
                 "built_at": datetime.now(UTC).isoformat(),
                 "total_datasets": len(self.datasets),
-                "datasets": {
-                    dataset_id: cached.to_dict()
-                    for dataset_id, cached in self.datasets.items()
-                }
+                "datasets": {dataset_id: cached.to_dict() for dataset_id, cached in self.datasets.items()},
             }
 
             # Write to temporary file first
@@ -263,7 +254,7 @@ class DatasetCatalog:
         return {
             "total_datasets": len(self.datasets),
             "cache_path": str(self.cache_path),
-            "built_at": datetime.now(UTC).isoformat()
+            "built_at": datetime.now(UTC).isoformat(),
         }
 
     def get(self, dataset_id: str) -> CachedDataset | None:

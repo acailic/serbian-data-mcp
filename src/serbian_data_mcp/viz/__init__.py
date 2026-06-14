@@ -1,4 +1,4 @@
-"""Visualization, theming, insights, infographics, and export functionality."""
+"""Visualization, theming, insights, infographics, maps, and export functionality."""
 
 from .charts import ChartBuilder
 from .exporters import export_html, export_png, export_json, fig_to_dict
@@ -6,6 +6,12 @@ from .themes import apply_theme, add_annotation, add_highlight_zone, dark_templa
 from .advanced_charts import AdvancedChartBuilder
 from .insights import extract_insights, generate_narrative, compute_derived_metrics
 from .infographics import create_infographic, create_dashboard
+from .maps import SerbiaMapBuilder
+from .special_charts import arrow_chart, dumbbell_chart, lollipop_chart
+from .tooltips import add_rich_tooltips, add_annotation_callouts, add_comparison_markers
+from .datawrapper_export import DatawrapperExporter
+from .animations import animated_timeline, animated_bars_evolution, animated_comparison
+from .scrollytelling import scrollytelling
 
 __all__ = [
     "ChartBuilder",
@@ -25,4 +31,16 @@ __all__ = [
     "compute_derived_metrics",
     "create_infographic",
     "create_dashboard",
+    "SerbiaMapBuilder",
+    "arrow_chart",
+    "dumbbell_chart",
+    "lollipop_chart",
+    "add_rich_tooltips",
+    "add_annotation_callouts",
+    "add_comparison_markers",
+    "DatawrapperExporter",
+    "animated_timeline",
+    "animated_bars_evolution",
+    "animated_comparison",
+    "scrollytelling",
 ]

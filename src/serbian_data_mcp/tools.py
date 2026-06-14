@@ -33,6 +33,12 @@ from .viz.themes import apply_theme, add_annotation, add_highlight_zone
 from .viz.advanced_charts import AdvancedChartBuilder
 from .viz.insights import extract_insights, generate_narrative, compute_derived_metrics
 from .viz.infographics import create_infographic, create_dashboard
+from .viz.maps import SerbiaMapBuilder
+from .viz.special_charts import arrow_chart, dumbbell_chart, lollipop_chart
+from .viz.tooltips import add_rich_tooltips, add_annotation_callouts, add_comparison_markers
+from .viz.datawrapper_export import DatawrapperExporter
+from .viz.animations import animated_timeline, animated_bars_evolution, animated_comparison
+from .viz.scrollytelling import scrollytelling
 
 logger = logging.getLogger(__name__)
 
@@ -1323,6 +1329,463 @@ async def export_data(
 # =========================================================================
 
 
+# =========================================================================
+# Map & Special Chart tools
+# =========================================================================
+
+
+_map_builder: Optional[SerbiaMapBuilder] = None
+
+
+def _get_map_builder() -> SerbiaMapBuilder:
+    """Get or create cached map builder."""
+    global _map_builder
+    if _map_builder is None:
+        _map_builder = SerbiaMapBuilder()
+    return _map_builder
+
+
+@mcp.tool()
+async def create_serbia_map(
+    data: list[dict[str, Any]],
+    name_column: str,
+    value_column: str,
+    title: str = "",
+    theme: str = "dark",
+    colorscale: Optional[str] = None,
+    highlight_top: int = 3,
+    filename: str = "serbia_map",
+) -> dict[str, Any]:
+    """Create a choropleth map of Serbia by administrative district (25 okruga).
+
+    Renders real district boundaries from Natural Earth geographic data.
+    Color-coded by the provided metric. Use for population density, pollution
+    levels, budget allocation, or any district-level comparison.
+
+    District names should match Natural Earth format (English transliteration).
+    Common names: 'Grad Beograd', 'Nišavski', 'Sremski', 'Zapadno-Backi',
+    'Šumadijski', 'Južno-Banatski', 'Severno-Backi', 'Zlatiborski', etc.
+    Cyrillic names and city shorthand are also supported (e.g., 'Niš', 'Novi Sad').
+
+    Use list_serbia_districts() to see all 25 available district names.
+
+    Workflow:
+        1. get_resource_data(resource_id) → download district-level data
+        2. create_serbia_map(data, name_column='okrug', value_column='populacija')
+
+    Args:
+        data: List of row dicts with district names and values
+        name_column: Column containing district names
+        value_column: Column containing numeric values to color by
+        title: Map title
+        theme: 'dark', 'light', or 'infographic'
+        colorscale: Color scheme: 'red', 'blue', 'diverging', or 'heat' (default: blue)
+        highlight_top: Number of top districts to highlight with thick border
+        filename: Output filename (without .html)
+
+    Returns: Dict with 'filepath', 'districts_matched', 'total_districts', 'title'
+    """
+    builder = _get_map_builder()
+
+    color_map = {
+        "red": [(0.0, "#fff9c4"), (0.25, "#ffcc80"), (0.5, "#ff8a65"), (0.75, "#e53935"), (1.0, "#b71c1c")],
+        "blue": None,  # default sequential blue
+        "diverging": [(0.0, "#1565c0"), (0.25, "#42a5f5"), (0.5, "#f5f5f5"), (0.75, "#ef5350"), (1.0, "#c62828")],
+        "heat": [(0.0, "#fff9c4"), (0.25, "#ffcc80"), (0.5, "#ff8a65"), (0.75, "#e53935"), (1.0, "#b71c1c")],
+    }
+    cs = color_map.get(colorscale or "blue") if colorscale else None
+
+    fig = builder.choropleth(
+        data,
+        name_column=name_column,
+        value_column=value_column,
+        title=title or f"{value_column} po okruzima",
+        theme=theme,
+        colorscale=cs,
+        highlight_top=highlight_top,
+    )
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    df = pd.DataFrame(data)
+    matched = df[name_column].apply(builder.resolve_name).notna().sum()
+
+    return {
+        "filepath": str(filepath),
+        "districts_matched": int(matched),
+        "total_districts": len(data),
+        "available_districts": 25,
+        "title": title,
+    }
+
+
+@mcp.tool()
+async def list_serbia_districts() -> dict[str, Any]:
+    """List all 25 administrative districts of Serbia available for mapping.
+
+    Returns district names and codes used by create_serbia_map().
+    Use this to understand what district names are recognized.
+    """
+    builder = _get_map_builder()
+    return {"districts": builder.list_districts(), "total": 25}
+
+
+@mcp.tool()
+async def create_arrow_chart(
+    data: list[dict[str, Any]],
+    label_column: str,
+    value_column: str,
+    title: str = "",
+    theme: str = "dark",
+    reference_value: Optional[float] = None,
+    filename: str = "arrow_chart",
+) -> dict[str, Any]:
+    """Create an arrow-style chart showing directional changes.
+
+    Horizontal bars colored green (positive) or red (negative) relative to
+    a reference value (default: 0). Ideal for rankings change, budget surplus/
+    deficit, growth/decline visualization.
+
+    Args:
+        data: List of row dicts
+        label_column: Category labels (district names, cities, etc.)
+        value_column: Numeric values (change, growth rate, etc.)
+        title: Chart title
+        theme: Visual theme
+        reference_value: Zero/baseline line (default: 0)
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'title'
+    """
+    fig = arrow_chart(
+        data,
+        label_column=label_column,
+        value_column=value_column,
+        title=title,
+        theme=theme,
+        reference_value=reference_value,
+    )
+    fig = apply_theme(fig, theme)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "title": title, "rows": len(data)}
+
+
+@mcp.tool()
+async def create_dumbbell_chart(
+    data: list[dict[str, Any]],
+    label_column: str,
+    start_column: str,
+    end_column: str,
+    title: str = "",
+    theme: str = "dark",
+    filename: str = "dumbbell_chart",
+) -> dict[str, Any]:
+    """Create a dumbbell chart showing before/after comparison.
+
+    Two dots per category connected by a line, colored by direction (green for
+    increase, red for decrease). Shows the magnitude and direction of change.
+
+    Ideal for: population 2010 vs 2022, budget planned vs executed, start vs end.
+
+    Args:
+        data: List of row dicts with start and end values
+        label_column: Category names
+        start_column: Starting/baseline values
+        end_column: Final/current values
+        title: Chart title
+        theme: Visual theme
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'title', 'rows'
+    """
+    fig = dumbbell_chart(
+        data,
+        label_column=label_column,
+        start_column=start_column,
+        end_column=end_column,
+        title=title,
+        theme=theme,
+    )
+    fig = apply_theme(fig, theme)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "title": title, "rows": len(data)}
+
+
+# =========================================================================
+# Datawrapper Cloud Export
+# =========================================================================
+
+
+@mcp.tool()
+async def export_to_datawrapper(
+    data: list[dict[str, Any]],
+    title: str,
+    chart_type: str = "d3-bars-vertical",
+    labels: Optional[dict[str, str]] = None,
+) -> dict[str, Any]:
+    """Export data to Datawrapper for professional cloud-hosted charts.
+
+    Creates a chart on Datawrapper (datawrapper.de) with your data, publishes it,
+    and returns embed URLs and codes. Requires DATAWRAPPER_ACCESS_TOKEN env var.
+
+    Get a free API token at: https://app.datawrapper.de/account/api-tokens
+
+    Supported chart types:
+    - 'd3-bars-vertical' — vertical bar chart
+    - 'd3-bars-horizontal' — horizontal bar chart
+    - 'd3-lines' — line chart
+    - 'd3-area' — area chart
+    - 'd3-pies' — pie chart
+    - 'd3-pie-donut' — donut chart
+    - 'd3-scatter' — scatter plot
+    - 'd3-table' — data table
+
+    Args:
+        data: List of row dicts
+        title: Chart title
+        chart_type: Datawrapper chart type (default: d3-bars-vertical)
+        labels: Column name → display label mapping
+
+    Returns: Dict with 'id', 'url', 'embed_url', 'embed_code' or 'error' if no token
+    """
+    exporter = DatawrapperExporter()
+    result = exporter.create_and_publish(data, title, chart_type, labels)
+    return result
+
+
+# =========================================================================
+# Animated Charts
+# =========================================================================
+
+
+@mcp.tool()
+async def create_animated_chart(
+    animation_type: str = "bars_evolution",
+    data: Optional[list[dict[str, Any]]] = None,
+    datasets: Optional[dict[str, list[dict[str, Any]]]] = None,
+    time_column: str = "",
+    category_column: str = "",
+    value_column: str = "",
+    title: str = "",
+    theme: str = "dark",
+    filename: str = "animated",
+) -> dict[str, Any]:
+    """Create an animated chart with smooth transitions between states.
+
+    Three animation types available:
+
+    1. 'bars_evolution' — Animated bar chart showing time evolution.
+       Bars grow/shrink smoothly as you advance through time periods.
+       Auto-sorts by value in each frame. Needs: time_column, category_column, value_column.
+
+    2. 'timeline' — Morphs from bar chart to line chart over time.
+       First half shows bars, second half transitions to multi-line trend.
+       Needs: time_column, category_column, value_column.
+
+    3. 'comparison' — Toggle between different datasets with smooth transitions.
+       Pass datasets as a dict of label→data. Needs: datasets, category_column, value_column.
+
+    All animations include play/pause buttons and a slider scrubber.
+
+    Args:
+        animation_type: 'bars_evolution', 'timeline', or 'comparison'
+        data: Single dataset (for bars_evolution and timeline)
+        datasets: Dict of label→data (for comparison type)
+        time_column: Column with time periods
+        category_column: Column with entity names
+        value_column: Column with numeric values
+        title: Chart title
+        theme: Visual theme
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'animation_type', 'title'
+    """
+    valid_types = {"bars_evolution", "timeline", "comparison"}
+    if animation_type not in valid_types:
+        return {"error": True, "message": f"Invalid type. Use: {', '.join(sorted(valid_types))}"}
+
+    fig = None
+    if animation_type == "bars_evolution" and data:
+        fig = animated_bars_evolution(
+            data,
+            time_column=time_column,
+            category_column=category_column,
+            value_column=value_column,
+            title=title,
+            theme=theme,
+        )
+    elif animation_type == "timeline" and data:
+        fig = animated_timeline(
+            data,
+            time_column=time_column,
+            category_column=category_column,
+            value_column=value_column,
+            title=title,
+            theme=theme,
+        )
+    elif animation_type == "comparison" and datasets:
+        fig = animated_comparison(
+            datasets,
+            category_column=category_column,
+            value_column=value_column,
+            title=title,
+            theme=theme,
+        )
+
+    if fig is None:
+        return {"error": True, "message": "Failed to create animated chart. Check parameters."}
+
+    fig = apply_theme(fig, theme)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "animation_type": animation_type, "title": title}
+
+
+# =========================================================================
+# Scrollytelling
+# =========================================================================
+
+
+@mcp.tool()
+async def create_scrollytelling_story(
+    steps: list[dict[str, Any]],
+    title: str = "Serbian Data Story",
+    subtitle: str = "",
+    byline: str = "",
+    theme: str = "dark",
+    filename: str = "story",
+) -> dict[str, Any]:
+    """Create a scroll-driven HTML data story (scrollytelling).
+
+    Generates a visually stunning multi-section page where narrative text scrolls
+    on the left and interactive charts update on the right — the visualise.admin.ch
+    pattern used by Swiss government data portal.
+
+    Each step has a headline, narrative text, and optional chart. As the user
+    scrolls, charts transition in and out with smooth animations.
+
+    Step format:
+    - 'headline' (str): Section headline text
+    - 'text' (str): Narrative paragraph (supports HTML: <br>, <b>, <em>)
+    - 'chart' (dict, optional): Plotly figure dict from create_visualization()
+    - 'big_number' (str, optional): Large statistic to display (e.g., '-12%')
+    - 'big_number_label' (str, optional): Label for big number
+    - 'highlight_color' (str, optional): Step accent color (default: #0C4076)
+
+    Example:
+        steps = [
+            {"headline": "Srbija gubi ljude", "text": "Od 2002...", "big_number": "-12%", "big_number_label": "pad populacije"},
+            {"headline": "Vazduh u Nišu", "text": "Niš je...", "chart": <from create_visualization>},
+        ]
+
+    The output HTML includes: hero header, progress bar, sticky chart area,
+    scroll-triggered animations, and responsive layout.
+
+    Args:
+        steps: List of step dicts (see format above)
+        title: Story title
+        subtitle: Story subtitle
+        byline: Author credit
+        theme: 'dark' or 'light'
+        filename: Output filename (without .html)
+
+    Returns: Dict with 'filepath', 'step_count', 'title'
+    """
+    # Convert figure dicts back to Plotly figures
+    processed_steps = []
+    for step in steps:
+        proc = dict(step)
+        if "chart" in step and step["chart"] and isinstance(step["chart"], dict):
+            from plotly.graph_objects import Figure
+
+            proc["chart"] = Figure(step["chart"].get("data", []), step["chart"].get("layout", {}))
+        processed_steps.append(proc)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+
+    html_path = scrollytelling(
+        processed_steps,
+        title=title,
+        subtitle=subtitle,
+        byline=byline,
+        theme=theme,
+        output_path=filepath,
+    )
+
+    return {
+        "filepath": html_path,
+        "step_count": len(steps),
+        "title": title,
+    }
+
+
+# =========================================================================
+# Rich Tooltip Enhancement
+# =========================================================================
+
+
+@mcp.tool()
+async def enhance_chart_tooltips(
+    figure: dict[str, Any],
+    value_column: str = "value",
+    unit: str = "",
+    show_mean: bool = True,
+    show_rank: bool = True,
+) -> dict[str, Any]:
+    """Add rich contextual tooltips to any Plotly figure.
+
+    Enriches hover tooltips with: formatted values, deviation from mean,
+    and rank among peers. Works with any chart from create_visualization().
+
+    Without enhancement: "Value: 7150000"
+    With enhancement: "Value: 7.15M\nProsečno: 4.2M\nRank: #1 of 25\nPromena: +2.3%"
+
+    Args:
+        figure: Plotly figure dict (from create_visualization)
+        value_column: Name of the value axis
+        unit: Unit suffix (e.g., ' stanovnika', ' RSD')
+        show_mean: Show average and deviation
+        show_rank: Show rank position
+
+    Returns: Enhanced figure dict with rich tooltips
+    """
+    from plotly.graph_objects import Figure
+
+    fig = Figure(figure.get("data", []), figure.get("layout", {}))
+    fig = add_rich_tooltips(
+        fig,
+        value_column=value_column,
+        unit=unit,
+        show_mean=show_mean,
+        show_rank=show_rank,
+    )
+    return fig_to_dict(fig)
+
+
+# =========================================================================
+# MCP Resources
+# =========================================================================
+
+
 @mcp.resource("serbian-data://server-info")
 def server_info() -> str:
     """Server metadata: version, capabilities, supported formats."""
@@ -1347,11 +1810,29 @@ def server_info() -> str:
                 "animated_line",
                 "comparison_bar",
                 "sparklines",
+                "choropleth_map",
+                "arrow",
+                "dumbbell",
+                "lollipop",
+                "animated_bars",
+                "animated_timeline",
+                "animated_comparison",
             ],
             "export_formats": ["html", "json"],
+            "export_targets": ["local_html", "datawrapper_cloud"],
             "aggregation_functions": ["sum", "mean", "median", "min", "max", "count", "std", "var"],
             "themes": ["dark", "light", "infographic"],
-            "features": [
+            "special_features": [
+                "Serbia choropleth map (25 districts, Natural Earth boundaries)",
+                "Arrow chart (directional change with green/red bars)",
+                "Dumbbell chart (before/after connected dot comparison)",
+                "Lollipop chart (ranking with highlighted dot)",
+                "Rich tooltips (mean, rank, % change in hover)",
+                "Datawrapper cloud export (professional charts)",
+                "Animated bar evolution (smooth time playback)",
+                "Animated timeline (bar→line morphing)",
+                "Animated dataset comparison (toggle between datasets)",
+                "Scrollytelling HTML (scroll-driven data stories)",
                 "Auto-insight extraction (shocking facts, outliers, trends)",
                 "Data narrative generation (headline + big number + summary)",
                 "Derived metrics (YoY%, per-capita, growth rates, index values)",
