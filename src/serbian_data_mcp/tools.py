@@ -29,6 +29,10 @@ from .data.transformers import aggregate_data, filter_data, group_data, select_c
 from .exceptions import VisualizationError
 from .viz.charts import ChartBuilder
 from .viz.exporters import export_html, export_json, fig_to_dict
+from .viz.themes import apply_theme, add_annotation, add_highlight_zone
+from .viz.advanced_charts import AdvancedChartBuilder
+from .viz.insights import extract_insights, generate_narrative, compute_derived_metrics
+from .viz.infographics import create_infographic, create_dashboard
 
 logger = logging.getLogger(__name__)
 
@@ -382,6 +386,415 @@ async def create_visualization(
     if fig is None:
         raise VisualizationError(chart_type, "Failed to create chart")
     return {"figure": fig_to_dict(fig), "type": "plotly", "interactive": True, "chart_type": chart_type, "title": title}
+
+
+# =========================================================================
+# Advanced visualization tools
+# =========================================================================
+
+
+@mcp.tool()
+async def create_advanced_visualization(
+    data: list[dict[str, Any]],
+    chart_type: str = "heatmap",
+    x_column: str = "",
+    y_column: str = "",
+    z_column: str = "",
+    names_column: str = "",
+    values_column: str = "",
+    color_column: Optional[str] = None,
+    hierarchy_column: Optional[str] = None,
+    title: str = "",
+    theme: str = "dark",
+    value: Optional[float] = None,
+    min_val: float = 0,
+    max_val: float = 100,
+    label: str = "",
+    frame_column: str = "",
+    category_column: Optional[str] = None,
+    comparison_columns: Optional[list[str]] = None,
+    trend_column: str = "",
+    top_n: int = 10,
+) -> dict[str, Any]:
+    """Create advanced visualizations: heatmap, treemap, gauge, funnel, animated line, comparison, sparklines.
+
+    Beyond the basic 6 chart types, these advanced visualizations are designed for
+    data journalism impact and storytelling. Each supports custom theming.
+
+    Supported chart types and their parameters:
+    - "heatmap": needs x_column + y_column + z_column → air quality grid, correlation matrix
+    - "treemap": needs names_column + values_column → budget breakdown, nested categories
+    - "gauge": needs value (float) → target vs actual, scores (0-100 scale)
+    - "funnel": needs labels_column (use names_column) + values_column → budget flow, cascading values
+    - "animated_line": needs x_column + y_column + frame_column → animated time-series playback
+    - "comparison_bar": needs x_column + comparison_columns (list of 2) → side-by-side comparison
+    - "sparklines": needs x_column + y_column + trend_column → faceted mini-charts per entity
+
+    Args:
+        data: List of row dicts
+        chart_type: One of: heatmap, treemap, gauge, funnel, animated_line, comparison_bar, sparklines
+        theme: 'dark', 'light', or 'infographic'
+        value: Single numeric value for gauge charts
+        min_val / max_val: Gauge range
+        label: Label for gauge value
+        frame_column: Column defining animation frames
+        comparison_columns: Two column names for comparison_bar
+        trend_column: Time column for sparklines/animated
+        top_n: Number of entities for sparklines
+
+    Returns: Dict with 'figure' (Plotly spec), 'type', 'interactive', 'chart_type', 'title'
+    """
+    valid_types = {"heatmap", "treemap", "gauge", "funnel", "animated_line", "comparison_bar", "sparklines"}
+    if chart_type not in valid_types:
+        raise VisualizationError(
+            chart_type, f"Unsupported advanced chart type '{chart_type}'. Use: {', '.join(sorted(valid_types))}"
+        )
+
+    builder = AdvancedChartBuilder(data)
+    fig = None
+
+    try:
+        if chart_type == "heatmap":
+            fig = builder.heatmap(x_column, y_column, z_column, title=title, theme=theme)
+        elif chart_type == "treemap":
+            fig = builder.treemap(
+                names_column,
+                values_column,
+                title=title,
+                theme=theme,
+                color_column=color_column,
+                hierarchy_column=hierarchy_column,
+            )
+        elif chart_type == "gauge":
+            if value is None:
+                raise VisualizationError(chart_type, "gauge chart requires 'value' parameter")
+            fig = builder.gauge(value, title=title, theme=theme, min_val=min_val, max_val=max_val, label=label)
+        elif chart_type == "funnel":
+            fig = builder.funnel(names_column, values_column, title=title, theme=theme)
+        elif chart_type == "animated_line":
+            fig = builder.animated_line(
+                x_column, y_column, frame_column, title=title, theme=theme, category_column=category_column
+            )
+        elif chart_type == "comparison_bar":
+            if not comparison_columns or len(comparison_columns) != 2:
+                raise VisualizationError(
+                    chart_type, "comparison_bar requires comparison_columns (list of 2 column names)"
+                )
+            fig = builder.comparison_bar(x_column, comparison_columns, title=title, theme=theme)
+        elif chart_type == "sparklines":
+            fig = builder.sparkline_container(
+                y_column, x_column, trend_column, title=title, theme=theme, sort_by=x_column, top_n=top_n
+            )
+    except Exception as e:
+        raise VisualizationError(chart_type, f"Failed to create {chart_type}: {e}") from e
+
+    if fig is None:
+        raise VisualizationError(chart_type, "Failed to create chart")
+
+    return {"figure": fig_to_dict(fig), "type": "plotly", "interactive": True, "chart_type": chart_type, "title": title}
+
+
+@mcp.tool()
+async def apply_chart_theme(
+    figure: dict[str, Any],
+    theme: str = "dark",
+    annotations: Optional[list[dict[str, Any]]] = None,
+    highlight_zones: Optional[list[dict[str, Any]]] = None,
+) -> dict[str, Any]:
+    """Apply a visual theme to an existing chart figure.
+
+    Transforms a basic chart into a visually striking, data-journalism style
+    visualization with custom colors, dark backgrounds, and annotations.
+
+    Themes:
+    - 'dark': Dramatic data-journalism style with deep navy background
+    - 'light': Clean professional white background
+    - 'infographic': Large typography, minimal chrome, centered titles
+
+    Annotations add callout arrows to specific data points for storytelling.
+    Each annotation: {"text": "string", "x": value, "y": value}
+
+    Highlight zones add shaded vertical regions (e.g., pandemic years, crisis period).
+    Each zone: {"x_start": value, "x_end": value, "label": "optional text", "color": "rgba(...)"}
+
+    Args:
+        figure: Plotly figure dict (from create_visualization or create_advanced_visualization)
+        theme: 'dark', 'light', or 'infographic'
+        annotations: List of annotation dicts to add callouts
+        highlight_zones: List of highlight zone dicts
+
+    Returns: Themed figure dict
+    """
+    from plotly.graph_objects import Figure
+
+    fig = Figure(figure.get("data", []), figure.get("layout", {}))
+    fig = apply_theme(fig, theme)
+
+    if annotations:
+        for ann in annotations:
+            fig = add_annotation(fig, ann.get("text", ""), ann.get("x", 0), ann.get("y", 0))
+
+    if highlight_zones:
+        for zone in highlight_zones:
+            fig = add_highlight_zone(
+                fig,
+                zone.get("x_start", 0),
+                zone.get("x_end", 0),
+                fill_color=zone.get("color", "rgba(198, 40, 40, 0.1)"),
+                annotation_text=zone.get("label", ""),
+            )
+
+    return fig_to_dict(fig)
+
+
+@mcp.tool()
+async def extract_data_insights(
+    data: list[dict[str, Any]],
+    time_column: Optional[str] = None,
+    entity_column: Optional[str] = None,
+    max_insights: int = 10,
+) -> dict[str, Any]:
+    """Extract the most interesting and shocking insights from a dataset.
+
+    Automatically scans data for statistically significant patterns,
+    extreme values, dramatic changes, outliers, and inequality.
+    Each insight includes a severity rating and human-readable narrative.
+
+    Insight types detected:
+    - Extreme values: Max/min with context ("Highest pollution: Niš at 245 μg/m³")
+    - Temporal changes: Biggest % changes over time ("Population dropped 12.3%")
+    - Rankings: Top/bottom entities ("Beograd leads with 50% of GDP")
+    - Inequality: High variance between entities ("10× gap between richest and poorest")
+    - Outliers: Statistical anomalies ("3 stations exceeded 3σ threshold")
+
+    Use AFTER get_resource_data() and data_profile() to understand columns.
+    Results sorted by severity (critical > high > medium > low).
+
+    Args:
+        data: List of row dicts (from get_resource_data)
+        time_column: Column with years/dates for temporal analysis
+        entity_column: Column with entity names (cities, ministries, etc.)
+        max_insights: Maximum insights to return (default 10)
+
+    Returns: Dict with 'insights' (list), 'total_found', 'headline'
+    """
+    insights = extract_insights(
+        data,
+        time_column=time_column,
+        entity_column=entity_column,
+    )
+    top = insights[:max_insights]
+
+    headline = ""
+    if top:
+        headline = top[0].get("headline", "")
+
+    return {
+        "insights": top,
+        "total_found": len(insights),
+        "headline": headline,
+        "severity_summary": {
+            sev: sum(1 for i in top if i.get("severity") == sev) for sev in ("critical", "high", "medium", "low")
+        },
+    }
+
+
+@mcp.tool()
+async def generate_data_narrative(
+    data: list[dict[str, Any]],
+    title: str = "",
+    time_column: Optional[str] = None,
+    entity_column: Optional[str] = None,
+    max_insights: int = 5,
+) -> dict[str, Any]:
+    """Generate a complete data story with headline, big number, and narrative.
+
+    Combines insight extraction with narrative generation to create
+    a compelling data story suitable for infographics, articles, or
+    social media. Returns a headline, summary text, key insights,
+    and a "big number" — the most dramatic single finding.
+
+    Workflow:
+        1. get_resource_data(resource_id) → download data
+        2. data_profile(data) → understand columns
+        3. generate_data_narrative(data, title="...", time_column="year") → full story
+        4. create_infographic(data, ...) → visual infographic HTML
+
+    Args:
+        data: List of row dicts (from get_resource_data)
+        title: Story title / topic
+        time_column: Column with temporal data for trend analysis
+        entity_column: Column with entity names
+        max_insights: Maximum insights to include in narrative
+
+    Returns: Dict with 'title', 'headline', 'big_number', 'big_label',
+             'insights', 'summary', 'total_insights_found'
+    """
+    narrative = generate_narrative(
+        data, title=title, time_column=time_column, entity_column=entity_column, max_insights=max_insights
+    )
+    return narrative
+
+
+@mcp.tool()
+async def compute_metrics(
+    data: list[dict[str, Any]],
+    time_column: Optional[str] = None,
+    entity_column: Optional[str] = None,
+    population_column: Optional[str] = None,
+) -> dict[str, Any]:
+    """Compute derived metrics: year-over-year changes, per-capita, growth rates, index values.
+
+    Goes beyond raw data to calculate meaningful derived metrics:
+    - YoY changes: Percentage change between consecutive periods
+    - Per-capita: Divide metrics by population for fairer comparisons
+    - Growth rates: Compound annual and linear growth rates
+    - Index values: Normalize to base period = 100 for easy comparison
+
+    Use AFTER get_resource_data() to enrich raw data with analytical depth.
+
+    Example: Population data with time_column="godina" yields:
+      yoy_changes: {"stanovnistvo": {"2010→2011": -0.5, "2011→2012": -0.4, ...}}
+      growth_rates: {"stanovnistvo": {"compound_annual": -0.45, "total_change_pct": -4.2}}
+      index_values: {"stanovnistvo": {"2010": 100.0, "2011": 99.5, ...}}
+
+    Args:
+        data: List of row dicts
+        time_column: Column with temporal ordering (years, dates)
+        entity_column: Column with entity names (for per-entity breakdown)
+        population_column: Column with population counts (for per-capita)
+
+    Returns: Dict with 'yoy_changes', 'per_capita', 'growth_rates', 'index_values', 'derived_data'
+    """
+    return compute_derived_metrics(
+        data,
+        time_column=time_column,
+        entity_column=entity_column,
+        population_column=population_column,
+    )
+
+
+@mcp.tool()
+async def build_infographic(
+    data: list[dict[str, Any]],
+    title: str = "Serbian Data Story",
+    subtitle: str = "",
+    chart_type: str = "bar",
+    x_column: str = "",
+    y_column: str = "",
+    theme: str = "infographic",
+    time_column: Optional[str] = None,
+    entity_column: Optional[str] = None,
+    filename: str = "infographic",
+) -> dict[str, Any]:
+    """Create a complete infographic HTML page: big number + chart + insights.
+
+    Generates a visually striking, self-contained HTML page with:
+    - A large headline with gradient styling
+    - A "big number" card showing the most dramatic finding
+    - An auto-generated chart with the chosen theme
+    - Color-coded insight cards (critical/high/medium/low severity)
+    - A narrative summary paragraph
+    - Responsive design for mobile/desktop
+
+    This is the RECOMMENDED tool for creating shareable data stories.
+    The output HTML can be opened in any browser or shared as a file.
+
+    Workflow:
+        1. search_datasets(query="...") → find dataset
+        2. get_resource_data(resource_id) → download data
+        3. data_profile(data) → identify columns
+        4. build_infographic(data, title="...", x_column="...", y_column="...") → HTML
+        5. Export saved to exports/ directory
+
+    Args:
+        data: List of row dicts
+        title: Infographic title (e.g., "Air Quality Crisis in Niš")
+        subtitle: Optional subtitle text
+        chart_type: Main chart type (line, bar, pie, scatter, histogram, box)
+        x_column: X axis column name
+        y_column: Y axis column name
+        theme: 'dark', 'light', or 'infographic' (default: infographic)
+        time_column: Optional time column for insight extraction
+        entity_column: Optional entity column for insight extraction
+        filename: Output filename (without .html)
+
+    Returns: Dict with 'filepath', 'metadata' (title, insights count, big number),
+             'insights', 'headline'
+    """
+    result = create_infographic(
+        data,
+        title=title,
+        subtitle=subtitle,
+        chart_type=chart_type,
+        x_column=x_column,
+        y_column=y_column,
+        theme=theme,
+        time_column=time_column,
+        entity_column=entity_column,
+    )
+
+    if result.get("html"):
+        output_dir = config.export_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
+        filepath = output_dir / f"{filename}.html"
+        filepath.write_text(result["html"], encoding="utf-8")
+        return {
+            "filepath": str(filepath),
+            "metadata": result.get("metadata", {}),
+            "insights": result.get("insights", []),
+            "headline": result.get("metadata", {}).get("headline", ""),
+            "total_rows": len(data),
+        }
+    return {"error": True, "message": "Failed to generate infographic"}
+
+
+@mcp.tool()
+async def build_dashboard(
+    panels: list[dict[str, Any]],
+    title: str = "Serbia Data Dashboard",
+    subtitle: str = "",
+    filename: str = "dashboard",
+) -> dict[str, Any]:
+    """Create a multi-panel dashboard HTML page combining charts and text.
+
+    Build a comprehensive dashboard with multiple visualization panels.
+    Each panel can be a chart, HTML content block, or a big number card.
+
+    Panel types:
+    - Chart: {"type": "chart", "title": "...", "figure": <plotly_dict>, "span": 1}
+    - HTML:  {"type": "html", "title": "...", "content": "<p>...</p>", "span": 1}
+    - Big number: {"type": "big_number", "number": "7M", "label": "Population", "color": "red"}
+
+    The 'span' field (1 or 2) controls width: span=2 takes full row, span=1 is half.
+
+    Example panels:
+        [
+            {"type": "big_number", "number": "-12%", "label": "Population Change", "color": "red"},
+            {"type": "chart", "title": "Population Trend", "figure": <from create_visualization>},
+            {"type": "html", "title": "Key Findings", "content": "<p>Serbia's population...</p>"},
+        ]
+
+    Args:
+        panels: List of panel dicts (see above for types)
+        title: Dashboard title
+        subtitle: Dashboard subtitle
+        filename: Output filename (without .html)
+
+    Returns: Dict with 'filepath', 'panel_count', 'filename'
+    """
+    html = create_dashboard(panels, title=title, subtitle=subtitle)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(html, encoding="utf-8")
+
+    return {
+        "filepath": str(filepath),
+        "panel_count": len(panels),
+        "filename": f"{filename}.html",
+    }
 
 
 @mcp.tool()
@@ -920,9 +1333,33 @@ def server_info() -> str:
             "description": "MCP server for Serbian open data portal (data.gov.rs)",
             "api_base": config.api_base,
             "supported_formats": ["json", "csv", "xlsx", "xml"],
-            "chart_types": ["line", "bar", "pie", "scatter", "histogram", "box"],
+            "chart_types": [
+                "line",
+                "bar",
+                "pie",
+                "scatter",
+                "histogram",
+                "box",
+                "heatmap",
+                "treemap",
+                "gauge",
+                "funnel",
+                "animated_line",
+                "comparison_bar",
+                "sparklines",
+            ],
             "export_formats": ["html", "json"],
             "aggregation_functions": ["sum", "mean", "median", "min", "max", "count", "std", "var"],
+            "themes": ["dark", "light", "infographic"],
+            "features": [
+                "Auto-insight extraction (shocking facts, outliers, trends)",
+                "Data narrative generation (headline + big number + summary)",
+                "Derived metrics (YoY%, per-capita, growth rates, index values)",
+                "Infographic builder (single-page data story)",
+                "Multi-panel dashboard builder",
+                "Chart theming (dark/light/infographic)",
+                "Annotations and highlight zones for storytelling",
+            ],
         },
         indent=2,
     )
@@ -1185,10 +1622,7 @@ async def _get_catalog() -> DatasetCatalog:
 
 @mcp.tool()
 async def intelligent_search(
-    query: str,
-    suggest_alternatives: bool = True,
-    max_results: int = 10,
-    min_score: float = 0.3
+    query: str, suggest_alternatives: bool = True, max_results: int = 10, min_score: float = 0.3
 ) -> dict[str, Any]:
     """Search datasets with semantic understanding and fallback suggestions.
 
@@ -1219,11 +1653,7 @@ async def intelligent_search(
     search_engine = SearchEngine(catalog)
 
     # Search with semantic understanding
-    results = await search_engine.search(
-        query,
-        max_results=max_results,
-        min_score=min_score
-    )
+    results = await search_engine.search(query, max_results=max_results, min_score=min_score)
 
     response: dict[str, Any] = {
         "results": [r.to_dict() for r in results],
@@ -1282,14 +1712,10 @@ async def preview_dataset(dataset_id: str, nrows: int = 10) -> dict[str, Any]:
             "error": True,
             "message": str(e),
             "dataset_id": dataset_id,
-            "note": "Dataset not found in catalog. Try intelligent_search() to find it."
+            "note": "Dataset not found in catalog. Try intelligent_search() to find it.",
         }
     except Exception as e:
-        return {
-            "error": True,
-            "message": f"Preview failed: {str(e)[:200]}",
-            "dataset_id": dataset_id
-        }
+        return {"error": True, "message": f"Preview failed: {str(e)[:200]}", "dataset_id": dataset_id}
 
 
 @mcp.tool()
@@ -1324,18 +1750,14 @@ async def refresh_catalog(force: bool = False) -> dict[str, Any]:
         result = await catalog.refresh() if force else await catalog.refresh()
         duration = time.time() - start
 
-        return {
-            **result,
-            "duration_seconds": round(duration, 2),
-            "timestamp": datetime.now(UTC).isoformat()
-        }
+        return {**result, "duration_seconds": round(duration, 2), "timestamp": datetime.now(UTC).isoformat()}
     except Exception as e:
         duration = time.time() - start
         return {
             "error": True,
             "message": f"Catalog refresh failed: {str(e)[:200]}",
             "duration_seconds": round(duration, 2),
-            "note": "The API may be rate-limited or unavailable. Try again later."
+            "note": "The API may be rate-limited or unavailable. Try again later.",
         }
 
 
@@ -1373,6 +1795,7 @@ async def get_catalog_stats() -> dict[str, Any]:
     cache_age_hours = None
     if catalog.cache_path.exists():
         import os
+
         cache_mtime = catalog.cache_path.stat().st_mtime
         cache_age = time.time() - cache_mtime
         cache_age_hours = round(cache_age / 3600, 2)
@@ -1386,7 +1809,7 @@ async def get_catalog_stats() -> dict[str, Any]:
         "organizations": sorted(organizations)[:20],  # Show first 20
         "cache_path": str(catalog.cache_path),
         "cache_age_hours": cache_age_hours,
-        "cache_exists": catalog.cache_path.exists()
+        "cache_exists": catalog.cache_path.exists(),
     }
 
 
