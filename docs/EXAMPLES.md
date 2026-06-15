@@ -9,6 +9,7 @@ Real-world examples of using Serbian Data MCP for data analysis and visualizatio
 3. [Visualization Examples](#visualization-examples)
 4. [Advanced Analysis Examples](#advanced-analysis-examples)
 5. [Integration Examples](#integration-examples)
+6. [Smithery Installation Examples](#smithery-installation-examples)
 
 ## Basic Search Examples
 
@@ -388,6 +389,92 @@ Download temperature data, calculate mean, median, and standard deviation by mon
 - Returns summary table
 
 **Use for:** Climate analysis, weather reports
+
+## Smithery Installation Examples
+
+### Example 25: Install via Smithery CLI (Claude Desktop)
+
+[Smithery](https://smithery.ai) is a registry and CLI for managing MCP server connections. It automatically configures your AI client — no manual config file editing needed.
+
+```bash
+# Install the Smithery CLI (requires Node.js 20+)
+npm install -g smithery@latest
+
+# Authenticate with Smithery
+smithery auth login
+
+# Add Serbian Data MCP to Claude Desktop
+smithery mcp add acailic/serbian-data-mcp --client claude
+```
+
+**What happens:**
+- Smithery downloads and configures the MCP server
+- Claude Desktop config is updated automatically
+- Server runs via `uvx --from serbian-data-mcp serbian-data-mcp`
+
+**Use for:** One-command setup for Claude Desktop users
+
+### Example 26: Install via Smithery (Cursor)
+
+```bash
+# Add to Cursor
+smithery mcp add acailic/serbian-data-mcp --client cursor
+
+# Restart Cursor for changes to take effect
+```
+
+**Use for:** One-command setup for Cursor users
+
+### Example 27: Install via Smithery (Remote Connection)
+
+If you prefer a fully managed remote connection instead of running the server locally:
+
+```bash
+# Connect as a remote Smithery connection
+smithery mcp add acailic/serbian-data-mcp --id serbian-data
+
+# Verify the connection
+smithery mcp list
+
+# List available tools
+smithery tool list serbian-data
+```
+
+**What happens:**
+- Smithery hosts the MCP connection remotely
+- No local Python installation needed
+- Works with any MCP-compatible client
+
+**Use for:** Users who want zero local dependencies
+
+### Example 28: Use Smithery CLI to Call Tools Directly
+
+You can also call MCP tools directly from the command line via Smithery:
+
+```bash
+# Search for datasets
+smithery tool call serbian-data search_datasets '{"query": "population", "page_size": 5}'
+
+# Get dataset details
+smithery tool call serbian-data get_dataset '{"dataset_id": "population-2023"}'
+
+# Create a visualization
+smithery tool call serbian-data create_visualization '{"chart_type": "line", "title": "Population Trends"}'
+```
+
+**Use for:** Scripting, automation, testing without an AI client
+
+### Example 29: Remove Smithery Connection
+
+```bash
+# Remove from Claude Desktop
+smithery mcp remove acailic/serbian-data-mcp --client claude
+
+# Remove a remote connection
+smithery mcp remove serbian-data
+```
+
+**Use for:** Cleanup and switching between installation methods
 
 ## Real-World Use Cases
 

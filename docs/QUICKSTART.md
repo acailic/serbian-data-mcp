@@ -30,6 +30,26 @@ pip install -e .
 pip install serbian-data-mcp
 ```
 
+### Option 3: Install via Smithery
+
+[Smithery](https://smithery.ai) is a registry and CLI that makes it easy to discover and install MCP servers.
+
+```bash
+# Install the Smithery CLI (requires Node.js 20+)
+npm install -g smithery@latest
+
+# Add to Claude Desktop — automatically configures everything
+smithery mcp add acailic/serbian-data-mcp --client claude
+
+# Add to Cursor
+smithery mcp add acailic/serbian-data-mcp --client cursor
+
+# Or connect as a remote connection
+smithery mcp add acailic/serbian-data-mcp --id serbian-data
+```
+
+Then restart your AI client. No manual config editing needed — Smithery handles it automatically.
+
 ## Configuration (1 minute)
 
 Create your configuration file:
@@ -74,7 +94,9 @@ Default configuration:
 
 ### 2. Add Serbian Data MCP
 
-Add this to your `mcpServers` section:
+**If you installed via Smithery (Option 3 above):** Skip this step — Smithery already configured Claude Desktop for you.
+
+**Otherwise**, add this to your `mcpServers` section:
 
 ```json
 {

@@ -3,6 +3,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/serbian-data-mcp?color=blue)](https://pypi.org/project/serbian-data-mcp/)
 [![Python - Version](https://img.shields.io/pypi/pyversions/serbian-data-mcp)](https://pypi.org/project/serbian-data-mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Smithery](https://smithery.ai/badge/serbian-data-mcp.svg)](https://smithery.ai/server/acailic/serbian-data-mcp)
 
 MCP server for accessing Serbian open data portal (data.gov.rs) with built-in visualization capabilities.
 
@@ -30,6 +31,26 @@ pip install serbian-data-mcp
 ```
 
 Then add to your MCP client configuration (see [Usage](#-usage) below).
+
+### Install from Smithery
+
+[Smithery](https://smithery.ai) is a registry and CLI for discovering and installing MCP servers.
+
+```bash
+# Install the Smithery CLI
+npm install -g smithery@latest
+
+# Add to Claude Desktop
+smithery mcp add acailic/serbian-data-mcp --client claude
+
+# Add to Cursor
+smithery mcp add acailic/serbian-data-mcp --client cursor
+
+# Or connect as a remote Smithery connection
+smithery mcp add acailic/serbian-data-mcp --id serbian-data
+```
+
+> **Note:** Requires Node.js 20+. After adding, restart your AI client for changes to take effect.
 
 ### Install from Source
 
@@ -81,6 +102,20 @@ Or if you installed from source:
   }
 }
 ```
+
+### Via Smithery CLI
+
+If you installed via [Smithery](https://smithery.ai), the configuration is handled automatically. Just run:
+
+```bash
+# For Claude Desktop
+smithery mcp add acailic/serbian-data-mcp --client claude
+
+# For Cursor
+smithery mcp add acailic/serbian-data-mcp --client cursor
+```
+
+Then restart your AI client. No manual config editing needed.
 
 ### Available Tools
 
