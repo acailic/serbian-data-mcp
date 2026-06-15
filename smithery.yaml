@@ -1,0 +1,9 @@
+# Smithery configuration for mcp.so registry
+# See: https://smithery.ai/docs/config
+startCommand:
+  type: stdio
+  command: uvx
+  args:
+    - "--from"
+    - "serbian-data-mcp"
+    - "serbian-data-mcp"

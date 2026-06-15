@@ -61,7 +61,7 @@ def arrow_chart(
             marker_color=colors,
             text=[f"{v:+,.1f}" if show_values else "" for v in df[value_column]],
             textposition="outside",
-            textfont=dict(size=12, color="#e0e0e0"),
+            textfont={"size": 12, "color": "#e0e0e0"},
             hovertemplate=("<b>%{y}</b><br>%{x:,.1f}<extra></extra>"),
             name="",
         )
@@ -74,14 +74,14 @@ def arrow_chart(
             x=reference_value,
             y=1.02,
             yref="paper",
-            font=dict(size=11, color="#ffab00"),
+            font={"size": 11, "color": "#ffab00"},
             showarrow=False,
         )
 
     fig.update_layout(
-        title=dict(text=title, font=dict(size=22), x=0.05, xanchor="left"),
-        xaxis=dict(title=value_column),
-        yaxis=dict(autorange="reversed"),
+        title={"text": title, "font": {"size": 22}, "x": 0.05, "xanchor": "left"},
+        xaxis={"title": value_column},
+        yaxis={"autorange": "reversed"},
         height=max(300, len(df) * 45 + 100),
         showlegend=False,
         bargap=0.15,
@@ -145,7 +145,7 @@ def dumbbell_chart(
             x=line_x,
             y=line_y,
             mode="lines",
-            line=dict(color="rgba(255,255,255,0.2)", width=2),
+            line={"color": "rgba(255,255,255,0.2)", "width": 2},
             hoverinfo="skip",
             showlegend=False,
             name="",
@@ -158,10 +158,10 @@ def dumbbell_chart(
             x=df[start_column],
             y=df[label_column],
             mode="markers+text",
-            marker=dict(size=10, color="#1565c0"),
+            marker={"size": 10, "color": "#1565c0"},
             text=[f"{v:,.0f}" for v in df[start_column]],
             textposition="middle left",
-            textfont=dict(size=11, color="#90a4ae"),
+            textfont={"size": 11, "color": "#90a4ae"},
             hovertemplate="<b>%{y}</b><br>Početak: %{x:,.0f}<extra></extra>",
             name="Početak",
             legendgroup="dots",
@@ -175,10 +175,10 @@ def dumbbell_chart(
             x=df[end_column],
             y=df[label_column],
             mode="markers+text",
-            marker=dict(size=10, color=end_colors),
+            marker={"size": 10, "color": end_colors},
             text=[f"{row[end_column]:,.0f} ({row['pct_change']:+.1f}%)" for _, row in df.iterrows()],
             textposition="middle right",
-            textfont=dict(size=11, color="#e0e0e0"),
+            textfont={"size": 11, "color": "#e0e0e0"},
             hovertemplate=("<b>%{y}</b><br>Kraj: %{x:,.0f}<br>Promena: %{customdata[0]:+.1f}%<extra></extra>"),
             customdata=df[["pct_change"]].values.tolist(),
             name="Kraj",
@@ -187,11 +187,11 @@ def dumbbell_chart(
     )
 
     fig.update_layout(
-        title=dict(text=title, font=dict(size=22), x=0.05, xanchor="left"),
-        xaxis=dict(title=""),
-        yaxis=dict(autorange="reversed"),
+        title={"text": title, "font": {"size": 22}, "x": 0.05, "xanchor": "left"},
+        xaxis={"title": ""},
+        yaxis={"autorange": "reversed"},
         height=max(300, len(df) * 50 + 120),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
         hovermode="closest",
     )
 
@@ -245,7 +245,7 @@ def lollipop_chart(
                 x=[0, row[value_column]],
                 y=[row[label_column], row[label_column]],
                 mode="lines",
-                line=dict(color="rgba(255,255,255,0.15)", width=2),
+                line={"color": "rgba(255,255,255,0.15)", "width": 2},
                 showlegend=False,
                 hoverinfo="skip",
             )
@@ -257,19 +257,19 @@ def lollipop_chart(
             x=df[value_column],
             y=df[label_column],
             mode="markers+text",
-            marker=dict(size=sizes, color=colors, line=dict(width=1, color="rgba(255,255,255,0.5)")),
+            marker={"size": sizes, "color": colors, "line": {"width": 1, "color": "rgba(255,255,255,0.5)"}},
             text=[f"{v:,.0f}" for v in df[value_column]],
             textposition="middle right",
-            textfont=dict(size=12, color="#e0e0e0"),
+            textfont={"size": 12, "color": "#e0e0e0"},
             hovertemplate="<b>%{y}</b><br>%{x:,.0f}<extra></extra>",
             name="",
         )
     )
 
     fig.update_layout(
-        title=dict(text=title, font=dict(size=22), x=0.05, xanchor="left"),
-        xaxis=dict(title=value_column),
-        yaxis=dict(autorange="reversed"),
+        title={"text": title, "font": {"size": 22}, "x": 0.05, "xanchor": "left"},
+        xaxis={"title": value_column},
+        yaxis={"autorange": "reversed"},
         height=max(300, len(df) * 45 + 100),
         showlegend=False,
     )

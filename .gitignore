@@ -27,6 +27,9 @@ htmlcov/
 # OMC state files
 .omc/
 
+# Build artifacts
+dist/
+
 # Project specific
 config.json
 .cache/

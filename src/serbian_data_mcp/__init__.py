@@ -5,6 +5,8 @@ MCP server for accessing Serbian open data portal (data.gov.rs).
 
 __version__ = "0.1.0"
 
+__all__ = ["mcp", "main", "__version__"]
+
 from fastmcp import FastMCP
 
 mcp = FastMCP("serbian-data")

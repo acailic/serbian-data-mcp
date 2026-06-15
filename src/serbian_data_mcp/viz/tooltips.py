@@ -151,7 +151,7 @@ def add_annotation_callouts(
             x=pt["x"],
             y=pt["y"],
             text=f"{prefix}{pt['text']}{suffix}",
-            font=dict(size=13, color="white"),
+            font={"size": 13, "color": "white"},
             bgcolor=color,
             bordercolor="rgba(255,255,255,0.3)",
             borderwidth=1,

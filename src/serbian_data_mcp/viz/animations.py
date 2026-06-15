@@ -77,7 +77,7 @@ def animated_timeline(
                             x=cat_data[time_column],
                             y=cat_data[value_column],
                             mode="lines+markers",
-                            line=dict(width=2),
+                            line={"width": 2},
                             name=cat,
                             hovertemplate="<b>" + cat + "</b><br>%{x}<br>%{y:,.0f}<extra></extra>",
                         )
@@ -94,11 +94,11 @@ def animated_timeline(
             frames.append(go.Frame(data=traces, name=str(t)))
 
         slider_steps.append(
-            dict(
-                label=str(t),
-                method="animate",
-                args=[[str(t)], dict(frame=dict(duration=frame_duration, redraw=True))],
-            )
+            {
+                "label": str(t),
+                "method": "animate",
+                "args": [[str(t)], {"frame": {"duration": frame_duration, "redraw": True}}],
+            }
         )
 
     # Initial frame
@@ -116,30 +116,30 @@ def animated_timeline(
     )
 
     fig.update_layout(
-        title=dict(text=title, font=dict(size=22), x=0.05, xanchor="left"),
-        xaxis=dict(title=""),
-        yaxis=dict(title=value_column),
+        title={"text": title, "font": {"size": 22}, "x": 0.05, "xanchor": "left"},
+        xaxis={"title": ""},
+        yaxis={"title": value_column},
         updatemenus=[
-            dict(
-                type="buttons",
-                showactive=False,
-                x=0.05,
-                y=0,
-                buttons=[
-                    dict(label="▶ Pokreni", method="animate", args=[None]),
-                    dict(label="⏸ Pauza", method="animate", args=[[None], dict(frame=dict(duration=0))]),
+            {
+                "type": "buttons",
+                "showactive": False,
+                "x": 0.05,
+                "y": 0,
+                "buttons": [
+                    {"label": "▶ Pokreni", "method": "animate", "args": [None]},
+                    {"label": "⏸ Pauza", "method": "animate", "args": [[None], {"frame": {"duration": 0}}]},
                 ],
-            )
+            }
         ],
         sliders=[
-            dict(
-                active=0,
-                steps=slider_steps,
-                len=0.9,
-                x=0.05,
-                currentvalue=dict(prefix="Period: ", font=dict(size=14)),
-                transition=dict(easing="cubic-in-out", duration=transition_duration),
-            )
+            {
+                "active": 0,
+                "steps": slider_steps,
+                "len": 0.9,
+                "x": 0.05,
+                "currentvalue": {"prefix": "Period: ", "font": {"size": 14}},
+                "transition": {"easing": "cubic-in-out", "duration": transition_duration},
+            }
         ],
         showlegend=False,
     )
@@ -188,7 +188,7 @@ def animated_bars_evolution(
             y=subset[value_column],
             text=[f"{v:,.0f}" for v in subset[value_column]],
             textposition="outside",
-            textfont=dict(size=11, color="#e0e0e0"),
+            textfont={"size": 11, "color": "#e0e0e0"},
             marker_color=subset[value_column],
             marker_colorscale="Blues",
             hovertemplate="<b>%{x}</b><br>%{y:,.0f}<extra></extra>",
@@ -197,11 +197,11 @@ def animated_bars_evolution(
 
         frames.append(go.Frame(data=[bar_trace], name=str(t)))
         slider_steps.append(
-            dict(
-                label=str(t),
-                method="animate",
-                args=[[str(t)], dict(frame=dict(duration=frame_duration, redraw=True))],
-            )
+            {
+                "label": str(t),
+                "method": "animate",
+                "args": [[str(t)], {"frame": {"duration": frame_duration, "redraw": True}}],
+            }
         )
 
     # Initial frame
@@ -220,30 +220,30 @@ def animated_bars_evolution(
     )
 
     fig.update_layout(
-        title=dict(text=title, font=dict(size=22), x=0.05, xanchor="left"),
-        yaxis=dict(title=value_column),
-        xaxis=dict(tickangle=-45),
+        title={"text": title, "font": {"size": 22}, "x": 0.05, "xanchor": "left"},
+        yaxis={"title": value_column},
+        xaxis={"tickangle": -45},
         updatemenus=[
-            dict(
-                type="buttons",
-                showactive=False,
-                x=0.05,
-                y=-0.1,
-                buttons=[
-                    dict(label="▶ Pokreni", method="animate", args=[None]),
-                    dict(label="⏸ Pauza", method="animate", args=[[None], dict(frame=dict(duration=0))]),
+            {
+                "type": "buttons",
+                "showactive": False,
+                "x": 0.05,
+                "y": -0.1,
+                "buttons": [
+                    {"label": "▶ Pokreni", "method": "animate", "args": [None]},
+                    {"label": "⏸ Pauza", "method": "animate", "args": [[None], {"frame": {"duration": 0}}]},
                 ],
-            )
+            }
         ],
         sliders=[
-            dict(
-                active=0,
-                steps=slider_steps,
-                len=0.9,
-                x=0.05,
-                currentvalue=dict(prefix="Period: ", font=dict(size=14)),
-                transition=dict(easing="cubic-in-out", duration=300),
-            )
+            {
+                "active": 0,
+                "steps": slider_steps,
+                "len": 0.9,
+                "x": 0.05,
+                "currentvalue": {"prefix": "Period: ", "font": {"size": 14}},
+                "transition": {"easing": "cubic-in-out", "duration": 300},
+            }
         ],
         showlegend=False,
         barmode="relative",
@@ -289,17 +289,17 @@ def animated_comparison(
             marker_color=colors[i % len(colors)],
             text=[f"{v:,.0f}" for v in df[value_column]],
             textposition="outside",
-            textfont=dict(size=11, color="#e0e0e0"),
+            textfont={"size": 11, "color": "#e0e0e0"},
             hovertemplate=f"<b>{label}</b><br>%{{x}}<br>%{{y:,.0f}}<extra></extra>",
             name=label,
         )
         frames.append(go.Frame(data=[bar_trace], name=label))
         slider_steps.append(
-            dict(
-                label=label,
-                method="animate",
-                args=[[label], dict(frame=dict(duration=600, redraw=True))],
-            )
+            {
+                "label": label,
+                "method": "animate",
+                "args": [[label], {"frame": {"duration": 600, "redraw": True}}],
+            }
         )
 
     first_label = labels[0]
@@ -317,29 +317,29 @@ def animated_comparison(
     )
 
     fig.update_layout(
-        title=dict(text=title, font=dict(size=22), x=0.05, xanchor="left"),
-        yaxis=dict(title=value_column),
+        title={"text": title, "font": {"size": 22}, "x": 0.05, "xanchor": "left"},
+        yaxis={"title": value_column},
         updatemenus=[
-            dict(
-                type="buttons",
-                showactive=False,
-                x=0.05,
-                y=-0.1,
-                buttons=[
-                    dict(label="▶ Pokreni", method="animate", args=[None]),
-                    dict(label="⏸ Pauza", method="animate", args=[[None], dict(frame=dict(duration=0))]),
+            {
+                "type": "buttons",
+                "showactive": False,
+                "x": 0.05,
+                "y": -0.1,
+                "buttons": [
+                    {"label": "▶ Pokreni", "method": "animate", "args": [None]},
+                    {"label": "⏸ Pauza", "method": "animate", "args": [[None], {"frame": {"duration": 0}}]},
                 ],
-            )
+            }
         ],
         sliders=[
-            dict(
-                active=0,
-                steps=slider_steps,
-                len=0.9,
-                x=0.05,
-                currentvalue=dict(prefix="Podaci: ", font=dict(size=14)),
-                transition=dict(easing="cubic-in-out", duration=300),
-            )
+            {
+                "active": 0,
+                "steps": slider_steps,
+                "len": 0.9,
+                "x": 0.05,
+                "currentvalue": {"prefix": "Podaci: ", "font": {"size": 14}},
+                "transition": {"easing": "cubic-in-out", "duration": 300},
+            }
         ],
         showlegend=False,
     )

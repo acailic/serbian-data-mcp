@@ -242,12 +242,12 @@ class SerbiaMapBuilder:
                 marker_line_width=0.5,
                 zmin=float(df_valid[value_column].min()),
                 zmax=float(df_valid[value_column].max()),
-                colorbar=dict(
-                    title=dict(text=value_column, font=dict(size=13)),
-                    thickness=15,
-                    len=0.8,
-                    x=0.85,
-                ),
+                colorbar={
+                    "title": {"text": value_column, "font": {"size": 13}},
+                    "thickness": 15,
+                    "len": 0.8,
+                    "x": 0.85,
+                },
                 hovertemplate=(f"<b>%{{properties.name}}</b><br>{value_column}: %{{z:,.0f}}<extra></extra>"),
                 name="",
             )
@@ -279,12 +279,12 @@ class SerbiaMapBuilder:
             showsubunits=False,
             fitbounds="locations",
             bgcolor="rgba(0,0,0,0)",
-            projection=dict(type="mercator"),
+            projection={"type": "mercator"},
         )
 
         fig.update_layout(
-            title=dict(text=title, font=dict(size=22), x=0.05, xanchor="left"),
-            margin=dict(l=20, r=20, t=70, b=20),
+            title={"text": title, "font": {"size": 22}, "x": 0.05, "xanchor": "left"},
+            margin={"l": 20, "r": 20, "t": 70, "b": 20},
             showlegend=False,
         )
 
@@ -293,7 +293,7 @@ class SerbiaMapBuilder:
         fig.update_layout(
             paper_bgcolor=fig.layout.paper_bgcolor,
             plot_bgcolor="rgba(0,0,0,0)",
-            geo=dict(bgcolor="rgba(0,0,0,0)"),
+            geo={"bgcolor": "rgba(0,0,0,0)"},
         )
 
         return fig
@@ -332,12 +332,12 @@ class SerbiaMapBuilder:
                 zmax=float(df_valid[value_column].max()),
                 marker_line_color="rgba(255,255,255,0.4)",
                 marker_line_width=0.5,
-                colorbar=dict(
-                    title=dict(text=value_column, font=dict(size=13)),
-                    thickness=15,
-                    len=0.8,
-                    x=0.85,
-                ),
+                colorbar={
+                    "title": {"text": value_column, "font": {"size": 13}},
+                    "thickness": 15,
+                    "len": 0.8,
+                    "x": 0.85,
+                },
                 hovertemplate=(
                     "<b>%{properties.name}</b><br>"
                     f"{value_column}: %{{z:,.0f}}<br>"
@@ -358,19 +358,19 @@ class SerbiaMapBuilder:
             countrycolor="rgba(255,255,255,0.1)",
             fitbounds="locations",
             bgcolor="rgba(0,0,0,0)",
-            projection=dict(type="mercator"),
+            projection={"type": "mercator"},
         )
 
         fig.update_layout(
-            title=dict(text=title, font=dict(size=22), x=0.05, xanchor="left"),
-            margin=dict(l=20, r=20, t=70, b=20),
+            title={"text": title, "font": {"size": 22}, "x": 0.05, "xanchor": "left"},
+            margin={"l": 20, "r": 20, "t": 70, "b": 20},
             showlegend=False,
         )
 
         fig = apply_theme(fig, theme)
         fig.update_layout(
             plot_bgcolor="rgba(0,0,0,0)",
-            geo=dict(bgcolor="rgba(0,0,0,0)"),
+            geo={"bgcolor": "rgba(0,0,0,0)"},
         )
 
         return fig
