@@ -1,8 +1,11 @@
 """Infographic builder — creates single-page "big number + chart + insight" HTML pages.
 
 Generates standalone, visually striking HTML files that present data
-as a story: headline, big number, supporting chart, and auto-generated
+as a story: headline, big numbers, supporting chart, and auto-generated
 narrative insights.
+
+Supports multiple big number cards with sparklines, timeline ribbon,
+count-up animations, print stylesheet, and enhanced hover states.
 """
 
 import contextlib
@@ -21,6 +24,7 @@ from .themes import (
     add_highlight_zone,
     infographic_template,
 )
+from .data_tables import data_table_html, data_table_css
 
 
 # ── HTML Templates ──────────────────────────────────────────────────────────
@@ -182,22 +186,150 @@ body {
     font-size: 0.85rem;
 }
 .plotly-chart { width: 100%; min-height: 450px; }
+
+/* ── Multi big-number cards ─────────────────────────────────────────── */
+.big-number-card { position: relative; overflow: hidden; }
+.big-number-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%);
+    pointer-events: none;
+}
+.big-number-card .sparkline { margin-top: 12px; height: 40px; opacity: 0.7; }
+.big-number-card .trend-indicator {
+    font-size: 0.8rem; margin-top: 4px;
+    display: flex; align-items: center; gap: 4px; justify-content: center;
+}
+.trend-up { color: var(--accent-green); }
+.trend-down { color: var(--accent-red); }
+.trend-flat { color: var(--accent-blue); }
+
+/* ── Timeline ribbon ─────────────────────────────────────────────────── */
+.timeline-ribbon { position: relative; padding: 32px 0 16px; margin-bottom: 32px; }
+.timeline-ribbon .timeline-line {
+    position: absolute; top: 48px; left: 32px; right: 32px;
+    height: 3px; background: var(--border); border-radius: 2px;
+}
+.timeline-ribbon .events { display: flex; justify-content: space-between; position: relative; }
+.timeline-ribbon .event { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+.timeline-ribbon .event-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent-blue); border: 3px solid var(--bg-primary);
+    position: relative; z-index: 1;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.timeline-ribbon .event:hover .event-dot {
+    transform: scale(1.3); box-shadow: 0 0 12px var(--accent-blue);
+}
+.timeline-ribbon .event-dot.highlight { background: var(--accent-red); box-shadow: 0 0 8px rgba(198,40,40,0.5); }
+.timeline-ribbon .event-dot.gold { background: var(--accent-gold); box-shadow: 0 0 8px rgba(255,171,0,0.5); }
+.timeline-ribbon .event-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px; text-align: center; max-width: 100px; }
+.timeline-ribbon .event-year { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-top: 4px; }
+
+/* ── Chart entrance animation ───────────────────────────────────────── */
+.chart-section {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.chart-section.visible { opacity: 1; transform: translateY(0); }
+.insights-section {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
+}
+.insights-section.visible { opacity: 1; transform: translateY(0); }
+.big-number-grid {
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.big-number-grid.visible { opacity: 1; transform: translateY(0); }
+
+/* ── Print stylesheet ─────────────────────────────────────────────────── */
+@media print {
+    body { background: white !important; color: #1a1a2e !important; }
+    .container { max-width: 100%; padding: 20px; }
+    .header { border-bottom: 2px solid #ccc; }
+    .header h1 { -webkit-text-fill-color: #1a1a2e !important; background: none !important; font-size: 2rem; }
+    .big-number-card { border: 1px solid #ccc !important; background: #f9f9f9 !important; break-inside: avoid; }
+    .chart-section, .insights-section { border: 1px solid #ccc !important; background: #f9f9f9 !important; opacity: 1 !important; transform: none !important; break-inside: avoid; }
+    .plotly-chart { min-height: 350px; }
+    .timeline-ribbon { break-inside: avoid; }
+    .footer { border-top: 1px solid #ccc; color: #666; }
+    .js-plotly-plot .plotly .main-svg { background: white !important; }
+}
+
 @media (max-width: 768px) {
     .header h1 { font-size: 1.8rem; }
     .big-number-card .number { font-size: 2.2rem; }
     .dashboard-grid { grid-template-columns: 1fr; }
     .container { padding: 24px 16px; }
+    .timeline-ribbon .event-label { font-size: 0.65rem; max-width: 70px; }
 }
 """
 
 _PLOTLY_CDN = "https://cdn.plot.ly/plotly-3.6.0.min.js"
 
-_JS_CHART_RENDERER = """
+_JS_CHART_RENDERER = r"""
 function renderChart(containerId, figureJson) {
     const container = document.getElementById(containerId);
     if (!container) return;
     Plotly.newPlot(containerId, figureJson.data, figureJson.layout, {responsive: true, displayModeBar: false});
 }
+
+function animateCountUp(selector, duration) {
+    var elements = document.querySelectorAll(selector);
+    duration = duration || 1500;
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var el = entry.target;
+                var finalText = el.dataset.finalValue || el.textContent;
+                var prefix = el.dataset.prefix || '';
+                var suffix = el.dataset.suffix || '';
+                var numMatch = finalText.match(/[\d,.-]+/);
+                if (numMatch) {
+                    var finalNum = parseFloat(numMatch[0].replace(/,/g, ''));
+                    if (!isNaN(finalNum) && Math.abs(finalNum) > 1) {
+                        var start = 0;
+                        var startTime = performance.now();
+                        function tick(now) {
+                            var progress = Math.min((now - startTime) / duration, 1);
+                            var eased = 1 - Math.pow(1 - progress, 3);
+                            var current = start + (finalNum - start) * eased;
+                            if (Math.abs(finalNum) >= 1000) {
+                                el.textContent = prefix + current.toLocaleString('sr-RS', {maximumFractionDigits: 1}) + suffix;
+                            } else {
+                                el.textContent = prefix + current.toFixed(1) + suffix;
+                            }
+                            if (progress < 1) requestAnimationFrame(tick);
+                        }
+                        requestAnimationFrame(tick);
+                    }
+                }
+                observer.unobserve(el);
+            }
+        });
+    }, {threshold: 0.5});
+    elements.forEach(function(el) { observer.observe(el); });
+}
+
+function initScrollReveal() {
+    var sections = document.querySelectorAll('.chart-section, .insights-section, .big-number-grid');
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {threshold: 0.1});
+    sections.forEach(function(s) { observer.observe(s); });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    animateCountUp('.big-number-card .number');
+    initScrollReveal();
+});
 """
 
 
@@ -231,7 +363,8 @@ def _build_html(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
     <script src="{_PLOTLY_CDN}" charset="utf-8"></script>
-    <style>{_DARK_STYLES}</style>
+    <style>{_DARK_STYLES}
+{data_table_css}</style>
 </head>
 <body>
     <div class="container">
@@ -265,8 +398,11 @@ def create_infographic(
     time_column: str | None = None,
     entity_column: str | None = None,
     annotations: list[dict[str, Any]] | None = None,
+    extra_big_numbers: list[dict[str, Any]] | None = None,
+    timeline_events: list[dict[str, Any]] | None = None,
+    data_table: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Create a complete infographic page: big number + chart + insights.
+    """Create a complete infographic page: big numbers + chart + insights.
 
     Auto-generates insights, formats them into a visually striking
     single-page HTML with a dark data-journalism aesthetic.
@@ -279,10 +415,15 @@ def create_infographic(
         x_column: X axis column
         y_column: Y axis column
         theme: 'dark', 'light', or 'infographic'
-        highlight_entity: Entity name to highlight in the chart
         time_column: Optional time column for insight extraction
         entity_column: Optional entity column for insight extraction
         annotations: Optional list of annotation dicts with 'text', 'x', 'y'
+        extra_big_numbers: Additional big number cards:
+            [{'number': '6.92M', 'label': 'Population', 'color': 'blue', 'trend': 'down'}]
+        timeline_events: Timeline ribbon events:
+            [{'year': '2020', 'label': 'COVID-19', 'dot_class': 'highlight'}]
+        data_table: Optional data table config:
+            {'columns': ['name', 'value'], 'highlight_column': 'value', 'title': 'Details'}
 
     Returns:
         Dict with 'html' (full page HTML), 'insights', 'chart_figure', 'metadata'
@@ -334,8 +475,10 @@ def create_infographic(
     fig.update_layout(margin={"l": 60, "r": 30, "t": 30, "b": 60}, showlegend=True)
     fig_dict = json.loads(fig.to_json())
 
-    # Build big number cards
+    # Build big number cards (auto-detected + extras)
     big_number_cards = ""
+    all_big_numbers: list[dict[str, str]] = []
+
     if narrative.get("big_number") is not None:
         color_class = "red"
         if isinstance(narrative["big_number"], (int, float)):
@@ -358,13 +501,40 @@ def create_infographic(
                 else:
                     number_display = f"{number_display:,.0f}"
 
-        big_number_cards = f"""
-        <div class="big-number-grid">
-            <div class="big-number-card {color_class}">
-                <div class="number">{number_display}</div>
-                <div class="label">{narrative.get("big_label", title)}</div>
-            </div>
-        </div>"""
+        all_big_numbers.append(
+            {"number": str(number_display), "label": narrative.get("big_label", title), "color": color_class}
+        )
+
+    # Add extra big numbers
+    if extra_big_numbers:
+        for ebn in extra_big_numbers:
+            all_big_numbers.append(
+                {
+                    "number": str(ebn.get("number", "")),
+                    "label": ebn.get("label", ""),
+                    "color": ebn.get("color", "blue"),
+                    "trend": ebn.get("trend", ""),
+                }
+            )
+
+    if all_big_numbers:
+        cards = ""
+        for bn in all_big_numbers:
+            trend_html = ""
+            if bn.get("trend"):
+                if bn["trend"] == "up":
+                    trend_html = '<div class="trend-indicator trend-up">▲ rast</div>'
+                elif bn["trend"] == "down":
+                    trend_html = '<div class="trend-indicator trend-down">▼ pad</div>'
+                else:
+                    trend_html = '<div class="trend-indicator trend-flat">● stabilno</div>'
+            cards += f"""
+            <div class="big-number-card {bn["color"]}">
+                <div class="number" data-final-value="{bn["number"]}">{bn["number"]}</div>
+                <div class="label">{bn["label"]}</div>
+                {trend_html}
+            </div>"""
+        big_number_cards = '<div class="big-number-grid">' + cards + "</div>"
 
     # Build insights HTML
     insights_html = ""
@@ -396,8 +566,38 @@ def create_infographic(
             </p>
         </div>"""
 
+    # Build timeline ribbon
+    timeline_html = ""
+    if timeline_events and len(timeline_events) > 1:
+        events_html = ""
+        for ev in timeline_events:
+            dot_class = ev.get("dot_class", "")
+            events_html += f"""
+            <div class="event">
+                <div class="event-dot {dot_class}"></div>
+                <div class="event-label">{ev.get("label", "")}</div>
+                <div class="event-year">{ev.get("year", "")}</div>
+            </div>"""
+        timeline_html = f"""
+        <div class="timeline-ribbon">
+            <div class="timeline-line"></div>
+            <div class="events">{events_html}</div>
+        </div>"""
+
+    # Build data table
+    table_html = ""
+    if data_table:
+        table_html = data_table_html(
+            data,
+            columns=data_table.get("columns"),
+            highlight_column=data_table.get("highlight_column"),
+            max_rows=data_table.get("max_rows", 25),
+            title=data_table.get("title", ""),
+            caption=data_table.get("caption", ""),
+        )
+
     # Assemble body
-    body = f"{big_number_cards}\n{summary_html}\n{insights_html}"
+    body = f"{big_number_cards}\n{timeline_html}\n{summary_html}\n{table_html}\n{insights_html}"
 
     full_html = _build_html(
         title=title,

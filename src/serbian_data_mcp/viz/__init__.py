@@ -1,7 +1,7 @@
 """Visualization, theming, insights, infographics, maps, and export functionality."""
 
 from .charts import ChartBuilder
-from .exporters import export_html, export_png, export_json, fig_to_dict
+from .exporters import export_html, export_png, export_json, export_pdf, generate_embed_code, fig_to_dict
 from .themes import apply_theme, add_annotation, add_highlight_zone, dark_template, light_template, infographic_template
 from .advanced_charts import AdvancedChartBuilder
 from .insights import extract_insights, generate_narrative, compute_derived_metrics
@@ -12,6 +12,10 @@ from .tooltips import add_rich_tooltips, add_annotation_callouts, add_comparison
 from .datawrapper_export import DatawrapperExporter
 from .animations import animated_timeline, animated_bars_evolution, animated_comparison
 from .scrollytelling import scrollytelling
+from .novel_charts import slope_chart, waffle_chart, population_pyramid, sankey_diagram, radar_chart
+from .map_advanced import AdvancedMapBuilder
+from .data_tables import data_table_html, data_table_css
+from .forecast import forecast_linear, benchmark_comparison, cross_dataset_insights
 
 __all__ = [
     "ChartBuilder",
@@ -19,6 +23,8 @@ __all__ = [
     "export_html",
     "export_png",
     "export_json",
+    "export_pdf",
+    "generate_embed_code",
     "fig_to_dict",
     "apply_theme",
     "add_annotation",
@@ -32,9 +38,15 @@ __all__ = [
     "create_infographic",
     "create_dashboard",
     "SerbiaMapBuilder",
+    "AdvancedMapBuilder",
     "arrow_chart",
     "dumbbell_chart",
     "lollipop_chart",
+    "slope_chart",
+    "waffle_chart",
+    "population_pyramid",
+    "sankey_diagram",
+    "radar_chart",
     "add_rich_tooltips",
     "add_annotation_callouts",
     "add_comparison_markers",
@@ -43,4 +55,9 @@ __all__ = [
     "animated_bars_evolution",
     "animated_comparison",
     "scrollytelling",
+    "data_table_html",
+    "data_table_css",
+    "forecast_linear",
+    "benchmark_comparison",
+    "cross_dataset_insights",
 ]

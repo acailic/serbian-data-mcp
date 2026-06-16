@@ -39,6 +39,11 @@ from .viz.tooltips import add_rich_tooltips, add_annotation_callouts, add_compar
 from .viz.datawrapper_export import DatawrapperExporter
 from .viz.animations import animated_timeline, animated_bars_evolution, animated_comparison
 from .viz.scrollytelling import scrollytelling
+from .viz.novel_charts import slope_chart, waffle_chart, population_pyramid, sankey_diagram, radar_chart
+from .viz.map_advanced import AdvancedMapBuilder
+from .viz.data_tables import data_table_html, data_table_css
+from .viz.forecast import forecast_linear, benchmark_comparison, cross_dataset_insights
+from .viz.exporters import export_pdf, generate_embed_code
 
 logger = logging.getLogger(__name__)
 
@@ -1325,11 +1330,6 @@ async def export_data(
 
 
 # =========================================================================
-# MCP Resources
-# =========================================================================
-
-
-# =========================================================================
 # Map & Special Chart tools
 # =========================================================================
 
@@ -1782,6 +1782,440 @@ async def enhance_chart_tooltips(
 
 
 # =========================================================================
+# Novel Chart Types
+# =========================================================================
+
+
+@mcp.tool()
+async def create_slope_chart(
+    data: list[dict[str, Any]],
+    entity_column: str,
+    start_column: str,
+    end_column: str,
+    title: str = "",
+    theme: str = "dark",
+    top_n: int = 15,
+    filename: str = "slope_chart",
+) -> dict[str, Any]:
+    """Create a slope chart showing ranking changes between two periods.
+
+    Connects entities across two time periods with lines showing how rankings
+    shifted. Color-coded by direction (green=gained, red=lost).
+
+    Ideal for: census ranking changes (2002 vs 2022), budget share shifts,
+    district population reorderings.
+
+    Args:
+        data: List of row dicts with entity names and two period values
+        entity_column: Entity/district names
+        start_column: First period values (e.g., 'pop_2002')
+        end_column: Second period values (e.g., 'pop_2022')
+        title: Chart title
+        theme: Visual theme
+        top_n: Number of entities to show
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'title', 'rows'
+    """
+    fig = slope_chart(data, entity_column, start_column, end_column, title=title, theme=theme, top_n=top_n)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "title": title, "rows": len(data)}
+
+
+@mcp.tool()
+async def create_waffle_chart(
+    data: list[dict[str, Any]],
+    names_column: str,
+    values_column: str,
+    title: str = "",
+    theme: str = "dark",
+    total_icons: int = 100,
+    filename: str = "waffle_chart",
+) -> dict[str, Any]:
+    """Create a waffle chart (icon grid) for proportional data.
+
+    Each category gets a block of small squares in a grid.
+    More intuitive than pie charts for showing "X out of 100".
+
+    Ideal for: "1 in 4 Serbs live in Belgrade", budget share, sector breakdown.
+
+    Args:
+        data: List of row dicts
+        names_column: Category labels
+        values_column: Numeric values (normalized to fill grid)
+        title: Chart title
+        theme: Visual theme
+        total_icons: Total icons in grid (100 = 10x10)
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'title', 'categories'
+    """
+    fig = waffle_chart(data, names_column, values_column, title=title, theme=theme, total_icons=total_icons)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "title": title, "categories": len(data)}
+
+
+@mcp.tool()
+async def create_population_pyramid(
+    data: list[dict[str, Any]],
+    age_column: str,
+    male_column: str,
+    female_column: str,
+    title: str = "",
+    theme: str = "dark",
+    filename: str = "population_pyramid",
+) -> dict[str, Any]:
+    """Create a population pyramid (age × sex distribution).
+
+    Classic demographic chart with males on the left and females on the right.
+    Essential for census data from RZS.
+
+    Args:
+        data: List of row dicts with age groups and male/female counts
+        age_column: Age group labels (e.g., '0-4', '5-9', '65+')
+        male_column: Male population counts
+        female_column: Female population counts
+        title: Chart title
+        theme: Visual theme
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'title', 'age_groups'
+    """
+    fig = population_pyramid(data, age_column, male_column, female_column, title=title, theme=theme)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "title": title, "age_groups": len(data)}
+
+
+@mcp.tool()
+async def create_sankey_diagram(
+    data: list[dict[str, Any]],
+    source_column: str,
+    target_column: str,
+    value_column: str,
+    title: str = "",
+    theme: str = "dark",
+    filename: str = "sankey",
+) -> dict[str, Any]:
+    """Create a Sankey (alluvial) diagram showing flow between categories.
+
+    Ideal for: budget flow (revenue → ministry → spending), migration flows,
+    energy distribution, supply chains.
+
+    Args:
+        data: List of row dicts with source, target, and flow value
+        source_column: Source/origin category
+        target_column: Target/destination category
+        value_column: Flow magnitude
+        title: Chart title
+        theme: Visual theme
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'title', 'flows'
+    """
+    fig = sankey_diagram(data, source_column, target_column, value_column, title=title, theme=theme)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "title": title, "flows": len(data)}
+
+
+@mcp.tool()
+async def create_radar_chart(
+    data: list[dict[str, Any]],
+    category_column: str,
+    value_columns: list[str],
+    title: str = "",
+    theme: str = "dark",
+    filename: str = "radar",
+) -> dict[str, Any]:
+    """Create a radar/spider chart for multi-metric comparison.
+
+    Compare entities across multiple indicators (population, budget, schools,
+    hospitals, air quality) on a single radar plot.
+
+    Args:
+        data: List of row dicts
+        category_column: Entity names (cities, districts)
+        value_columns: List of numeric columns to compare
+        title: Chart title
+        theme: Visual theme
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'title', 'entities', 'metrics'
+    """
+    fig = radar_chart(data, category_column, value_columns, title=title, theme=theme)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "title": title, "entities": len(data), "metrics": len(value_columns)}
+
+
+# =========================================================================
+# Advanced Map Tools
+# =========================================================================
+
+
+_advanced_map_builder: Optional[AdvancedMapBuilder] = None
+
+
+def _get_advanced_map_builder() -> AdvancedMapBuilder:
+    global _advanced_map_builder
+    if _advanced_map_builder is None:
+        _advanced_map_builder = AdvancedMapBuilder()
+    return _advanced_map_builder
+
+
+@mcp.tool()
+async def create_bubble_map(
+    data: list[dict[str, Any]],
+    name_column: str,
+    value_column: str,
+    title: str = "",
+    theme: str = "dark",
+    second_value_column: Optional[str] = None,
+    filename: str = "bubble_map",
+) -> dict[str, Any]:
+    """Create a bubble map of Serbia — bubble size represents absolute values.
+
+    Unlike choropleth (which colors by density), bubble maps represent magnitude
+    with circle size, avoiding the "large district bias" problem.
+
+    Ideal for: population by district, budget allocation, number of schools.
+
+    Args:
+        data: List of row dicts with district names and values
+        name_column: District names column
+        value_column: Primary numeric value (determines bubble size)
+        title: Map title
+        theme: Visual theme
+        second_value_column: Optional second metric for overlay bubbles
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'districts_matched', 'title'
+    """
+    builder = _get_advanced_map_builder()
+    fig = builder.bubble_map(
+        data,
+        name_column=name_column,
+        value_column=value_column,
+        title=title,
+        theme=theme,
+        second_value_column=second_value_column,
+    )
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    df = pd.DataFrame(data)
+    matched = df[name_column].apply(builder.resolve_name).notna().sum()
+
+    return {"filepath": str(filepath), "districts_matched": int(matched), "title": title}
+
+
+@mcp.tool()
+async def create_multi_layer_map(
+    layers: list[dict[str, Any]],
+    title: str = "",
+    theme: str = "dark",
+    filename: str = "multi_layer_map",
+) -> dict[str, Any]:
+    """Create a multi-layer choropleth map with toggle buttons between layers.
+
+    Each layer is a separate dataset rendered as a choropleth. Toggle buttons
+    let users switch between indicators on the same map.
+
+    Args:
+        layers: List of layer dicts, each with:
+            - 'data': List of row dicts
+            - 'name_column': District names column
+            - 'value_column': Value column
+            - 'label': Display name for this layer
+            - 'colorscale': 'blue', 'red', 'heat', or 'diverging'
+        title: Map title
+        theme: Visual theme
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'layer_count', 'title'
+    """
+    builder = _get_advanced_map_builder()
+    fig = builder.multi_layer_map(layers, title=title, theme=theme)
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "layer_count": len(layers), "title": title}
+
+
+# =========================================================================
+# Forecasting & Benchmarking Tools
+# =========================================================================
+
+
+@mcp.tool()
+async def forecast_data(
+    data: list[dict[str, Any]],
+    time_column: str,
+    value_column: str,
+    periods_ahead: int = 5,
+    method: str = "linear",
+) -> dict[str, Any]:
+    """Forecast future values using linear or exponential regression.
+
+    Projects a metric forward by N periods. Useful for "at this rate,
+    Serbia will have X by 2030" type insights.
+
+    Args:
+        data: List of row dicts with time series data
+        time_column: Column with temporal ordering (years, dates)
+        value_column: Column with numeric values to forecast
+        periods_ahead: Number of future periods to predict
+        method: 'linear' or 'exponential'
+
+    Returns: Dict with 'forecast_data', 'growth_rate', 'projection_note',
+             'r_squared', 'historical_data', 'trend_line'
+    """
+    return forecast_linear(
+        data,
+        time_column=time_column,
+        value_column=value_column,
+        periods_ahead=periods_ahead,
+        method=method,
+    )
+
+
+@mcp.tool()
+async def benchmark_data(
+    data: list[dict[str, Any]],
+    value_column: str,
+    entity_column: str,
+    benchmarks: Optional[dict[str, float]] = None,
+) -> dict[str, Any]:
+    """Compare data against benchmark values (EU average, regional, custom).
+
+    Computes how each entity compares to reference values, identifying
+    above/below performers and generating comparison insights.
+
+    Args:
+        data: List of row dicts
+        value_column: Numeric column to benchmark
+        entity_column: Entity names (districts, cities)
+        benchmarks: Dict of benchmark_name → value (e.g., {'EU average': 50000})
+
+    Returns: Dict with 'statistical_benchmarks', 'best_performer', 'worst_performer',
+             'comparisons', 'insights'
+    """
+    return benchmark_comparison(
+        data,
+        value_column=value_column,
+        entity_column=entity_column,
+        benchmarks=benchmarks,
+    )
+
+
+@mcp.tool()
+async def compare_cross_dataset(
+    data_a: list[dict[str, Any]],
+    data_b: list[dict[str, Any]],
+    value_column_a: str,
+    value_column_b: str,
+    entity_column_a: Optional[str] = None,
+    entity_column_b: Optional[str] = None,
+    label_a: str = "Dataset A",
+    label_b: str = "Dataset B",
+) -> dict[str, Any]:
+    """Extract insights by comparing two related datasets.
+
+    Finds correlations, divergences, and rank disagreements between
+    two datasets. Useful for "population vs air quality" analyses.
+
+    Args:
+        data_a: First dataset
+        data_b: Second dataset
+        value_column_a: Numeric column in first dataset
+        value_column_b: Numeric column in second dataset
+        entity_column_a: Entity column in first dataset
+        entity_column_b: Entity column in second dataset
+        label_a: Label for first dataset
+        label_b: Label for second dataset
+
+    Returns: Dict with 'summary_a', 'summary_b', 'correlation', 'insights'
+    """
+    return cross_dataset_insights(
+        data_a,
+        data_b,
+        value_column_a=value_column_a,
+        value_column_b=value_column_b,
+        entity_column_a=entity_column_a,
+        entity_column_b=entity_column_b,
+        label_a=label_a,
+        label_b=label_b,
+    )
+
+
+# =========================================================================
+# Embed & Share Tools
+# =========================================================================
+
+
+@mcp.tool()
+async def generate_embed(
+    figure: dict[str, Any],
+    width: int = 700,
+    height: int = 450,
+    title: str = "Chart",
+) -> dict[str, Any]:
+    """Generate iframe embed code for sharing a chart in websites/blogs.
+
+    Creates a self-contained embed snippet that can be pasted into any
+    website, CMS, or HTML document. The chart renders via Plotly.js CDN.
+
+    Args:
+        figure: Plotly figure dict (from create_visualization)
+        width: Embed width in pixels
+        height: Embed height in pixels
+        title: Accessible title for the iframe
+
+    Returns: Dict with 'iframe_code', 'html_snippet', 'width', 'height'
+    """
+    from plotly.graph_objects import Figure
+
+    fig = Figure(figure.get("data", []), figure.get("layout", {}))
+    result = generate_embed_code(fig, width=width, height=height, title=title)
+    # Don't return the full html_snippet (too large), just the embed code
+    return {
+        "iframe_code": result["iframe_code"],
+        "width": result["width"],
+        "height": result["height"],
+        "note": "Paste the iframe_code into your HTML to embed the chart.",
+    }
+
+
+# =========================================================================
 # MCP Resources
 # =========================================================================
 
@@ -1811,14 +2245,21 @@ def server_info() -> str:
                 "comparison_bar",
                 "sparklines",
                 "choropleth_map",
+                "bubble_map",
+                "multi_layer_map",
                 "arrow",
                 "dumbbell",
                 "lollipop",
+                "slope_chart",
+                "waffle_chart",
+                "population_pyramid",
+                "sankey_diagram",
+                "radar_chart",
                 "animated_bars",
                 "animated_timeline",
                 "animated_comparison",
             ],
-            "export_formats": ["html", "json"],
+            "export_formats": ["html", "json", "png", "pdf", "embed"],
             "export_targets": ["local_html", "datawrapper_cloud"],
             "aggregation_functions": ["sum", "mean", "median", "min", "max", "count", "std", "var"],
             "themes": ["dark", "light", "infographic"],
