@@ -19,9 +19,9 @@ from . import _helpers as h
 async def transform_data(
     data: list[dict[str, Any]],
     operation: str,
+    columns: list[str] = [],
     column: str = "",
-    columns: list[str] | None = None,
-    group_by: str | list[str] | None = None,
+    group_by: str = "",
     aggregations: dict[str, str] | None = None,
     function: str = "sum",
     ascending: bool = True,

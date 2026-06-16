@@ -168,6 +168,9 @@ ignore = [
     "ARG",     # unused arguments in test fixtures
     "S101",    # assert statements in tests
 ]
+"src/serbian_data_mcp/tools/**/*.py" = [
+    "B006",    # mutable defaults OK — Pydantic handles instance isolation per MCP call
+]
 
 [tool.ruff.format]
 quote-style = "double"

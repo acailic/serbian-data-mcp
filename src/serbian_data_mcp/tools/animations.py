@@ -32,8 +32,8 @@ def _save_html(fig, filename: str) -> str:
 @mcp.tool()
 async def create_animated_chart(
     animation_type: str = "bars_evolution",
-    data: Optional[list[dict[str, Any]]] = None,
-    datasets: Optional[dict[str, list[dict[str, Any]]]] = None,
+    data: list[dict[str, Any]] = [],
+    datasets: dict[str, list[dict[str, Any]]] = {},
     time_column: str = "",
     category_column: str = "",
     value_column: str = "",

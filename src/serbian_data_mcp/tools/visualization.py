@@ -9,8 +9,6 @@ Contracts:
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
@@ -53,7 +51,7 @@ async def create_chart(
     label: str = "",
     frame_column: str = "",
     category_column: Optional[str] = None,
-    comparison_columns: Optional[list[str]] = None,
+    comparison_columns: list[str] = [],
     trend_column: str = "",
     top_n: int = 10,
 ) -> dict[str, Any]:
@@ -180,9 +178,9 @@ def _build_chart(
     label: str,
     frame_column: str,
     category_column: Optional[str],
-    comparison_columns: Optional[list[str]],
-    trend_column: str,
-    top_n: int,
+    comparison_columns: list[str] = [],
+    trend_column: str = "",
+    top_n: int = 10,
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -257,7 +255,7 @@ def _build_chart(
         )
 
     if chart_type == "comparison_bar":
-        if not x_column or not comparison_columns or len(comparison_columns) != 2:
+        if not x_column or len(comparison_columns) != 2:
             raise ToolError("comparison_bar requires x_column and comparison_columns (list of 2)")
         return builder.comparison_bar(x_column, comparison_columns, title=title, theme=theme)
 
@@ -275,8 +273,8 @@ def _build_chart(
 async def apply_chart_theme(
     figure: dict[str, Any],
     theme: str = "dark",
-    annotations: Optional[list[dict[str, Any]]] = None,
-    highlight_zones: Optional[list[dict[str, Any]]] = None,
+    annotations: list[dict[str, Any]] = [],
+    highlight_zones: list[dict[str, Any]] = [],
 ) -> dict[str, Any]:
     """Apply visual theme to a chart figure from create_chart().
 
@@ -576,7 +574,7 @@ async def add_chart_threshold_line(
 @mcp.tool()
 async def create_data_table(
     data: list[dict[str, Any]],
-    columns: Optional[list[str]] = None,
+    columns: list[str] = [],
     title: str = "",
     caption: str = "",
     highlight_column: Optional[str] = None,
