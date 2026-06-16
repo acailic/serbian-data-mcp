@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Estate Prices — Serbian Data MCP</title>
+    <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #0f1117; --bg-card: #1a1d28; --bg-card2: #222639;
+            --text: #e8e8ed; --text-dim: #8b8d97; --text-muted: #555;
+            --accent: #c62828; --accent2: #1565c0; --accent3: #ffab00; --accent4: #2a9d8f;
+            --border: rgba(255,255,255,0.07); --radius: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.65; min-height: 100vh;
+            background-image: radial-gradient(ellipse at 15% 0%, rgba(21,101,192,0.06) 0%, transparent 50%),
+                              radial-gradient(ellipse at 85% 100%, rgba(198,40,40,0.04) 0%, transparent 50%);
+        }
+        .wrap { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
+        .header {
+            text-align: center; margin-bottom: 48px;
+            padding-bottom: 32px; border-bottom: 1px solid var(--border);
+        }
+        .header h1 {
+            font-size: 2.2rem; font-weight: 800; margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--text), var(--accent3));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header .sub { color: var(--text-dim); font-size: 1rem; }
+        .badge {
+            display: inline-block; padding: 2px 10px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; background: var(--accent3); color: #0f1117;
+            margin-bottom: 12px;
+        }
+        .badge-blue { background: var(--accent2); color: white; }
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 28px; margin-bottom: 24px;
+        }
+        .card h2 {
+            font-size: 1.2rem; font-weight: 700; margin-bottom: 16px;
+            color: var(--text);
+        }
+        .stats {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px; margin: 20px 0;
+        }
+        .stat { text-align: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; }
+        .stat .num { font-size: 2rem; font-weight: 800; }
+        .stat .num.red { color: var(--accent); }
+        .stat .num.blue { color: var(--accent2); }
+        .stat .num.green { color: var(--accent4); }
+        .stat .num.gold { color: var(--accent3); }
+        .stat .lbl { color: var(--text-dim); font-size: 0.8rem; margin-top: 4px; }
+        .note { color: var(--text-muted); font-size: 0.78rem; margin-top: 8px; text-align: center; }
+        .nav {
+            text-align: center; margin-top: 40px; padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+        .nav a {
+            color: var(--accent3); text-decoration: none; font-weight: 600;
+        }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="header">
+        <div class="badge">Serbian Data MCP</div>
+        <h1>Real Estate Prices</h1>
+        <p class="sub">Real data from data.gov.rs · 3,443 datasets · 184 organizations</p>
+    </div>
+    
+    <div class="stats">
+        <div class="stat"><div class="num">14</div><div class="lbl">Property Price Datasets</div></div>
+        <div class="stat"><div class="num gold">32</div><div class="lbl">Price Records (National)</div></div>
+    </div>
+    <div class="card"><h2>📋 Available Datasets</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin-top:12px">
+            <tr><th style="color:var(--text-dim);text-align:left;padding:8px">Dataset</th><th style="color:var(--text-dim);text-align:left;padding:8px">Publisher</th><th style="color:var(--text-dim);text-align:left;padding:8px">Years</th></tr>
+            <tr><td>Списак непокретности Општине Рашка</td><td>Општина Рашка</td><td>—</td></tr><tr><td>Просечне цене непокретности на подручју општине Сјеница у 20</td><td>Општина Сјеница</td><td>2026</td></tr><tr><td>ПРОСЕЧНИХ ЦЕНА КВАДРАТНОГ МЕТРА НЕПОКРЕТНОСТИ ЗА УТВРЂИВАЊЕ </td><td>Општина Горњи Милановац</td><td>—</td></tr><tr><td>Просечна цена квадратног метра непокретности за утврђивање п</td><td>Општина Топола</td><td>2021</td></tr><tr><td>Просечна цена квадратног метра непокретности за утврђивање п</td><td>Град Ниш</td><td>—</td></tr><tr><td>Просечна цена квадратног метра непокретности за утврђивање п</td><td>Град Сомбор</td><td>—</td></tr><tr><td>Просечна цена квадратног метра непокретности за утврђивање п</td><td>Град Кикинда</td><td>2024</td></tr><tr><td>Просечна цена квадратног метра непокретности за утврђивање п</td><td>Град Кикинда</td><td>2023</td></tr><tr><td>Просечна цена квадратног метра непокретности за утврђивање п</td><td>Град Кикинда</td><td>2022</td></tr><tr><td>Просечна цена квадратног метра непокретности за утврђивање п</td><td>Град Кикинда</td><td>2019</td></tr><tr><td>Просечна цена квадратног метра непокретности за утврђивање п</td><td>Град Кикинда</td><td>2020</td></tr><tr><td>Просечна цена квадратног метра непокретности за утврђивање п</td><td>Град Кикинда</td><td>2021</td></tr>
+        </table>
+    </div>
+    <div class='card'><h2>💱 National Price Data Sample</h2><table style='width:100%;border-collapse:collapse;font-size:0.85rem;margin-top:12px'><tr><th>Godina</th><th>Zona</th><th>Vrsta nepokretnosti</th><th>Prosecna cena po m2 (RSD)</th></tr><tr><td>2026</td><td>I</td><td>Građevinsko zemljište</td><td>4638</td></tr><tr><td>2026</td><td>I</td><td>Poljoprivredno zemljište</td><td>43.2</td></tr><tr><td>2026</td><td>I</td><td>Šumsko zemljište</td><td>54.18</td></tr><tr><td>2026</td><td>I</td><td>Drugo zemljište</td><td>25.92</td></tr><tr><td>2026</td><td>I</td><td>Stanovi</td><td>75043.67</td></tr><tr><td>2026</td><td>I</td><td>Kuće za stanovanje</td><td>43200.08</td></tr><tr><td>2026</td><td>I</td><td>Poslovne zgrade i prostorije</td><td>64800.08</td></tr><tr><td>2026</td><td>I</td><td>Garaže i pomoćni objekti</td><td>50150</td></tr></table></div>
+    
+    <div class="nav">
+        <a href="index.html">← Back to Demos</a>
+    </div>
+</div>
+</body>
+</html>

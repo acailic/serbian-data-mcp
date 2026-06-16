@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serbian Open Data — What's Possible</title>
+    <style>
+:root {
+    --bg: #0f1117;
+    --bg-card: #1a1d28;
+    --text: #e8e8ed;
+    --text-dim: #8b8d97;
+    --accent: #e63946;
+    --accent2: #1d8cf8;
+    --accent3: #f4a261;
+    --accent4: #2a9d8f;
+    --border: rgba(255,255,255,0.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.7;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+h1 {
+    font-size: 2.4rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #e63946, #f4a261);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.subtitle { text-align: center; color: var(--text-dim); margin-bottom: 48px; font-size: 1.1rem; }
+.section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+}
+.section h2 {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.badge-high { background: #e63946; color: white; }
+.badge-med { background: #f4a261; color: #0f1117; }
+.section .desc { color: var(--text-dim); margin-bottom: 16px; font-size: 0.95rem; }
+.big-num {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--accent);
+}
+.big-num.blue { color: var(--accent2); }
+.big-num.green { color: var(--accent4); }
+.big-num.gold { color: var(--accent3); }
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+.stat-box {
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+}
+.stat-box .label { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 4px; }
+.findings { margin-top: 16px; }
+.findings h3 { font-size: 1rem; margin-bottom: 8px; color: var(--accent3); }
+.findings ul { padding-left: 20px; color: var(--text-dim); }
+.findings li { margin-bottom: 6px; }
+.findings strong { color: var(--text); }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.85rem;
+}
+th, td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+th { color: var(--text-dim); font-weight: 600; }
+td { color: var(--text); }
+.negative { color: #e63946; }
+.positive { color: #2a9d8f; }
+.tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    background: rgba(29,140,248,0.15);
+    color: var(--accent2);
+    margin: 2px;
+}
+.footer { text-align: center; color: var(--text-dim); margin-top: 48px; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🇷🇸 Serbian Open Data: What's Possible</h1>
+    <p class="subtitle">
+        Investigation of data.gov.rs — 3,443 datasets from 184 organizations<br>
+        Real data, real analysis, real potential
+    </p>
+
+    <div class="section">
+        <h2>📊 Portal Overview</h2>
+        <p class="desc">National open data portal data.gov.rs — scope and composition</p>
+        <div class="stats">
+            <div class="stat-box">
+                <div class="big-num">700</div>
+                <div class="label">Total Datasets</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num blue">184</div>
+                <div class="label">Organizations</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num green">630</div>
+                <div class="label">Government Datasets</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num gold">70</div>
+                <div class="label">Non-Government</div>
+            </div>
+        </div>
+        <div class="findings">
+            <h3>Key Findings</h3>
+            <ul>
+                <li>Portal is dominated by <strong>municipal budget uploads</strong> — one municipality (Рашка) has 245 datasets alone</li>
+                <li>Many datasets are from <strong>private businesses</strong> uploading price lists (noise data)</li>
+                <li>The API search only works with <strong>Cyrillic Serbian</strong> — English queries return 0 results</li>
+                <li>The <strong>Statistical Office (РЗС)</strong> has the highest-quality structured data (JSON/CSV, 34K+ rows)</li>
+                <li><strong>15+ years of daily air quality data</strong> from 40+ stations is a standout dataset</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2><span class="badge badge-high">HIGH</span> Census — Households by Municipality</h2>
+        <p class="desc">Popis 2022 vs Popis 2011: 2.5M+ households across 202 municipalities</p>
+        <div class="stats">
+            <div class="stat-box">
+                <div class="big-num">2,589,344</div>
+                <div class="label">Households 2022</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num blue">4.1%</div>
+                <div class="label">Change Since 2011</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num gold">202</div>
+                <div class="label">Municipalities Compared</div>
+            </div>
+        </div>
+        <div class="findings">
+            <h3>What's Possible</h3>
+            <ul>
+                <li><strong>Municipality-level comparison</strong> of household growth/decline over 11 years</li>
+                <li><strong>Choropleth map</strong> of Serbia showing household change by district (25 okruga)</li>
+                <li><strong>Household structure analysis</strong> — 1-person vs multi-person households</li>
+                <li><strong>Slope chart</strong> ranking municipalities by population change</li>
+                <li>Urban vs rural settlement breakdown available</li>
+            </ul>
+            <h3>Biggest Decline</h3>
+            <table><tr><th>Municipality</th><th>2011</th><th>2022</th><th>Change</th></tr><tr><td>Црна Трава</td><td>794</td><td>565</td><td class="negative">-28.8%</td></tr><tr><td>Гаџин Хан</td><td>3,637</td><td>2,768</td><td class="negative">-23.9%</td></tr><tr><td>Сечањ</td><td>5,451</td><td>4,391</td><td class="negative">-19.4%</td></tr><tr><td>Сврљиг</td><td>5,458</td><td>4,458</td><td class="negative">-18.3%</td></tr><tr><td>Чока</td><td>4,663</td><td>3,814</td><td class="negative">-18.2%</td></tr></table></div>
+    </div>
+    <div class="section">
+        <h2><span class="badge badge-high">HIGH</span> Employment — Registered Employment Trends</h2>
+        <p class="desc">Monthly and annual registered employment since 2015 — 124 data points</p>
+        <div class="stats">
+            <div class="stat-box">
+                <div class="big-num">2,364,301</div>
+                <div class="label">Employed (2025)</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num green">+18.8%</div>
+                <div class="label">Growth Since 2015</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num gold">124</div>
+                <div class="label">Monthly Data Points</div>
+            </div>
+        </div>
+        <div class="findings">
+            <h3>What's Possible</h3>
+            <ul>
+                <li><strong>Time series line chart</strong> of employment growth 2015-2024 (10-year trend)</li>
+                <li><strong>Seasonal pattern analysis</strong> — monthly data reveals hiring cycles</li>
+                <li><strong>Employment type breakdown</strong> — legal entities vs entrepreneurs vs farmers</li>
+                <li><strong>Forecasting</strong> — project employment to 2030 with linear regression</li>
+                <li><strong>Municipality-level</strong> employment data available for cross-analysis</li>
+            </ul>
+            <h3>Yearly Trend</h3>
+            <table><tr><th>Year</th><th>Total Employed</th><th>YoY Change</th></tr><tr><td>2015</td><td>1,989,617</td><td></td></tr><tr><td>2016</td><td>2,009,785</td><td><span class="positive">+1.0%</span></td></tr><tr><td>2017</td><td>2,062,588</td><td><span class="positive">+2.6%</span></td></tr><tr><td>2018</td><td>2,131,079</td><td><span class="positive">+3.3%</span></td></tr><tr><td>2019</td><td>2,173,135</td><td><span class="positive">+2.0%</span></td></tr><tr><td>2020</td><td>2,215,475</td><td><span class="positive">+1.9%</span></td></tr><tr><td>2021</td><td>2,273,591</td><td><span class="positive">+2.6%</span></td></tr><tr><td>2022</td><td>2,310,035</td><td><span class="positive">+1.6%</span></td></tr><tr><td>2023</td><td>2,360,588</td><td><span class="positive">+2.2%</span></td></tr><tr><td>2024</td><td>2,368,948</td><td><span class="positive">+0.4%</span></td></tr><tr><td>2025</td><td>2,364,301</td><td><span class="negative">-0.2%</span></td></tr></table></div>
+    </div>
+    <div class="section">
+        <h2><span class="badge badge-high">HIGH</span> Air Quality — Daily PM₁₀ from 39 Stations</h2>
+        <p class="desc">
+            Verified daily PM₁₀ data, 13,970 measurements, 2024 annual analysis<br>
+            Years available: 2011-2024 (14 years!) — EU limit: 40 µg/m³ annual mean
+        </p>
+        <div class="stats">
+            <div class="stat-box">
+                <div class="big-num">39</div>
+                <div class="label">Monitoring Stations</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num" style="color: #e63946">0</div>
+                <div class="label">Exceed EU Limit</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num green">39</div>
+                <div class="label">Below EU Limit</div>
+            </div>
+        </div>
+        <div class="findings">
+            <h3>What's Possible</h3>
+            <ul>
+                <li><strong>14-year time series</strong> of air quality — unmatched temporal depth</li>
+                <li><strong>Station-level heatmap</strong> showing daily PM₁₀ across all 40+ stations</li>
+                <li><strong>Seasonal analysis</strong> — winter heating vs summer pollution patterns</li>
+                <li><strong>City ranking</strong> — which cities breathe the worst air</li>
+                <li><strong>Before/after comparison</strong> — policy intervention analysis</li>
+                <li><strong>Choropleth map</strong> of Serbia colored by air quality</li>
+            </ul>
+            <h3>Worst Air Quality (2024 Annual Mean PM₁₀)</h3>
+            <table><tr><th>Station</th><th>Avg PM₁₀ (µg/m³)</th><th>vs EU Limit</th></tr><tr><td>Smederevo Centar</td><td>17.7</td><td class="negative">44% of limit</td></tr><tr><td>Zaječar</td><td>17.1</td><td class="negative">43% of limit</td></tr><tr><td>Obrenovac Centar</td><td>16.6</td><td class="negative">42% of limit</td></tr><tr><td>Loznica</td><td>15.1</td><td class="negative">38% of limit</td></tr><tr><td>Bor Gradski park</td><td>13.9</td><td class="negative">35% of limit</td></tr></table>
+            <h3>Cleanest Air</h3>
+            <table><tr><th>Station</th><th>Avg PM₁₀ (µg/m³)</th></tr><tr><td>Kopaonik</td><td class="positive">5.9</td></tr><tr><td>Niš IZJZ Niš</td><td class="positive">6.8</td></tr><tr><td>Popovac</td><td class="positive">7.1</td></tr><tr><td>Kraljevo</td><td class="positive">7.4</td></tr><tr><td>Kosjerić</td><td class="positive">8.0</td></tr></table></div>
+    </div>
+    <div class="section">
+        <h2><span class="badge badge-high">HIGH</span> Municipal Budgets — 40 Budget Datasets</h2>
+        <p class="desc">
+            Budget execution data from 19 municipalities.
+            Multi-year data in XLSX/CSV format.
+        </p>
+        <div class="stats">
+            <div class="stat-box">
+                <div class="big-num">40</div>
+                <div class="label">Budget Datasets</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num blue">19</div>
+                <div class="label">Municipalities</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num gold">XLSX</div>
+                <div class="label">Primary Format</div>
+            </div>
+        </div>
+        <div class="findings">
+            <h3>What's Possible</h3>
+            <ul>
+                <li><strong>Budget comparison</strong> across municipalities — who spends most per capita</li>
+                <li><strong>Revenue vs expenditure</strong> analysis — balanced vs deficit municipalities</li>
+                <li><strong>Multi-year trends</strong> — how budgets evolved 2019-2026</li>
+                <li><strong>Budget structure</strong> — revenue sources, spending categories (using Sankey diagrams)</li>
+                <li><strong>Format challenge</strong>: XLSX files have varied structures — needs per-municipality parsing</li>
+            </ul>
+            <h3>Top Publishers</h3>
+            <table><tr><th>Municipality</th><th>Datasets</th></tr><tr><td>Општина Жабари</td><td>4</td></tr><tr><td>Град Пирот</td><td>4</td></tr><tr><td>Општина Прибој</td><td>2</td></tr><tr><td>Град Врање</td><td>2</td></tr><tr><td>Град Шабац</td><td>2</td></tr><tr><td>Општина Алексинац</td><td>2</td></tr><tr><td>Општина Лучани</td><td>2</td></tr><tr><td>Општина Параћин</td><td>2</td></tr></table></div>
+    </div>
+    <div class="section">
+        <h2><span class="badge badge-high">HIGH</span> Real Estate — Property Prices</h2>
+        <p class="desc">14 datasets with average square meter prices for property tax assessment</p>
+        <div class="findings">
+            <h3>What's Available</h3>
+            <ul><li><strong>Списак непокретности Општине Рашка</strong> — Општина Рашка (xlsx)</li><li><strong>ПРОСЕЧНИХ ЦЕНА КВАДРАТНОГ МЕТРА НЕПОКРЕТНОСТИ ЗА УТВРЂИВАЊЕ ПОРЕЗА НА ИМОВИНУ</strong> — Општина Горњи Милановац (xlsx)</li><li><strong>Просечне цене непокретности на подручју општине Сјеница у 2026. години</strong> — Општина Сјеница (xlsx)</li><li><strong>Просечна цена квадратног метра непокретности за утврђивање пореза на имовину за 2021. годину</strong> — Општина Топола (xlsx)</li><li><strong>Просечна цена квадратног метра непокретности за утврђивање пореза на имовину на територији Града Ниша</strong> — Град Ниш (xlsx)</li><li><strong>Просечна цена квадратног метра непокретности за утврђивање пореза на имовину на територији града Сомбора</strong> — Град Сомбор (xlsx)</li><li><strong>Просечна цена квадратног метра непокретности за утврђивање пореза на имовину на територији Града Кикинда за 2022 годину</strong> — Град Кикинда (xlsx)</li><li><strong>Просечна цена квадратног метра непокретности за утврђивање пореза на имовину на територији Града Кикинда за 2021 годину</strong> — Град Кикинда (xlsx)</li><li><strong>Просечна цена квадратног метра непокретности за утврђивање пореза на имовину на територији Града Кикинда за 2019 годину</strong> — Град Кикинда (xlsx)</li><li><strong>Просечна цена квадратног метра непокретности за утврђивање пореза на имовину на територији Града Кикинда за 2020 годину</strong> — Град Кикинда (xlsx)</li></ul>
+            <h3>What's Possible</h3>
+            <ul>
+                <li><strong>Property price comparison</strong> across municipalities</li>
+                <li><strong>Price trend analysis</strong> — yearly price changes per municipality</li>
+                <li><strong>Choropleth map</strong> of Serbia colored by property prices</li>
+                <li>Data format is <strong>tax assessment prices</strong> (not market prices) — conservative baseline</li>
+            </ul><h3>Data Structure (National)</h3>
+            <p style="color:var(--text-dim);font-size:0.9rem">69 rows, columns: Година, Број одлуке, Зона, Тип, Износ у динарима по м2</p></div>
+    </div>
+    <div class="section">
+        <h2><span class="badge badge-med">MEDIUM</span> Public Registries — Address, Company, Energy</h2>
+        <p class="desc">Government registries available as APIs and bulk downloads</p>
+        <div class="findings">
+            <h3>Available Registries</h3><li>✅ <strong>Адресни регистар</strong> — Републички геодетски завод (csv, gpkg, csv, gpkg)</li><li>✅ <strong>АПИ за Регистар привредних друштава</strong> — Агенција за привредне регистре (rdf, json)</li><li>✅ <strong>АПИ за Регистар задужбина</strong> — Агенција за привредне регистре (rdf, json)</li><li>✅ <strong>Регистар издатих енергетских дозвола</strong> — Министарство рударства и енергетике (json)</li><li>✅ <strong>Регистар повлашћених произвођача</strong> — Министарство рударства и енергетике (xlsx, xlsx, xlsx, csv)</li><p style="color:var(--accent)">Company API error: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)</p>
+            <h3>What's Possible</h3>
+            <ul>
+                <li><strong>Address registry with GeoPKG</strong> — geospatial data of all Serbian addresses</li>
+                <li><strong>Company registry API</strong> — real-time access to business registration data</li>
+                <li><strong>Energy permit tracking</strong> — who's generating renewable energy</li>
+            </ul>
+        </div>
+    </div>
+    <div class="section">
+        <h2><span class="badge badge-med">MEDIUM</span> Cross-Dataset Analysis — Employment × Households</h2>
+        <p class="desc">
+            Matching 203 municipalities across census (2022) and employment (2025) data.
+            Employment per household ratio reveals economic activity patterns.
+        </p>
+        <div class="stats">
+            <div class="stat-box">
+                <div class="big-num">0.78</div>
+                <div class="label">Avg Employment per Household</div>
+            </div>
+            <div class="stat-box">
+                <div class="big-num blue">203</div>
+                <div class="label">Municipalities Matched</div>
+            </div>
+        </div>
+        <div class="findings">
+            <h3>Top Employment-per-Household Municipalities</h3>
+            <table><tr><th>Municipality</th><th>Employment</th><th>Households</th><th>Emp/HH</th></tr><tr><td>Савски венац</td><td>115,728</td><td>17,109</td><td>6.76</td></tr><tr><td>Стари град</td><td>75,558</td><td>22,189</td><td>3.41</td></tr><tr><td>Нови Београд</td><td>188,411</td><td>88,848</td><td>2.12</td></tr><tr><td>Врачар</td><td>49,429</td><td>26,959</td><td>1.83</td></tr><tr><td>Пећинци</td><td>10,464</td><td>6,371</td><td>1.64</td></tr>
+            </table>
+            <h3>What's Possible</h3>
+            <ul>
+                <li><strong>Economic activity mapping</strong> — which municipalities are employment hubs</li>
+                <li><strong>Choropleth map</strong> of employment density per household</li>
+                <li><strong>Radar chart</strong> comparing top municipalities across multiple indicators</li>
+                <li><strong>Correlation analysis</strong> — does household size predict employment?</li>
+            </ul>
+        </div>
+    </div>
+    <div class="section">
+        <h2>🎯 Summary & Recommendations</h2>
+        <div class="findings">
+            <h3>Ready for Production (Start Here)</h3>
+            <ul>
+                <li><strong>Air Quality Dashboard</strong> — 14 years, 40+ stations, daily data. Highest ROI dataset on the portal. Build animated time-series with city toggle.</li>
+                <li><strong>Employment Trends Dashboard</strong> — 10 years of monthly data. Line charts with forecasting to 2030. Seasonal decomposition.</li>
+                <li><strong>Census Comparison Map</strong> — Choropleth of household change 2011→2022. Slope chart for ranking changes. Infographic with demographic insights.</li>
+            </ul>
+            <h3>Worth Exploring (Moderate Effort)</h3>
+            <ul>
+                <li><strong>Municipal Budget Analysis</strong> — Requires per-municipality XLSX parsing (varied structures). Sankey diagrams of budget flows. Comparison across municipalities.</li>
+                <li><strong>Real Estate Price Map</strong> — Tax assessment prices as baseline. Choropleth by municipality. Year-over-year trend analysis.</li>
+                <li><strong>Cross-Dataset Insights</strong> — Employment × demographics, air quality × budgets, registries × economic data.</li>
+            </ul>
+            <h3>Technical Improvements Needed</h3>
+            <ul>
+                <li><strong>Fix resource ID lookup</strong> — The `_find_resource` method only scans 150 recent datasets. Must search by parent dataset ID first.</li>
+                <li><strong>UTF-8 BOM handling</strong> — RZS JSON endpoint returns BOM, parser must use `utf-8-sig`.</li>
+                <li><strong>Search language</strong> — Portal API only supports Cyrillic. The bilingual intelligent search is essential for usability.</li>
+                <li><strong>Rate limiting</strong> — With 3,443 datasets, bulk operations need pagination and caching.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        Generated by Serbian Data MCP investigation · data.gov.rs · {(summarize := __import__('datetime').datetime.now().strftime('%B %d, %Y'))}
+    </div>
+</div>
+</body>
+</html>
