@@ -110,8 +110,11 @@ def to_gemini_declarations(tool_schemas: list[dict]) -> list[types.FunctionDecla
         for pname, pinfo in params.get("properties", {}).items():
             ptype = pinfo.get("type", "string")
             schema_kwargs: dict = {"type": ptype, "description": pinfo.get("description", "")}
-            if ptype == "array" and "items" in pinfo:
-                item_type = pinfo["items"].get("type", "string") if isinstance(pinfo["items"], dict) else "string"
+            if ptype == "array":
+                if "items" in pinfo and isinstance(pinfo["items"], dict):
+                    item_type = pinfo["items"].get("type", "string")
+                else:
+                    item_type = "string"
                 schema_kwargs["items"] = types.Schema(type=item_type)
             properties[pname] = types.Schema(**schema_kwargs)
 
