@@ -1524,6 +1524,55 @@ async def create_dumbbell_chart(
     return {"filepath": str(filepath), "title": title, "rows": len(data)}
 
 
+@mcp.tool()
+async def create_lollipop_chart(
+    data: list[dict[str, Any]],
+    label_column: str,
+    value_column: str,
+    title: str = "",
+    theme: str = "dark",
+    highlight_column: Optional[str] = None,
+    highlight_value: Optional[str] = None,
+    filename: str = "lollipop_chart",
+) -> dict[str, Any]:
+    """Create a lollipop chart — dots on stems for clean ranking visualization.
+
+    Like a bar chart but with dots instead of bars, giving a cleaner visual.
+    Can highlight a specific category with a contrasting color.
+
+    Ideal for: district population ranking, budget allocation by ministry,
+    top-N lists where you want to spotlight one entity.
+
+    Args:
+        data: List of row dicts
+        label_column: Category labels (districts, cities, etc.)
+        value_column: Numeric values to rank by
+        title: Chart title
+        theme: Visual theme
+        highlight_column: Column to match for highlighting
+        highlight_value: Value to highlight (e.g., 'Grad Beograd')
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'title', 'rows'
+    """
+    fig = lollipop_chart(
+        data,
+        label_column=label_column,
+        value_column=value_column,
+        title=title,
+        theme=theme,
+        highlight_column=highlight_column,
+        highlight_value=highlight_value,
+    )
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(export_html(fig), encoding="utf-8")
+
+    return {"filepath": str(filepath), "title": title, "rows": len(data)}
+
+
 # =========================================================================
 # Datawrapper Cloud Export
 # =========================================================================
@@ -1739,7 +1788,7 @@ async def create_scrollytelling_story(
 
 
 # =========================================================================
-# Rich Tooltip Enhancement
+# Chart Enhancement Tools
 # =========================================================================
 
 
@@ -1778,6 +1827,144 @@ async def enhance_chart_tooltips(
         show_mean=show_mean,
         show_rank=show_rank,
     )
+    return fig_to_dict(fig)
+
+
+@mcp.tool()
+async def add_chart_annotation(
+    figure: dict[str, Any],
+    text: str,
+    x: float | str = 0,
+    y: float | str = 0,
+    arrow_color: str = "#ffab00",
+    font_size: int = 14,
+    show_arrow: bool = True,
+) -> dict[str, Any]:
+    """Add a callout annotation to a chart for data storytelling.
+
+    Places a text box with optional arrow pointing to a specific data point.
+    Use for highlighting key insights like "Peak year" or "COVID impact".
+
+    Workflow:
+        1. create_visualization() → get figure dict
+        2. add_chart_annotation(figure, text='Peak: 7.2M', x=2022, y=7200000)
+        3. export_visualization(figure) → save
+
+    Args:
+        figure: Plotly figure dict (from create_visualization)
+        text: Annotation text (the insight/callout)
+        x: X position (data coordinate, e.g., year 2020)
+        y: Y position (data coordinate, e.g., value 5000000)
+        arrow_color: Color of annotation arrow (default: gold)
+        font_size: Text size
+        show_arrow: Whether to show arrow pointing to data
+
+    Returns: Enhanced figure dict
+    """
+    from plotly.graph_objects import Figure
+
+    fig = Figure(figure.get("data", []), figure.get("layout", {}))
+    fig = add_annotation(fig, text=text, x=x, y=y, arrow_color=arrow_color, font_size=font_size, show_arrow=show_arrow)
+    return fig_to_dict(fig)
+
+
+@mcp.tool()
+async def add_chart_highlight_zone(
+    figure: dict[str, Any],
+    x_start: float | str,
+    x_end: float | str,
+    fill_color: str = "rgba(198, 40, 40, 0.1)",
+    annotation_text: str = "",
+) -> dict[str, Any]:
+    """Add a shaded vertical highlight zone to a chart.
+
+    Highlights a time period or range on the x-axis with a colored band.
+    Ideal for marking crisis periods, pandemic years, policy changes.
+
+    Example:
+        add_chart_highlight_zone(figure, x_start=2020, x_end=2022, annotation_text='COVID period')
+
+    Args:
+        figure: Plotly figure dict (from create_visualization)
+        x_start: Start of zone (e.g., year 2020)
+        x_end: End of zone (e.g., year 2022)
+        fill_color: RGBA fill color (default: light red)
+        annotation_text: Optional label above the zone
+
+    Returns: Enhanced figure dict
+    """
+    from plotly.graph_objects import Figure
+
+    fig = Figure(figure.get("data", []), figure.get("layout", {}))
+    fig = add_highlight_zone(fig, x_start=x_start, x_end=x_end, fill_color=fill_color, annotation_text=annotation_text)
+    return fig_to_dict(fig)
+
+
+@mcp.tool()
+async def add_chart_callouts(
+    figure: dict[str, Any],
+    points: list[dict[str, Any]],
+    prefix: str = "",
+    suffix: str = "",
+) -> dict[str, Any]:
+    """Add annotation callout boxes to highlight specific data points on a chart.
+
+    Unlike add_chart_annotation (single point), this adds multiple callout boxes
+    from a list of positions. Each box has an arrow pointing to the data.
+
+    Example:
+        points = [
+            {"x": 2020, "y": 7200000, "text": "7.2M", "color": "#4caf50"},
+            {"x": 2015, "y": 7100000, "text": "Previous peak", "ax": 0, "ay": -40},
+        ]
+        add_chart_callouts(figure, points)
+
+    Args:
+        figure: Plotly figure dict (from create_visualization)
+        points: List of dicts with keys: x, y, text, color (optional), ax (optional), ay (optional)
+        prefix: Text before each callout
+        suffix: Text after each callout
+
+    Returns: Enhanced figure dict
+    """
+    from plotly.graph_objects import Figure
+
+    fig = Figure(figure.get("data", []), figure.get("layout", {}))
+    fig = add_annotation_callouts(fig, points=points, prefix=prefix, suffix=suffix)
+    return fig_to_dict(fig)
+
+
+@mcp.tool()
+async def add_chart_threshold_line(
+    figure: dict[str, Any],
+    threshold: float,
+    label: str = "",
+    direction: str = "above",
+    color: str = "#ffab00",
+) -> dict[str, Any]:
+    """Add a horizontal threshold/reference line with label to a chart.
+
+    Draws a dashed horizontal line at a given Y value. Use for:
+    - EU average benchmark line
+    - Target/goal line
+    - Critical threshold (e.g., PM10 > 50 µg/m³)
+
+    Example:
+        add_chart_threshold_line(figure, threshold=50000, label='EU prosečno', color='#4caf50')
+
+    Args:
+        figure: Plotly figure dict (from create_visualization)
+        threshold: Y-value of the threshold line
+        label: Label text (empty for no label)
+        direction: 'above' or 'below' — label position relative to line
+        color: Line and label color (default: gold)
+
+    Returns: Enhanced figure dict
+    """
+    from plotly.graph_objects import Figure
+
+    fig = Figure(figure.get("data", []), figure.get("layout", {}))
+    fig = add_comparison_markers(fig, threshold=threshold, label=label, direction=direction, color=color)
     return fig_to_dict(fig)
 
 
@@ -2178,6 +2365,100 @@ async def compare_cross_dataset(
 
 
 # =========================================================================
+# Data Table Tool
+# =========================================================================
+
+
+@mcp.tool()
+async def create_data_table(
+    data: list[dict[str, Any]],
+    columns: Optional[list[str]] = None,
+    title: str = "",
+    caption: str = "",
+    highlight_column: Optional[str] = None,
+    highlight_max: bool = True,
+    max_rows: int = 50,
+    format_columns: Optional[dict[str, str]] = None,
+    filename: str = "data_table",
+) -> dict[str, Any]:
+    """Create a styled, responsive HTML data table.
+
+    Generates a professional data table with conditional formatting,
+    ranking indicators, and value formatting. Supports highlighting
+    the maximum or minimum value row.
+
+    Ideal for: district statistics tables, budget breakdowns, top-N listings,
+    data summaries alongside charts.
+
+    Args:
+        data: List of row dicts
+        columns: Columns to include (auto-detected if None)
+        title: Table title
+        caption: Table caption text
+        highlight_column: Column to highlight max/min row
+        highlight_max: True to highlight max, False for min
+        max_rows: Maximum rows to display
+        format_columns: Dict of column→format ('number', 'pct', 'currency')
+        filename: Output filename
+
+    Returns: Dict with 'filepath', 'title', 'rows', 'columns'
+    """
+    if not data:
+        return {"error": True, "message": "No data to create table"}
+
+    table_html = data_table_html(
+        data,
+        columns=columns,
+        highlight_column=highlight_column,
+        highlight_max=highlight_max,
+        max_rows=max_rows,
+        format_columns=format_columns,
+        title=title,
+        caption=caption,
+    )
+    table_css = data_table_css()
+
+    full_html = f"""<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{title or 'Data Table'}</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            background: #0d1117;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #e0e0e0;
+            padding: 40px 20px;
+        }}
+        .container {{ max-width: 960px; margin: 0 auto; }}
+        {table_css}
+    </style>
+</head>
+<body>
+    <div class="container">
+        {table_html}
+    </div>
+</body>
+</html>"""
+
+    output_dir = config.export_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = output_dir / f"{filename}.html"
+    filepath.write_text(full_html, encoding="utf-8")
+
+    cols = columns or list(data[0].keys())
+    return {
+        "filepath": str(filepath),
+        "title": title,
+        "rows": min(len(data), max_rows),
+        "total_rows": len(data),
+        "columns": cols,
+    }
+
+
+# =========================================================================
 # Embed & Share Tools
 # =========================================================================
 
@@ -2213,6 +2494,45 @@ async def generate_embed(
         "height": result["height"],
         "note": "Paste the iframe_code into your HTML to embed the chart.",
     }
+
+
+@mcp.tool()
+async def export_chart_pdf(
+    figure: dict[str, Any],
+    filename: str = "chart",
+    width: int = 1200,
+    height: int = 700,
+) -> dict[str, Any]:
+    """Export a chart figure to PDF file.
+
+    Renders a Plotly figure to a high-quality PDF. Requires kaleido package.
+    Install with: pip install kaleido
+
+    Workflow:
+        1. create_visualization() → get figure dict
+        2. export_chart_pdf(figure, filename='populacija')
+
+    Args:
+        figure: Plotly figure dict (from create_visualization)
+        filename: Output filename (without .pdf extension)
+        width: Page width in pixels (default: 1200)
+        height: Page height in pixels (default: 700)
+
+    Returns: Dict with 'filepath' or 'error' if kaleido not installed
+    """
+    from plotly.graph_objects import Figure
+
+    fig = Figure(figure.get("data", []), figure.get("layout", {}))
+
+    try:
+        filepath = await export_pdf(fig, filename=filename, width=width, height=height)
+        return {"filepath": filepath, "format": "pdf", "width": width, "height": height}
+    except RuntimeError as e:
+        return {
+            "error": True,
+            "message": str(e),
+            "note": "Install kaleido with: pip install kaleido",
+        }
 
 
 # =========================================================================
@@ -2258,6 +2578,7 @@ def server_info() -> str:
                 "animated_bars",
                 "animated_timeline",
                 "animated_comparison",
+                "data_table",
             ],
             "export_formats": ["html", "json", "png", "pdf", "embed"],
             "export_targets": ["local_html", "datawrapper_cloud"],
@@ -2281,6 +2602,10 @@ def server_info() -> str:
                 "Multi-panel dashboard builder",
                 "Chart theming (dark/light/infographic)",
                 "Annotations and highlight zones for storytelling",
+                "Threshold/reference lines for benchmarking",
+                "Multiple callout annotations for key data points",
+                "Styled data tables with conditional formatting",
+                "PDF export for reports and printing",
             ],
         },
         indent=2,

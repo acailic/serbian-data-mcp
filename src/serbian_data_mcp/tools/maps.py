@@ -17,7 +17,6 @@ from ..viz.maps import SerbiaMapBuilder
 from ..viz.exporters import export_html
 from ..viz.themes import apply_theme
 from ..viz.map_advanced import AdvancedMapBuilder
-from ..viz.special_charts import arrow_chart, dumbbell_chart, lollipop_chart
 from . import _helpers as h
 
 _map_builder: Optional[SerbiaMapBuilder] = None

@@ -16,7 +16,7 @@ from fastmcp.exceptions import ToolError
 
 from .. import mcp
 from ..config import config
-from ..viz.exporters import export_html, export_json
+from ..viz.exporters import export_html, export_json, export_pdf, generate_embed_code
 
 
 @mcp.tool()
@@ -108,3 +108,67 @@ async def export_data(
         "columns": list(df.columns),
         "filename": f"{filename}.{format}",
     }
+
+
+@mcp.tool()
+async def export_chart_pdf(
+    figure: dict[str, Any],
+    filename: str = "chart",
+    width: int = 1200,
+    height: int = 700,
+) -> dict[str, Any]:
+    """Export a chart to PDF. Requires kaleido (pip install kaleido).
+
+    Returns: {filepath, format, width, height} or {error} if kaleido missing
+
+    Args:
+        figure: Plotly figure dict from create_chart()
+        filename: Output name (without .pdf)
+        width: Page width in pixels
+        height: Page height in pixels
+    """
+    from plotly.graph_objects import Figure
+
+    try:
+        fig = Figure(figure.get("data", []), figure.get("layout", {}))
+        filepath = await export_pdf(fig, filename=filename, width=width, height=height)
+        return {"filepath": filepath, "format": "pdf", "width": width, "height": height}
+    except RuntimeError as e:
+        raise ToolError(f"PDF export failed: {e}. Install kaleido: pip install kaleido") from e
+    except Exception as e:
+        raise ToolError(f"PDF export failed: {e}") from e
+
+
+@mcp.tool()
+async def generate_embed(
+    figure: dict[str, Any],
+    width: int = 700,
+    height: int = 450,
+    title: str = "Chart",
+) -> dict[str, Any]:
+    """Generate iframe embed code for sharing a chart in websites/blogs.
+
+    Self-contained embed snippet pasteable into any website or CMS.
+    Renders via Plotly.js CDN.
+
+    Returns: {iframe_code, width, height, note}
+
+    Args:
+        figure: Plotly figure dict from create_chart()
+        width: Embed width in pixels
+        height: Embed height in pixels
+        title: Accessible title for the iframe
+    """
+    from plotly.graph_objects import Figure
+
+    try:
+        fig = Figure(figure.get("data", []), figure.get("layout", {}))
+        result = generate_embed_code(fig, width=width, height=height, title=title)
+        return {
+            "iframe_code": result["iframe_code"],
+            "width": result["width"],
+            "height": result["height"],
+            "note": "Paste the iframe_code into your HTML to embed the chart.",
+        }
+    except Exception as e:
+        raise ToolError(f"Embed generation failed: {e}") from e

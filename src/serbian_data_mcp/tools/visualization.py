@@ -25,6 +25,8 @@ from ..viz.themes import apply_theme, add_annotation, add_highlight_zone
 from ..viz.advanced_charts import AdvancedChartBuilder
 from ..viz.insights import extract_insights, generate_narrative, compute_derived_metrics
 from ..viz.infographics import create_infographic, create_dashboard
+from ..viz.tooltips import add_rich_tooltips, add_annotation_callouts, add_comparison_markers
+from ..viz.data_tables import data_table_html, data_table_css
 from . import _helpers as h
 
 
@@ -400,3 +402,262 @@ async def build_dashboard(
         return {"filepath": str(filepath), "panel_count": len(panels), "filename": f"{filename}.html"}
     except Exception as e:
         raise ToolError(f"Dashboard failed: {e}") from e
+
+
+@mcp.tool()
+async def enhance_chart_tooltips(
+    figure: dict[str, Any],
+    value_column: str = "value",
+    unit: str = "",
+    show_mean: bool = True,
+    show_rank: bool = True,
+) -> dict[str, Any]:
+    """Add rich contextual tooltips to any Plotly figure.
+
+    Enriches hover with formatted values, deviation from mean, and rank.
+    Without: 'Value: 7150000'. With: 'Value: 7.15M / Prosečno: 4.2M / Rank: #1'.
+
+    Returns: Enhanced figure dict
+
+    Args:
+        figure: Plotly figure dict from create_chart()
+        value_column: Name of the value axis
+        unit: Unit suffix (e.g., ' stanovnika', ' RSD')
+        show_mean: Show average and deviation
+        show_rank: Show rank position
+    """
+    from plotly.graph_objects import Figure
+
+    try:
+        fig = Figure(figure.get("data", []), figure.get("layout", {}))
+        fig = add_rich_tooltips(
+            fig,
+            value_column=value_column,
+            unit=unit,
+            show_mean=show_mean,
+            show_rank=show_rank,
+        )
+        return fig_to_dict(fig)
+    except Exception as e:
+        raise ToolError(f"Tooltip enhancement failed: {e}") from e
+
+
+@mcp.tool()
+async def add_chart_annotation(
+    figure: dict[str, Any],
+    text: str,
+    x: float | str = 0,
+    y: float | str = 0,
+    arrow_color: str = "#ffab00",
+    font_size: int = 14,
+    show_arrow: bool = True,
+) -> dict[str, Any]:
+    """Add a callout annotation to a chart for storytelling.
+
+    Text box with optional arrow pointing to a data point.
+
+    Workflow:
+        1. create_chart() → figure dict
+        2. add_chart_annotation(figure, text='Peak: 7.2M', x=2022, y=7200000)
+
+    Returns: Enhanced figure dict
+
+    Args:
+        figure: Plotly figure dict from create_chart()
+        text: Annotation text
+        x: X position (data coordinate)
+        y: Y position (data coordinate)
+        arrow_color: Arrow color (default: gold)
+        font_size: Text size
+        show_arrow: Show arrow pointing to data
+    """
+    from plotly.graph_objects import Figure
+
+    try:
+        fig = Figure(figure.get("data", []), figure.get("layout", {}))
+        fig = add_annotation(fig, text=text, x=x, y=y, arrow_color=arrow_color, font_size=font_size, show_arrow=show_arrow)
+        return fig_to_dict(fig)
+    except Exception as e:
+        raise ToolError(f"Annotation failed: {e}") from e
+
+
+@mcp.tool()
+async def add_chart_highlight_zone(
+    figure: dict[str, Any],
+    x_start: float | str,
+    x_end: float | str,
+    fill_color: str = "rgba(198, 40, 40, 0.1)",
+    annotation_text: str = "",
+) -> dict[str, Any]:
+    """Add a shaded vertical highlight zone to a chart.
+
+    Highlights a time period with a colored band.
+    Ideal for: COVID years, crisis periods, policy changes.
+
+    Returns: Enhanced figure dict
+
+    Args:
+        figure: Plotly figure dict from create_chart()
+        x_start: Start of zone
+        x_end: End of zone
+        fill_color: RGBA fill color
+        annotation_text: Optional label above the zone
+    """
+    from plotly.graph_objects import Figure
+
+    try:
+        fig = Figure(figure.get("data", []), figure.get("layout", {}))
+        fig = add_highlight_zone(fig, x_start=x_start, x_end=x_end, fill_color=fill_color, annotation_text=annotation_text)
+        return fig_to_dict(fig)
+    except Exception as e:
+        raise ToolError(f"Highlight zone failed: {e}") from e
+
+
+@mcp.tool()
+async def add_chart_callouts(
+    figure: dict[str, Any],
+    points: list[dict[str, Any]],
+    prefix: str = "",
+    suffix: str = "",
+) -> dict[str, Any]:
+    """Add multiple annotation callout boxes to highlight data points.
+
+    Each box has arrow pointing to data. Points: {x, y, text, color?, ax?, ay?}
+
+    Returns: Enhanced figure dict
+
+    Args:
+        figure: Plotly figure dict from create_chart()
+        points: List of {x, y, text, color?} dicts
+        prefix: Text before each callout
+        suffix: Text after each callout
+    """
+    from plotly.graph_objects import Figure
+
+    try:
+        fig = Figure(figure.get("data", []), figure.get("layout", {}))
+        fig = add_annotation_callouts(fig, points=points, prefix=prefix, suffix=suffix)
+        return fig_to_dict(fig)
+    except Exception as e:
+        raise ToolError(f"Callouts failed: {e}") from e
+
+
+@mcp.tool()
+async def add_chart_threshold_line(
+    figure: dict[str, Any],
+    threshold: float,
+    label: str = "",
+    direction: str = "above",
+    color: str = "#ffab00",
+) -> dict[str, Any]:
+    """Add a horizontal threshold/reference line with label.
+
+    Ideal for: EU average benchmark, target/goal line, critical threshold.
+
+    Returns: Enhanced figure dict
+
+    Args:
+        figure: Plotly figure dict from create_chart()
+        threshold: Y-value of the line
+        label: Label text
+        direction: 'above' or 'below'
+        color: Line color (default: gold)
+    """
+    from plotly.graph_objects import Figure
+
+    try:
+        fig = Figure(figure.get("data", []), figure.get("layout", {}))
+        fig = add_comparison_markers(fig, threshold=threshold, label=label, direction=direction, color=color)
+        return fig_to_dict(fig)
+    except Exception as e:
+        raise ToolError(f"Threshold line failed: {e}") from e
+
+
+@mcp.tool()
+async def create_data_table(
+    data: list[dict[str, Any]],
+    columns: Optional[list[str]] = None,
+    title: str = "",
+    caption: str = "",
+    highlight_column: Optional[str] = None,
+    highlight_max: bool = True,
+    max_rows: int = 50,
+    format_columns: Optional[dict[str, str]] = None,
+    filename: str = "data_table",
+) -> dict[str, Any]:
+    """Create a styled, responsive HTML data table with conditional formatting.
+
+    Professional table with ranking indicators and value formatting.
+    Highlights max or min value row.
+
+    Ideal for: district statistics, budget breakdowns, top-N listings.
+
+    Returns: {filepath, title, rows, total_rows, columns}
+
+    Args:
+        data: Row dicts
+        columns: Columns to include (auto-detected if None)
+        title: Table title
+        caption: Table caption text
+        highlight_column: Column to highlight max/min row
+        highlight_max: True=max, False=min
+        max_rows: Maximum rows to display
+        format_columns: {column: 'number'|'pct'|'currency'}
+        filename: Output filename
+    """
+    if not data:
+        raise ToolError("No data to create table")
+
+    try:
+        table_html = data_table_html(
+            data,
+            columns=columns,
+            highlight_column=highlight_column,
+            highlight_max=highlight_max,
+            max_rows=max_rows,
+            format_columns=format_columns,
+            title=title,
+            caption=caption,
+        )
+        table_css = data_table_css()
+
+        full_html = f"""<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{title or 'Data Table'}</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            background: #0d1117;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #e0e0e0;
+            padding: 40px 20px;
+        }}
+        .container {{ max-width: 960px; margin: 0 auto; }}
+        {table_css}
+    </style>
+</head>
+<body>
+    <div class="container">
+        {table_html}
+    </div>
+</body>
+</html>"""
+
+        output_dir = config.export_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
+        filepath = output_dir / f"{filename}.html"
+        filepath.write_text(full_html, encoding="utf-8")
+
+        cols = columns or list(data[0].keys())
+        return {
+            "filepath": str(filepath),
+            "title": title,
+            "rows": min(len(data), max_rows),
+            "total_rows": len(data),
+            "columns": cols,
+        }
+    except Exception as e:
+        raise ToolError(f"Data table failed: {e}") from e

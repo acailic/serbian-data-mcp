@@ -13,3 +13,5 @@ from . import maps  # noqa: F401
 from . import export  # noqa: F401
 from . import resources  # noqa: F401
 from . import prompts  # noqa: F401
+from . import novel_charts  # noqa: F401
+from . import animations  # noqa: F401

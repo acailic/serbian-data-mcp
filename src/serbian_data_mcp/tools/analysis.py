@@ -220,3 +220,48 @@ async def benchmark_data(
         )
     except Exception as e:
         raise ToolError(f"Benchmark failed: {e}") from e
+
+
+@mcp.tool()
+async def compare_cross_dataset(
+    data_a: list[dict[str, Any]],
+    data_b: list[dict[str, Any]],
+    value_column_a: str,
+    value_column_b: str,
+    entity_column_a: Optional[str] = None,
+    entity_column_b: Optional[str] = None,
+    label_a: str = "Dataset A",
+    label_b: str = "Dataset B",
+) -> dict[str, Any]:
+    """Extract insights by comparing two related datasets.
+
+    Finds correlations, divergences, and rank disagreements.
+    Ideal for: 'population vs air quality' analyses.
+
+    Returns: {summary_a, summary_b, correlation, insights}
+
+    Args:
+        data_a: First dataset
+        data_b: Second dataset
+        value_column_a: Numeric column in first dataset
+        value_column_b: Numeric column in second dataset
+        entity_column_a: Entity column in first dataset
+        entity_column_b: Entity column in second dataset
+        label_a: Label for first dataset
+        label_b: Label for second dataset
+    """
+    from ..viz.forecast import cross_dataset_insights
+
+    try:
+        return cross_dataset_insights(
+            data_a,
+            data_b,
+            value_column_a=value_column_a,
+            value_column_b=value_column_b,
+            entity_column_a=entity_column_a,
+            entity_column_b=entity_column_b,
+            label_a=label_a,
+            label_b=label_b,
+        )
+    except Exception as e:
+        raise ToolError(f"Cross-dataset comparison failed: {e}") from e
