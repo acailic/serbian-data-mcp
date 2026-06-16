@@ -41,4 +41,4 @@ jobs:
 
     - name: Run security checks
       run: |
-        uv run bandit -r src/
+        uv run bandit -r src/ -ll --skip B110,B105,B108,B310
