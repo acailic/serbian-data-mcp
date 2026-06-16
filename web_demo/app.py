@@ -15,6 +15,7 @@ Deployment (Render.com):
 
 import asyncio
 import os
+import re
 import sys
 import traceback
 from pathlib import Path
@@ -74,7 +75,6 @@ async def get_mcp_tool_schemas() -> list[dict]:
         props = schema.get("properties", {})
         required = schema.get("required", [])
 
-        # Gemini doesn't like "anyOf" for optional fields — flatten to single type
         cleaned_props = {}
         for pname, pinfo in props.items():
             cleaned = dict(pinfo)
@@ -163,6 +163,36 @@ async def call_mcp_tool(name: str, args: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Error classification for Gemini API errors
+# ---------------------------------------------------------------------------
+
+
+def classify_gemini_error(exc: Exception) -> tuple[str, bool]:
+    """Classify a Gemini API error. Returns (user_message, retryable)."""
+    msg = str(exc)
+    if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+        # Extract retry delay if present
+        retry_match = re.search(r"retry in ([\d.]+)s", msg)
+        if retry_match:
+            secs = int(float(retry_match.group(1)))
+            user_msg = (
+                f"⏳ Rate limit reached. The Gemini free tier has a 15 req/min cap. Please wait ~{secs}s and try again."
+            )
+        else:
+            user_msg = "⏳ Rate limit reached. The Gemini free tier allows 15 requests/minute. Wait a moment and retry."
+        return user_msg, True
+    if "400" in msg or "INVALID_ARGUMENT" in msg:
+        return "⚠️ Invalid request sent to Gemini API. Try a simpler query.", False
+    if "401" in msg or "PERMISSION_DENIED" in msg:
+        return "🔑 API key is invalid or expired. Check GEMINI_API_KEY.", False
+    if "403" in msg:
+        return "🚫 Access denied. The Gemini API key may need billing enabled.", False
+    if "500" in msg or "INTERNAL" in msg:
+        return "🔧 Gemini server error. Try again in a moment.", True
+    return f"⚠️ Gemini API error: {msg[:200]}", False
+
+
+# ---------------------------------------------------------------------------
 # Gemini chat loop with tool calling
 # ---------------------------------------------------------------------------
 
@@ -201,9 +231,7 @@ async def chat_with_tools(message: str, history: list[dict], lang: str = "en") -
     """Run one turn of the Gemini chat loop with MCP tool calling."""
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        return (
-            "Error: GEMINI_API_KEY environment variable not set. Get a free key at https://aistudio.google.com/apikey"
-        )
+        return "🔑 GEMINI_API_KEY environment variable not set. Get a free key at https://aistudio.google.com/apikey"
 
     client = genai.Client(api_key=api_key)
     tool_schemas = await get_mcp_tool_schemas()
@@ -228,12 +256,16 @@ async def chat_with_tools(message: str, history: list[dict], lang: str = "en") -
 
     # Tool-calling loop (max 8 rounds)
     for _ in range(8):
-        response = await asyncio.to_thread(
-            client.models.generate_content,
-            model="gemini-2.0-flash",
-            contents=contents,
-            config=config,
-        )
+        try:
+            response = await asyncio.to_thread(
+                client.models.generate_content,
+                model="gemini-2.0-flash",
+                contents=contents,
+                config=config,
+            )
+        except Exception as exc:
+            user_msg, _ = classify_gemini_error(exc)
+            return user_msg
 
         candidate = response.candidates[0] if response.candidates else None
         if not candidate:
@@ -305,7 +337,7 @@ def chat():
 
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"response": f"Server error: {e}"}), 500
+        return jsonify({"response": f"⚠️ Server error: {e}"}), 500
 
 
 @app.route("/health")
@@ -337,7 +369,6 @@ def debug():
         "render": os.environ.get("RENDER", "not on Render"),
         "gemini_key_set": bool(os.environ.get("GEMINI_API_KEY")),
     }
-    # Test MCP import
     try:
         info["mcp_tools_count"] = len(mcp._tool_manager._tools) if hasattr(mcp, "_tool_manager") else "unknown"
     except Exception as e:
