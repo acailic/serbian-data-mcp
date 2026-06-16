@@ -51,6 +51,7 @@ def wrap_html(fig_list: list[go.Figure], title: str, subtitle: str, meta: str = 
 <title>{title}</title>
 <meta name="description" content="{meta}">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <style>
 :root {{ --bg: #0a0a1a; --card: #111128; --border: rgba(255,255,255,0.06); --accent: #ffab00;
          --text: #e8e8f0; --muted: #6868a0; --red: #ef5350; --green: #66bb6a; --blue: #42a5f5; }}
@@ -100,7 +101,6 @@ footer {{ max-width: 1100px; margin: 0 auto; padding: 20px 24px 40px; border-top
 <footer>
   Podaci: Републички завод за статистику (РЗС) · data.gov.rs · Serbian Data MCP
 </footer>
-<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 </body>
 </html>"""
 
