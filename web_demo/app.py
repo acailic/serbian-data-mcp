@@ -16,6 +16,7 @@ Deployment (Render.com):
 import asyncio
 import os
 import sys
+import traceback
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -164,7 +165,7 @@ async def call_mcp_tool(name: str, args: dict) -> str:
 # Gemini chat loop with tool calling
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are an AI assistant for Serbian open data (data.gov.rs). You help users find,
+SYSTEM_PROMPT_EN = """You are an AI assistant for Serbian open data (data.gov.rs). You help users find,
 explore, and visualize datasets about Serbia — demographics, budgets, health, education, etc.
 
 Rules:
@@ -177,10 +178,25 @@ Rules:
 - When showing data, format it clearly.
 - If you create a visualization, mention the file path so the user can view it.
 - Serbian and English search terms both work.
-- You can respond in both English and Serbian depending on what the user speaks."""
+- Respond in English."""
+
+SYSTEM_PROMPT_SR = """Ti si AI асистент за српке отворене податке (data.gov.rs). Помажеш корисницима да
+нађу, истраже и визуализују скупове података о Србији — демографија, буџети, здравство, образовање и сл.
+
+Правила:
+- УВЕК прво претражи скупове података користећи search_datasets(). Никад не погађај ID-еове.
+- Након проналаска скупова, користи get_dataset() за детаље и ID-еове ресурса.
+- Користи get_resource_data() да преузмеш податке, па data_profile() да разумеш колоне.
+- Када правиш графикон, проследи стварне редове података из get_resource_data().
+- За мапе, користи create_serbia_map() са подацима по окрузима.
+- Одговори буди јасни и корисни.
+- Када приказујеш податке, форматирај их прегледно.
+- Ако направиш визуализацију, наведи путању фајла.
+- И српски и енглески термини за претрагу раде.
+- Одговарај на српском језику (ћирилица или латиница, како корисник пише)."""
 
 
-async def chat_with_tools(message: str, history: list[dict]) -> str:
+async def chat_with_tools(message: str, history: list[dict], lang: str = "en") -> str:
     """Run one turn of the Gemini chat loop with MCP tool calling."""
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -193,6 +209,8 @@ async def chat_with_tools(message: str, history: list[dict]) -> str:
     declarations = to_gemini_declarations(tool_schemas)
     gemini_tools = [types.Tool(function_declarations=declarations)]
 
+    system_prompt = SYSTEM_PROMPT_SR if lang == "sr" else SYSTEM_PROMPT_EN
+
     # Build conversation for Gemini
     contents = []
     for msg in history[-10:]:
@@ -201,7 +219,7 @@ async def chat_with_tools(message: str, history: list[dict]) -> str:
     contents.append(types.Content(role="user", parts=[types.Part(text=message)]))
 
     config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_PROMPT,
+        system_instruction=system_prompt,
         tools=gemini_tools,
         temperature=0.3,
         max_output_tokens=4096,
@@ -247,7 +265,7 @@ async def chat_with_tools(message: str, history: list[dict]) -> str:
         contents.append(types.Content(role="user", parts=function_responses))
 
         config = types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
+            system_instruction=system_prompt,
             tools=gemini_tools,
             temperature=0.3,
             max_output_tokens=4096,
@@ -268,16 +286,25 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    """Handle a chat message. Returns JSON with 'response'."""
-    data = request.get_json()
-    message = data.get("message", "")
-    history = data.get("history", [])
+    """Handle a chat message. Always returns JSON, even on errors."""
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"response": "Invalid request. Please send JSON."})
 
-    if not message.strip():
-        return jsonify({"response": "Please type a question."})
+        message = data.get("message", "")
+        history = data.get("history", [])
+        lang = data.get("lang", "en")
 
-    result = asyncio.run(chat_with_tools(message, history))
-    return jsonify({"response": result})
+        if not message.strip():
+            return jsonify({"response": "Please type a question."})
+
+        result = asyncio.run(chat_with_tools(message, history, lang=lang))
+        return jsonify({"response": result})
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"response": f"Server error: {e}"}), 500
 
 
 @app.route("/health")
@@ -291,6 +318,30 @@ def health():
             "note": "Set GEMINI_API_KEY env var" if not api_key else "Ready",
         }
     )
+
+
+@app.route("/debug")
+def debug():
+    """Debug endpoint — shows environment info to diagnose deployment issues."""
+    import platform
+
+    info = {
+        "python_version": platform.python_version(),
+        "working_dir": os.getcwd(),
+        "project_root": str(_PROJECT_ROOT),
+        "src_on_path": str(_PROJECT_ROOT / "src") in sys.path,
+        "static_dir_exists": _STATIC_DIR.exists(),
+        "env_keys": [k for k in os.environ if "KEY" in k or "API" in k or "PORT" in k],
+        "sys_path": sys.path[:5],
+        "render": os.environ.get("RENDER", "not on Render"),
+        "gemini_key_set": bool(os.environ.get("GEMINI_API_KEY")),
+    }
+    # Test MCP import
+    try:
+        info["mcp_tools_count"] = len(mcp._tool_manager._tools) if hasattr(mcp, "_tool_manager") else "unknown"
+    except Exception as e:
+        info["mcp_error"] = str(e)
+    return jsonify(info)
 
 
 @app.route("/export/<path:filename>")

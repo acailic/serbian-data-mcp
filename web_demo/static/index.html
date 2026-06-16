@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Serbian Data Explorer — Live Demo</title>
+<title>Serbian Data Explorer — / Istraživač srpskih podataka</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -55,14 +55,41 @@
     gap: 12px;
     align-items: center;
   }
-  .header .links a {
+
+  /* Language toggle */
+  .lang-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
     font-size: 12px;
+  }
+  .lang-toggle button {
+    padding: 4px 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    transition: all 0.2s;
+  }
+  .lang-toggle button.active {
+    background: var(--blue);
+    color: white;
+  }
+  .lang-toggle button:not(.active):hover {
+    background: rgba(48, 114, 198, 0.15);
+    color: var(--blue-light);
+  }
+
+  .header .links a {
+    font-size: 18px;
     color: var(--text-dim);
     text-decoration: none;
     transition: color 0.2s;
   }
   .header .links a:hover { color: var(--blue-light); }
-  .header .links .github { font-size: 18px; }
 
   /* Status bar */
   .status-bar {
@@ -266,6 +293,7 @@
     .header h1 span { display: none; }
     .msg { max-width: 92%; }
     .welcome .examples { gap: 4px; }
+    .suggestions { gap: 4px; }
   }
 </style>
 </head>
@@ -273,9 +301,13 @@
 
 <div class="header">
   <div class="flag">🇷🇸</div>
-  <h1>Serbian Data Explorer<span>MCP + Gemini Live Demo</span></h1>
+  <h1 data-i18n="title">Serbian Data Explorer<span>MCP + Gemini Live Demo</span></h1>
   <div class="links">
-    <a href="https://github.com/acailic/serbian-data-mcp" target="_blank" class="github" title="GitHub">⌨</a>
+    <div class="lang-toggle">
+      <button id="langEn" class="active" onclick="setLang('en')">EN</button>
+      <button id="langSr" onclick="setLang('sr')">SR</button>
+    </div>
+    <a href="https://github.com/acailic/serbian-data-mcp" target="_blank" title="GitHub">⌨</a>
   </div>
 </div>
 
@@ -287,38 +319,138 @@
 <div class="chat-area" id="chatArea">
   <div class="welcome" id="welcome">
     <div class="icon">📊</div>
-    <h2>Ask anything about Serbian open data</h2>
-    <p>
+    <h2 id="welcomeTitle">Ask anything about Serbian open data</h2>
+    <p id="welcomeDesc">
       Search 3,400+ datasets from data.gov.rs in natural language.
       Find demographics, budgets, health stats, education data and more.
       Powered by MCP tools + Google Gemini.
     </p>
-    <div class="examples">
-      <button onclick="send('Search for population datasets')">Search population data</button>
-      <button onclick="send('What organizations publish data?')">List publishers</button>
-      <button onclick="send('Find datasets about air quality')">Air quality</button>
-      <button onclick="send('Show me budget datasets from RZS')">Budget / RZS</button>
-      <button onclick="send('Suggest datasets about education')">Education</button>
-    </div>
+    <div class="examples" id="welcomeExamples"></div>
   </div>
   <div class="loading-indicator" id="loading">Thinking...</div>
 </div>
 
 <div class="input-area">
-  <div class="suggestions" id="suggestions">
-    <button onclick="send('health check')">Health Check</button>
-    <button onclick="send('Search: stanovništvo')">Population</button>
-    <button onclick="send('Search: budžet')">Budget</button>
-    <button onclick="send('Search: vazduh')">Air quality</button>
-    <button onclick="send('List organizations')">Organizations</button>
-  </div>
+  <div class="suggestions" id="suggestions"></div>
   <div class="input-row">
-    <input type="text" id="userInput" placeholder="Ask about Serbian data... (English or Serbian)" autofocus>
-    <button id="sendBtn" onclick="handleSend()">Send</button>
+    <input type="text" id="userInput" data-i18n-placeholder="placeholder" placeholder="Ask about Serbian data... (English or Serbian)" autofocus>
+    <button id="sendBtn" data-i18n="sendBtn" onclick="handleSend()">Send</button>
   </div>
 </div>
 
 <script>
+// ---------------------------------------------------------------------------
+// i18n — English / Serbian translations
+// ---------------------------------------------------------------------------
+const i18n = {
+  en: {
+    title: 'Serbian Data Explorer<span>MCP + Gemini Live Demo</span>',
+    welcomeTitle: 'Ask anything about Serbian open data',
+    welcomeDesc: 'Search 3,400+ datasets from data.gov.rs in natural language. Find demographics, budgets, health stats, education data and more. Powered by MCP tools + Google Gemini.',
+    placeholder: 'Ask about Serbian data… (English or Serbian)',
+    sendBtn: 'Send',
+    loading: 'Thinking…',
+    statusOk: 'Connected — Gemini AI ready',
+    statusNoKey: 'Server OK but Gemini API key not configured',
+    statusFail: 'Server health check failed',
+    statusUnreach: 'Cannot reach server',
+    statusChecking: 'Checking server health…',
+    connErr: 'Connection error: {msg}. Try refreshing the page.',
+    examples: [
+      { label: 'Population data',   query: 'Search for population datasets' },
+      { label: 'Publishers',        query: 'What organizations publish data?' },
+      { label: 'Air quality',       query: 'Find datasets about air quality' },
+      { label: 'Budget / RZS',      query: 'Show me budget datasets from RZS' },
+      { label: 'Education',         query: 'Suggest datasets about education' },
+    ],
+    quickBtns: [
+      { label: 'Health Check',  query: 'health check' },
+      { label: 'Population',    query: 'Search: stanovništvo' },
+      { label: 'Budget',        query: 'Search: budžet' },
+      { label: 'Air quality',   query: 'Search: vazduh' },
+      { label: 'Organizations', query: 'List organizations' },
+    ],
+  },
+  sr: {
+    title: 'Istraživač srpskih podataka<span>MCP + Gemini демо</span>',
+    welcomeTitle: 'Питај било шта о отвореним подацима Србије',
+    welcomeDesc: 'Претражи 3.400+ скупова података са data.gov.rs на природном језику. Нађи демографске податке, буџете, здравствене статистике, образовање и више. Покреће MCP алати + Google Gemini.',
+    placeholder: 'Питај о српким подацима… (српски или енглески)',
+    sendBtn: 'Пошаљи',
+    loading: 'Размишљам…',
+    statusOk: 'Повезан — Gemini AI спреман',
+    statusNoKey: 'Сервер ради али Gemini API кључ није подешен',
+    statusFail: 'Провера здравља сервера није успела',
+    statusUnreach: 'Не могу да се повежем са сервером',
+    statusChecking: 'Проверавам здравље сервера…',
+    connErr: 'Грешка везе: {msg}. Покушај да освежиш страницу.',
+    examples: [
+      { label: 'Становништво',    query: 'Претражи скупове података о становништву' },
+      { label: 'Издавачи',        query: 'Које организације објављују податке?' },
+      { label: 'Квалитет ваздуха', query: 'Нађи податке о квалитету ваздуха' },
+      { label: 'Буџет / РЗС',     query: 'Покажи скупове података о буџету од РЗС' },
+      { label: 'Образовање',       query: 'Предложи скупове података о образовању' },
+    ],
+    quickBtns: [
+      { label: 'Провера',        query: 'health check' },
+      { label: 'Становништво',    query: 'Претрага: stanovništvo' },
+      { label: 'Буџет',          query: 'Претрага: budžet' },
+      { label: 'Ваздух',          query: 'Претрага: vazduh' },
+      { label: 'Организације',     query: 'Листа организација' },
+    ],
+  },
+};
+
+let lang = localStorage.getItem('lang') || 'en';
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('lang', l);
+  applyLang();
+}
+
+function applyLang() {
+  const t = i18n[lang];
+  document.documentElement.lang = lang;
+
+  // Toggle buttons
+  document.getElementById('langEn').classList.toggle('active', lang === 'en');
+  document.getElementById('langSr').classList.toggle('active', lang === 'sr');
+
+  // Text content
+  document.getElementById('welcomeTitle').textContent = t.welcomeTitle;
+  document.getElementById('welcomeDesc').textContent = t.welcomeDesc;
+  document.getElementById('userInput').placeholder = t.placeholder;
+  document.getElementById('sendBtn').textContent = t.sendBtn;
+  document.getElementById('loading').textContent = t.loading;
+
+  // Title (contains HTML span)
+  document.querySelector('[data-i18n="title"]').innerHTML = t.title;
+
+  // Render example buttons
+  const exDiv = document.getElementById('welcomeExamples');
+  exDiv.innerHTML = '';
+  t.examples.forEach(e => {
+    const btn = document.createElement('button');
+    btn.textContent = e.label;
+    btn.onclick = () => send(e.query);
+    exDiv.appendChild(btn);
+  });
+
+  // Render quick-action buttons
+  const qDiv = document.getElementById('suggestions');
+  qDiv.innerHTML = '';
+  t.quickBtns.forEach(q => {
+    const btn = document.createElement('button');
+    btn.textContent = q.label;
+    btn.onclick = () => send(q.query);
+    qDiv.appendChild(btn);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Chat logic
+// ---------------------------------------------------------------------------
 const chatArea = document.getElementById('chatArea');
 const welcome = document.getElementById('welcome');
 const loading = document.getElementById('loading');
@@ -328,21 +460,23 @@ const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
 const history = [];
 
-// Check health on load
+// Check health
 fetch('/health').then(r => r.json()).then(d => {
+  const t = i18n[lang];
   if (d.status === 'ok' && d.gemini_configured) {
     statusDot.className = 'dot ok';
-    statusText.textContent = 'Connected — Gemini AI ready';
+    statusText.textContent = t.statusOk;
   } else if (d.status === 'ok') {
     statusDot.className = 'dot err';
-    statusText.textContent = 'Server OK but Gemini API key not configured';
+    statusText.textContent = t.statusNoKey;
   } else {
     statusDot.className = 'dot err';
-    statusText.textContent = 'Server health check failed';
+    statusText.textContent = t.statusFail;
   }
 }).catch(() => {
+  const t = i18n[lang];
   statusDot.className = 'dot err';
-  statusText.textContent = 'Cannot reach server';
+  statusText.textContent = t.statusUnreach;
 });
 
 userInput.addEventListener('keydown', e => {
@@ -372,14 +506,15 @@ async function handleSend() {
     const res = await fetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message, history, lang }),
     });
     const data = await res.json();
     const response = data.response || 'No response received.';
     appendMessage('assistant', response);
     history.push({ role: 'assistant', text: response });
   } catch (err) {
-    appendMessage('assistant', `Connection error: ${err.message}. Try refreshing the page.`);
+    const t = i18n[lang];
+    appendMessage('assistant', t.connErr.replace('{msg}', err.message));
   } finally {
     sendBtn.disabled = false;
     loading.classList.remove('visible');
@@ -404,6 +539,9 @@ function formatMarkdown(text) {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
     .replace(/\n/g, '<br>');
 }
+
+// Init
+applyLang();
 </script>
 </body>
 </html>
