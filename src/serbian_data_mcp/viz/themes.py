@@ -5,6 +5,9 @@ Provides themed templates for different presentation contexts:
 - Light theme: Clean, professional
 - Infographic: Big-number focused layouts
 - Serbian flag palette: Red, blue, white color system
+
+All themes include: custom font stacks, refined hover styles,
+consistent spacing, and professional color treatment.
 """
 
 import copy
@@ -55,26 +58,48 @@ def _dark_layout_dict() -> dict[str, Any]:
     return {
         "paper_bgcolor": "#1a1a2e",
         "plot_bgcolor": "#16213e",
-        "font": {"family": "'Segoe UI', Arial, sans-serif", "color": "#e0e0e0", "size": 14},
-        "title": {"font": {"size": 22, "color": "#ffffff"}, "x": 0.05, "xanchor": "left"},
+        "font": {
+            "family": "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
+            "color": "#e0e0e0",
+            "size": 14,
+        },
+        "title": {
+            "font": {"size": 22, "color": "#ffffff", "family": "'Inter', 'Segoe UI', system-ui, sans-serif"},
+            "x": 0.05,
+            "xanchor": "left",
+        },
         "xaxis": {
-            "gridcolor": "#2a3a5c",
-            "linecolor": "#2a3a5c",
-            "zerolinecolor": "#4a5a7c",
-            "title": {"font": {"size": 14, "color": "#b0bec5"}},
-            "tickfont": {"size": 12, "color": "#90a4ae"},
+            "gridcolor": "rgba(255,255,255,0.06)",
+            "linecolor": "rgba(255,255,255,0.1)",
+            "zerolinecolor": "rgba(255,255,255,0.15)",
+            "title": {"font": {"size": 13, "color": "#90a4ae", "family": "'Inter', 'Segoe UI', system-ui, sans-serif"}},
+            "tickfont": {"size": 12, "color": "#78909c"},
+            "tickformat": ",",
         },
         "yaxis": {
-            "gridcolor": "#2a3a5c",
-            "linecolor": "#2a3a5c",
-            "zerolinecolor": "#4a5a7c",
-            "title": {"font": {"size": 14, "color": "#b0bec5"}},
-            "tickfont": {"size": 12, "color": "#90a4ae"},
+            "gridcolor": "rgba(255,255,255,0.06)",
+            "linecolor": "rgba(255,255,255,0.1)",
+            "zerolinecolor": "rgba(255,255,255,0.15)",
+            "title": {"font": {"size": 13, "color": "#90a4ae", "family": "'Inter', 'Segoe UI', system-ui, sans-serif"}},
+            "tickfont": {"size": 12, "color": "#78909c"},
+            "tickformat": ",",
         },
-        "legend": {"bgcolor": "#1a1a2e", "font": {"color": "#e0e0e0", "size": 12}, "bordercolor": "#2a3a5c"},
+        "legend": {
+            "bgcolor": "rgba(26,26,46,0.9)",
+            "font": {"color": "#cfd8dc", "size": 12},
+            "bordercolor": "rgba(255,255,255,0.08)",
+            "borderwidth": 1,
+            "groupclick": "toggleitem",
+        },
         "colorway": SEMANTIC_COLORS,
-        "hoverlabel": {"bgcolor": "#1a1a2e", "bordercolor": "#1565c0", "font": {"color": "#ffffff"}},
+        "hoverlabel": {
+            "bgcolor": "#0d1b2a",
+            "bordercolor": "#1565c0",
+            "font": {"color": "#ffffff", "size": 13, "family": "'Inter', 'Segoe UI', system-ui, sans-serif"},
+            "namelength": 0,
+        },
         "margin": {"l": 80, "r": 40, "t": 80, "b": 80},
+        "modebar": {"bgcolor": "rgba(0,0,0,0)", "color": "#78909c", "activecolor": "#ffab00"},
     }
 
 
@@ -82,27 +107,49 @@ def _light_layout_dict() -> dict[str, Any]:
     """Raw layout dict for light theme."""
     return {
         "paper_bgcolor": "#ffffff",
-        "plot_bgcolor": "#fafafa",
-        "font": {"family": "'Segoe UI', Arial, sans-serif", "color": "#37474f", "size": 14},
-        "title": {"font": {"size": 22, "color": "#1a1a2e"}, "x": 0.05, "xanchor": "left"},
+        "plot_bgcolor": "#f8f9fa",
+        "font": {
+            "family": "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
+            "color": "#37474f",
+            "size": 14,
+        },
+        "title": {
+            "font": {"size": 22, "color": "#1a1a2e", "family": "'Inter', 'Segoe UI', system-ui, sans-serif"},
+            "x": 0.05,
+            "xanchor": "left",
+        },
         "xaxis": {
-            "gridcolor": "#e0e0e0",
-            "linecolor": "#bdbdbd",
-            "zerolinecolor": "#9e9e9e",
-            "title": {"font": {"size": 14, "color": "#455a64"}},
-            "tickfont": {"size": 12, "color": "#616161"},
+            "gridcolor": "#e9ecef",
+            "linecolor": "#dee2e6",
+            "zerolinecolor": "#adb5bd",
+            "title": {"font": {"size": 13, "color": "#495057", "family": "'Inter', 'Segoe UI', system-ui, sans-serif"}},
+            "tickfont": {"size": 12, "color": "#6c757d"},
+            "tickformat": ",",
         },
         "yaxis": {
-            "gridcolor": "#e0e0e0",
-            "linecolor": "#bdbdbd",
-            "zerolinecolor": "#9e9e9e",
-            "title": {"font": {"size": 14, "color": "#455a64"}},
-            "tickfont": {"size": 12, "color": "#616161"},
+            "gridcolor": "#e9ecef",
+            "linecolor": "#dee2e6",
+            "zerolinecolor": "#adb5bd",
+            "title": {"font": {"size": 13, "color": "#495057", "family": "'Inter', 'Segoe UI', system-ui, sans-serif"}},
+            "tickfont": {"size": 12, "color": "#6c757d"},
+            "tickformat": ",",
         },
-        "legend": {"bgcolor": "#ffffff", "font": {"color": "#37474f", "size": 12}, "bordercolor": "#e0e0e0"},
+        "legend": {
+            "bgcolor": "rgba(255,255,255,0.95)",
+            "font": {"color": "#495057", "size": 12},
+            "bordercolor": "#e9ecef",
+            "borderwidth": 1,
+            "groupclick": "toggleitem",
+        },
         "colorway": SEMANTIC_COLORS,
-        "hoverlabel": {"bgcolor": "#ffffff", "bordercolor": "#1565c0", "font": {"color": "#1a1a2e"}},
+        "hoverlabel": {
+            "bgcolor": "#ffffff",
+            "bordercolor": "#1565c0",
+            "font": {"color": "#1a1a2e", "size": 13, "family": "'Inter', 'Segoe UI', system-ui, sans-serif"},
+            "namelength": 0,
+        },
         "margin": {"l": 80, "r": 40, "t": 80, "b": 80},
+        "modebar": {"bgcolor": "rgba(0,0,0,0)", "color": "#6c757d", "activecolor": "#1565c0"},
     }
 
 
@@ -111,29 +158,46 @@ def _infographic_layout_dict() -> dict[str, Any]:
     return {
         "paper_bgcolor": "#1a1a2e",
         "plot_bgcolor": "#16213e",
-        "font": {"family": "'Segoe UI', Arial, sans-serif", "color": "#ffffff", "size": 16},
-        "title": {"font": {"size": 28, "color": "#ffffff"}, "x": 0.5, "xanchor": "center"},
+        "font": {
+            "family": "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
+            "color": "#ffffff",
+            "size": 16,
+        },
+        "title": {
+            "font": {"size": 28, "color": "#ffffff", "family": "'Inter', 'Segoe UI', system-ui, sans-serif"},
+            "x": 0.5,
+            "xanchor": "center",
+        },
         "xaxis": {
             "showgrid": False,
             "linecolor": "rgba(255,255,255,0.1)",
-            "title": {"font": {"size": 15, "color": "#b0bec5"}},
+            "title": {"font": {"size": 15, "color": "#b0bec5", "family": "'Inter', 'Segoe UI', system-ui, sans-serif"}},
             "tickfont": {"size": 13, "color": "#90a4ae"},
+            "tickformat": ",",
         },
         "yaxis": {
             "showgrid": True,
-            "gridcolor": "rgba(255,255,255,0.08)",
+            "gridcolor": "rgba(255,255,255,0.06)",
             "linecolor": "rgba(255,255,255,0.1)",
-            "title": {"font": {"size": 15, "color": "#b0bec5"}},
+            "title": {"font": {"size": 15, "color": "#b0bec5", "family": "'Inter', 'Segoe UI', system-ui, sans-serif"}},
             "tickfont": {"size": 13, "color": "#90a4ae"},
+            "tickformat": ",",
         },
         "legend": {
             "bgcolor": "rgba(26,26,46,0.8)",
             "font": {"color": "#e0e0e0", "size": 13},
             "bordercolor": "rgba(255,255,255,0.1)",
+            "groupclick": "toggleitem",
         },
         "colorway": SEMANTIC_COLORS,
-        "hoverlabel": {"bgcolor": "#1a1a2e", "bordercolor": "#ffab00", "font": {"color": "#ffffff", "size": 14}},
+        "hoverlabel": {
+            "bgcolor": "#0d1b2a",
+            "bordercolor": "#ffab00",
+            "font": {"color": "#ffffff", "size": 14, "family": "'Inter', 'Segoe UI', system-ui, sans-serif"},
+            "namelength": 0,
+        },
         "margin": {"l": 100, "r": 60, "t": 100, "b": 100},
+        "modebar": {"bgcolor": "rgba(0,0,0,0)", "color": "#78909c", "activecolor": "#ffab00"},
     }
 
 
@@ -155,6 +219,9 @@ def infographic_template() -> dict[str, Any]:
 def apply_theme(fig: go.Figure, theme: str = "dark") -> go.Figure:
     """Apply a named theme to a Plotly figure.
 
+    Sets layout styles, refines trace appearance for consistency,
+    and configures interactive features like legend toggle.
+
     Args:
         fig: Plotly Figure to theme
         theme: 'dark', 'light', or 'infographic'
@@ -170,7 +237,73 @@ def apply_theme(fig: go.Figure, theme: str = "dark") -> go.Figure:
     builder = templates.get(theme)
     if not builder:
         builder = _dark_layout_dict
-    fig.update_layout(builder())
+    layout = builder()
+    fig.update_layout(layout)
+
+    # Polish trace defaults for visual consistency
+    trace_updates: dict[str, Any] = {
+        "marker": {"line": {"width": 0}},
+        "line": {"shape": "spline", "smoothing": 0.8},
+    }
+    if theme == "dark":
+        trace_updates["marker"]["opacity"] = 0.9
+
+    for trace in fig.data:
+        if hasattr(trace, "marker"):
+            trace.marker.update({"line": trace_updates["marker"]["line"]})
+
+    return fig
+
+
+def polish_for_export(fig: go.Figure, title: str = "", subtitle: str = "", source: str = "") -> go.Figure:
+    """Apply final polish pass before export: watermark, source attribution, sizing.
+
+    Adds a subtle watermark footer and source attribution to the chart,
+    sets optimal dimensions for export, and ensures consistent typography.
+
+    Args:
+        fig: Plotly Figure to polish
+        title: Override chart title (optional)
+        subtitle: Subtitle text to show below title
+        source: Data source attribution (e.g., 'data.gov.rs')
+
+    Returns:
+        Polished Plotly Figure
+    """
+    if title:
+        fig.update_layout(title={"text": title, "x": 0.05, "xanchor": "left"})
+
+    # Add subtitle as annotation below title
+    if subtitle:
+        fig.add_annotation(
+            text=subtitle,
+            xref="paper",
+            yref="paper",
+            x=0.05,
+            y=1.0,
+            showarrow=False,
+            font={"size": 13, "color": "#90a4ae"},
+        )
+
+    # Source watermark
+    source_text = source or "Source: data.gov.rs | serbian-data-mcp"
+    fig.add_annotation(
+        text=source_text,
+        xref="paper",
+        yref="paper",
+        x=1,
+        y=-0.06,
+        xanchor="right",
+        showarrow=False,
+        font={"size": 10, "color": "#546e7a"},
+    )
+
+    # Ensure consistent dimensions
+    layout = fig.layout
+    if not layout.height or layout.height < 400:
+        fig.update_layout(height=500)
+    fig.update_layout(width=None, autosize=True)
+
     return fig
 
 

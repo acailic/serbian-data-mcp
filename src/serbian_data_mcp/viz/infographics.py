@@ -30,52 +30,73 @@ from .data_tables import data_table_html, data_table_css
 # ── HTML Templates ──────────────────────────────────────────────────────────
 
 _DARK_STYLES = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 :root {
-    --bg-primary: #1a1a2e;
+    --bg-primary: #0f0f23;
     --bg-secondary: #16213e;
-    --bg-card: rgba(22, 33, 62, 0.9);
+    --bg-card: rgba(22, 33, 62, 0.85);
     --text-primary: #ffffff;
     --text-secondary: #b0bec5;
     --accent-red: #c62828;
     --accent-blue: #1565c0;
     --accent-gold: #ffab00;
     --accent-green: #2e7d32;
-    --border: rgba(255,255,255,0.08);
+    --border: rgba(255,255,255,0.06);
+    --radius: 20px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     background: var(--bg-primary);
+    background-image: radial-gradient(ellipse at 20% 0%, rgba(21,101,192,0.08) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 100%, rgba(198,40,40,0.06) 0%, transparent 50%);
     color: var(--text-primary);
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
     line-height: 1.6;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 40px 24px;
+    padding: 48px 24px;
 }
 .header {
     text-align: center;
-    margin-bottom: 48px;
+    margin-bottom: 56px;
     padding-bottom: 32px;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+}
+.header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-gold), var(--accent-red));
+    border-radius: 2px;
 }
 .header h1 {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     font-weight: 800;
-    letter-spacing: -0.02em;
-    margin-bottom: 8px;
-    background: linear-gradient(135deg, var(--text-primary), var(--accent-gold));
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 40%, var(--accent-gold) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    line-height: 1.15;
 }
 .header .subtitle {
     font-size: 1.1rem;
     color: var(--text-secondary);
     max-width: 700px;
     margin: 0 auto;
+    font-weight: 400;
+    line-height: 1.6;
 }
 .big-number-grid {
     display: grid;
@@ -86,14 +107,16 @@ body {
 .big-number-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: var(--radius);
     padding: 32px 24px;
     text-align: center;
-    transition: transform 0.2s, border-color 0.2s;
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), border-color 0.25s, box-shadow 0.25s;
+    backdrop-filter: blur(10px);
 }
 .big-number-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--accent-gold);
+    transform: translateY(-6px);
+    border-color: rgba(255,171,0,0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,171,0,0.1);
 }
 .big-number-card .number {
     font-size: 3rem;
@@ -115,28 +138,34 @@ body {
 .chart-section {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: var(--radius);
     padding: 32px;
     margin-bottom: 32px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.15);
 }
 .chart-section h2 {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 700;
     margin-bottom: 20px;
     color: var(--accent-gold);
+    letter-spacing: -0.01em;
 }
 .insights-section {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: var(--radius);
     padding: 32px;
     margin-bottom: 32px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.15);
 }
 .insights-section h2 {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 700;
     margin-bottom: 20px;
     color: var(--accent-gold);
+    letter-spacing: -0.01em;
 }
 .insight-item {
     padding: 16px 0;
@@ -180,10 +209,11 @@ body {
 }
 .footer {
     text-align: center;
-    padding-top: 32px;
+    padding: 32px 24px 40px;
     border-top: 1px solid var(--border);
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
 }
 .plotly-chart { width: 100%; min-height: 450px; }
 
@@ -259,15 +289,21 @@ body {
 }
 
 @media (max-width: 768px) {
-    .header h1 { font-size: 1.8rem; }
+    .header h1 { font-size: 2rem; }
+    .header .subtitle { font-size: 1rem; }
     .big-number-card .number { font-size: 2.2rem; }
+    .big-number-grid { gap: 16px; }
     .dashboard-grid { grid-template-columns: 1fr; }
     .container { padding: 24px 16px; }
     .timeline-ribbon .event-label { font-size: 0.65rem; max-width: 70px; }
+    .chart-section, .insights-section { padding: 20px 16px; border-radius: 16px; }
+    .big-number-card { padding: 24px 16px; border-radius: 16px; }
 }
 """
 
 _PLOTLY_CDN = "https://cdn.plot.ly/plotly-3.6.0.min.js"
+
+_INTER_FONT = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'
 
 _JS_CHART_RENDERER = r"""
 function renderChart(containerId, figureJson) {
@@ -362,6 +398,7 @@ def _build_html(
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
+    {_INTER_FONT}
     <script src="{_PLOTLY_CDN}" charset="utf-8"></script>
     <style>{_DARK_STYLES}
 {data_table_css}</style>
@@ -374,7 +411,7 @@ def _build_html(
         </div>
         {body_html}
         <div class="footer">
-            🇷🇸 Serbian Open Data — data.gov.rs | Generated with serbian-data-mcp
+            🇷🇸 Serbian Open Data Portal (data.gov.rs) &middot; Generated with serbian-data-mcp
         </div>
     </div>
     <script>{_JS_CHART_RENDERER}</script>

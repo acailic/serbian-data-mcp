@@ -2,7 +2,15 @@
 
 from .charts import ChartBuilder
 from .exporters import export_html, export_png, export_json, export_pdf, generate_embed_code, fig_to_dict
-from .themes import apply_theme, add_annotation, add_highlight_zone, dark_template, light_template, infographic_template
+from .themes import (
+    apply_theme,
+    add_annotation,
+    add_highlight_zone,
+    dark_template,
+    light_template,
+    infographic_template,
+    polish_for_export,
+)
 from .advanced_charts import AdvancedChartBuilder
 from .insights import extract_insights, generate_narrative, compute_derived_metrics
 from .infographics import create_infographic, create_dashboard
@@ -32,6 +40,7 @@ __all__ = [
     "dark_template",
     "light_template",
     "infographic_template",
+    "polish_for_export",
     "extract_insights",
     "generate_narrative",
     "compute_derived_metrics",
