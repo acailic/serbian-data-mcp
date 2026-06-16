@@ -1,6 +1,6 @@
 [project]
 name = "serbian-data-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server for Serbian open data portal (data.gov.rs) with visualization capabilities"
 readme = "README.md"
 requires-python = ">=3.11"

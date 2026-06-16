@@ -18,7 +18,7 @@ def sample_catalog():
         description="Demographic data showing population distribution by age groups",
         organization="Statistical Office",
         formats=["xlsx"],
-        tags=["population", "demographics", "age"]
+        tags=["population", "demographics", "age"],
     )
     catalog.datasets["budg-1"] = CachedDataset(
         id="budg-1",
@@ -26,7 +26,7 @@ def sample_catalog():
         description="Annual budget execution report",
         organization="Ministry of Finance",
         formats=["csv"],
-        tags=["budget", "finance"]
+        tags=["budget", "finance"],
     )
     catalog.datasets["health-1"] = CachedDataset(
         id="health-1",
@@ -34,7 +34,7 @@ def sample_catalog():
         description="Public health indicators and hospital data",
         organization="Ministry of Health",
         formats=["json"],
-        tags=["health", "statistics"]
+        tags=["health", "statistics"],
     )
 
     return catalog
@@ -107,7 +107,7 @@ async def test_search_max_results(sample_catalog):
             description="Test dataset",
             organization="Test",
             formats=["csv"],
-            tags=["test"]
+            tags=["test"],
         )
 
     results = await engine.search("test", max_results=5)

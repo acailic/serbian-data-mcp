@@ -1,27 +1,19 @@
-"""Comprehensive MCP test client – exercises the full MCP protocol surface.
+"""MCP protocol tests for Serbian Data MCP Server.
 
-This test file demonstrates and verifies every MCP capability that the
-Serbian Data MCP Server exposes:
-
+Exercises the full MCP capability surface via in-process transport:
   • Server discovery  (list_tools, list_resources, list_prompts)
   • Search tools      (search_datasets, suggest_datasets, list_organizations)
   • Data retrieval     (get_dataset)
-  • Visualization      (create_visualization, export_visualization)
-  • Data transforms   (filter_data_tool, group_data_tool, aggregate_data_tool,
-                        sort_data_tool, select_columns_tool)
-  • Utilities         (get_config_tool, health_check)
+  • Visualization      (create_chart, export_visualization)
+  • Data transforms   (transform_data, filter_data_tool)
+  • Utilities         (health_check)
   • Resources         (read serbian-data://server-info)
   • Prompts           (render each prompt template)
-
-All tests use **in-process** transport (FastMCP → Client) so no network
-is required and tests run deterministically.
 """
 
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +23,7 @@ from fastmcp.client import FastMCPTransport
 
 from serbian_data_mcp import mcp
 
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -39,9 +32,6 @@ from serbian_data_mcp import mcp
 @pytest.fixture
 async def mcp_client():
     """Yield an MCP Client connected to the server in-process."""
-    from serbian_data_mcp.tools import _reset_client
-
-    _reset_client()
     transport = FastMCPTransport(mcp)
     async with Client(transport) as client:
         yield client
@@ -85,7 +75,7 @@ class TestServerDiscovery:
         names = {t.name for t in tools}
         assert len(names) >= 14, f"Expected >=14 tools, got {len(names)}: {names}"
         # Spot-check critical tools
-        for name in ("search_datasets", "create_visualization", "filter_data_tool", "health_check"):
+        for name in ("search_datasets", "create_chart", "filter_data_tool", "health_check"):
             assert name in names, f"Tool '{name}' missing"
 
     @pytest.mark.asyncio
@@ -105,13 +95,12 @@ class TestServerDiscovery:
         prompts = await mcp_client.list_prompts()
         names = {p.name for p in prompts}
         assert len(names) >= 3
-        for name in ("search_prompt", "explore_dataset_prompt", "visualize_prompt"):
+        for name in ("search_prompt", "visualize_prompt", "data_journalism_prompt"):
             assert name in names, f"Prompt '{name}' missing"
 
     @pytest.mark.asyncio
     async def test_server_info_resource(self, mcp_client):
         result = await mcp_client.read_resource("serbian-data://server-info")
-        # read_resource returns a list of content items
         assert isinstance(result, list) and len(result) > 0
         text = result[0].text if hasattr(result[0], "text") else str(result[0])
         data = json.loads(text)
@@ -119,6 +108,15 @@ class TestServerDiscovery:
         assert "version" in data
         assert "supported_formats" in data
         assert "chart_types" in data
+
+    @pytest.mark.asyncio
+    async def test_guide_resource(self, mcp_client):
+        result = await mcp_client.read_resource("serbian-data://guide")
+        assert isinstance(result, list) and len(result) > 0
+        text = result[0].text if hasattr(result[0], "text") else str(result[0])
+        data = json.loads(text)
+        assert "workflow" in data
+        assert "tips" in data
 
 
 # ===========================================================================
@@ -177,7 +175,7 @@ class TestDataRetrieval:
     async def test_get_dataset_not_found(self, mcp_client):
         from fastmcp.exceptions import ToolError
 
-        with pytest.raises(ToolError, match="Dataset not found|nonexistent"):
+        with pytest.raises(ToolError, match="Dataset.*not found"):
             await mcp_client.call_tool("get_dataset", {"dataset_id": "nonexistent-id-12345"})
 
 
@@ -192,7 +190,7 @@ class TestVisualization:
     @pytest.mark.asyncio
     async def test_create_line_chart(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "create_visualization",
+            "create_chart",
             {
                 "data": sample_data,
                 "chart_type": "line",
@@ -210,7 +208,7 @@ class TestVisualization:
     @pytest.mark.asyncio
     async def test_create_bar_chart(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "create_visualization",
+            "create_chart",
             {
                 "data": sample_data,
                 "chart_type": "bar",
@@ -226,7 +224,7 @@ class TestVisualization:
     @pytest.mark.asyncio
     async def test_create_pie_chart(self, mcp_client, pie_data):
         result = await mcp_client.call_tool(
-            "create_visualization",
+            "create_chart",
             {
                 "data": pie_data,
                 "chart_type": "pie",
@@ -241,7 +239,7 @@ class TestVisualization:
     @pytest.mark.asyncio
     async def test_create_scatter_plot(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "create_visualization",
+            "create_chart",
             {
                 "data": sample_data,
                 "chart_type": "scatter",
@@ -256,7 +254,7 @@ class TestVisualization:
     @pytest.mark.asyncio
     async def test_create_histogram(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "create_visualization",
+            "create_chart",
             {
                 "data": sample_data,
                 "chart_type": "histogram",
@@ -271,7 +269,7 @@ class TestVisualization:
     @pytest.mark.asyncio
     async def test_create_box_plot(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "create_visualization",
+            "create_chart",
             {
                 "data": sample_data,
                 "chart_type": "box",
@@ -287,9 +285,9 @@ class TestVisualization:
     async def test_create_invalid_chart_type(self, mcp_client, sample_data):
         from fastmcp.exceptions import ToolError
 
-        with pytest.raises(ToolError, match="radar|Unsupported chart type"):
+        with pytest.raises(ToolError, match="Unsupported chart type"):
             await mcp_client.call_tool(
-                "create_visualization",
+                "create_chart",
                 {
                     "data": sample_data,
                     "chart_type": "radar",
@@ -302,7 +300,7 @@ class TestVisualization:
     async def test_export_visualization_json(self, mcp_client, sample_data, tmp_path):
         # Create a chart first
         chart_result = await mcp_client.call_tool(
-            "create_visualization",
+            "create_chart",
             {
                 "data": sample_data,
                 "chart_type": "line",
@@ -321,7 +319,6 @@ class TestVisualization:
                 "figure": figure,
                 "format": "json",
                 "filename": "test-export",
-                "output_dir": str(tmp_path),
             },
         )
         data = _parse_result(export_result)
@@ -352,37 +349,42 @@ class TestDataTransformations:
             assert row["region"] == "Beograd"
 
     @pytest.mark.asyncio
-    async def test_filter_data_tool_with_operator(self, mcp_client, sample_data):
+    async def test_transform_data_sort(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "filter_data_tool",
+            "transform_data",
             {
                 "data": sample_data,
-                "filters": {"population": {">": 1900000}},
+                "operation": "sort",
+                "column": "population",
+                "ascending": True,
             },
         )
         data = _parse_result(result)
-        for row in data["data"]:
-            assert row["population"] > 1900000
+        values = [r["population"] for r in data["data"]]
+        assert values == sorted(values)
 
     @pytest.mark.asyncio
-    async def test_filter_data_tool_with_list(self, mcp_client, sample_data):
+    async def test_transform_data_sort_descending(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "filter_data_tool",
+            "transform_data",
             {
                 "data": sample_data,
-                "filters": {"year": [2021, 2022]},
+                "operation": "sort",
+                "column": "gdp",
+                "ascending": False,
             },
         )
         data = _parse_result(result)
-        for row in data["data"]:
-            assert row["year"] in (2021, 2022)
+        values = [r["gdp"] for r in data["data"]]
+        assert values == sorted(values, reverse=True)
 
     @pytest.mark.asyncio
-    async def test_group_data_tool(self, mcp_client, sample_data):
+    async def test_transform_data_group(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "group_data_tool",
+            "transform_data",
             {
                 "data": sample_data,
+                "operation": "group",
                 "group_by": "region",
             },
         )
@@ -391,24 +393,12 @@ class TestDataTransformations:
         assert data["rows"] > 0
 
     @pytest.mark.asyncio
-    async def test_group_data_tool_with_aggregation(self, mcp_client, sample_data):
+    async def test_transform_data_aggregate(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "group_data_tool",
+            "transform_data",
             {
                 "data": sample_data,
-                "group_by": "region",
-                "aggregations": {"gdp": "mean"},
-            },
-        )
-        data = _parse_result(result)
-        assert data["rows"] > 0
-
-    @pytest.mark.asyncio
-    async def test_aggregate_data_tool_sum(self, mcp_client, sample_data):
-        result = await mcp_client.call_tool(
-            "aggregate_data_tool",
-            {
-                "data": sample_data,
+                "operation": "aggregate",
                 "column": "population",
                 "function": "sum",
             },
@@ -418,66 +408,12 @@ class TestDataTransformations:
         assert data["value"] > 0
 
     @pytest.mark.asyncio
-    async def test_aggregate_data_tool_mean(self, mcp_client, sample_data):
+    async def test_transform_data_select(self, mcp_client, sample_data):
         result = await mcp_client.call_tool(
-            "aggregate_data_tool",
+            "transform_data",
             {
                 "data": sample_data,
-                "column": "gdp",
-                "function": "mean",
-            },
-        )
-        data = _parse_result(result)
-        assert data["function"] == "mean"
-        assert data["value"] > 0
-
-    @pytest.mark.asyncio
-    async def test_aggregate_data_tool_count(self, mcp_client, sample_data):
-        result = await mcp_client.call_tool(
-            "aggregate_data_tool",
-            {
-                "data": sample_data,
-                "column": "population",
-                "function": "count",
-            },
-        )
-        data = _parse_result(result)
-        assert data["value"] == len(sample_data)
-
-    @pytest.mark.asyncio
-    async def test_sort_data_tool_ascending(self, mcp_client, sample_data):
-        result = await mcp_client.call_tool(
-            "sort_data_tool",
-            {
-                "data": sample_data,
-                "by": "population",
-                "ascending": True,
-            },
-        )
-        data = _parse_result(result)
-        values = [r["population"] for r in data["data"]]
-        assert values == sorted(values)
-
-    @pytest.mark.asyncio
-    async def test_sort_data_tool_descending(self, mcp_client, sample_data):
-        result = await mcp_client.call_tool(
-            "sort_data_tool",
-            {
-                "data": sample_data,
-                "by": "gdp",
-                "ascending": False,
-            },
-        )
-        data = _parse_result(result)
-        values = [r["gdp"] for r in data["data"]]
-        assert values == sorted(values, reverse=True)
-
-    @pytest.mark.asyncio
-    async def test_select_columns_tool(self, mcp_client, sample_data):
-        result = await mcp_client.call_tool(
-            "select_columns_tool",
-            {
-                "data": sample_data,
+                "operation": "select",
                 "columns": ["region", "population"],
             },
         )
@@ -488,6 +424,19 @@ class TestDataTransformations:
             assert "population" in row
             assert "gdp" not in row
 
+    @pytest.mark.asyncio
+    async def test_transform_data_invalid_operation(self, mcp_client, sample_data):
+        from fastmcp.exceptions import ToolError
+
+        with pytest.raises(ToolError, match="Unknown operation"):
+            await mcp_client.call_tool(
+                "transform_data",
+                {
+                    "data": sample_data,
+                    "operation": "explode",
+                },
+            )
+
 
 # ===========================================================================
 # 6. Utility Tools Tests
@@ -495,16 +444,7 @@ class TestDataTransformations:
 
 
 class TestUtilityTools:
-    """Verify configuration and health-check tools."""
-
-    @pytest.mark.asyncio
-    async def test_get_config_tool(self, mcp_client):
-        result = await mcp_client.call_tool("get_config_tool", {})
-        data = _parse_result(result)
-        assert "api_base" in data
-        assert "rate_limit" in data
-        assert "timeout" in data
-        assert data["api_base"] == "https://data.gov.rs"
+    """Verify health-check tools."""
 
     @pytest.mark.asyncio
     async def test_health_check(self, mcp_client):
@@ -531,18 +471,18 @@ class TestPromptRendering:
         assert "education" in text
 
     @pytest.mark.asyncio
-    async def test_explore_dataset_prompt(self, mcp_client):
-        result = await mcp_client.get_prompt("explore_dataset_prompt", {"dataset_id": "test-123"})
-        assert len(result.messages) >= 1
-        text = result.messages[0].content.text
-        assert "test-123" in text
-
-    @pytest.mark.asyncio
     async def test_visualize_prompt(self, mcp_client):
         result = await mcp_client.get_prompt("visualize_prompt", {"description": "GDP trend"})
         assert len(result.messages) >= 1
         text = result.messages[0].content.text
         assert "GDP trend" in text
+
+    @pytest.mark.asyncio
+    async def test_data_journalism_prompt(self, mcp_client):
+        result = await mcp_client.get_prompt("data_journalism_prompt", {"topic": "air quality"})
+        assert len(result.messages) >= 1
+        text = result.messages[0].content.text
+        assert "air quality" in text
 
 
 # ===========================================================================
@@ -576,10 +516,11 @@ class TestEndToEndPipeline:
 
         # Step 2: Sort
         sort_result = await mcp_client.call_tool(
-            "sort_data_tool",
+            "transform_data",
             {
                 "data": filtered["data"],
-                "by": "population",
+                "operation": "sort",
+                "column": "population",
                 "ascending": False,
             },
         )
@@ -588,7 +529,7 @@ class TestEndToEndPipeline:
 
         # Step 3: Visualize
         viz_result = await mcp_client.call_tool(
-            "create_visualization",
+            "create_chart",
             {
                 "data": sorted_data["data"],
                 "chart_type": "bar",
@@ -607,7 +548,6 @@ class TestEndToEndPipeline:
                 "figure": viz_data["figure"],
                 "format": "json",
                 "filename": "pipeline-test",
-                "output_dir": str(tmp_path),
             },
         )
         export_data = _parse_result(export_result)
@@ -624,7 +564,6 @@ def _parse_result(result: Any) -> dict[str, Any]:
     for content in result.content:
         if hasattr(content, "text"):
             return json.loads(content.text)
-    # Fallback: return the raw result content as a string dict
     if hasattr(result, "content") and result.content:
         text = result.content[0].text if hasattr(result.content[0], "text") else str(result.content[0])
         return json.loads(text)

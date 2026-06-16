@@ -26,7 +26,7 @@ def sample_dataset():
         created_at="2025-01-01T00:00:00Z",
         modified_at="2025-01-10T00:00:00Z",
         resource_count=2,
-        has_downloadable=True
+        has_downloadable=True,
     )
 
 
