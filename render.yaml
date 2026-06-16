@@ -1,0 +1,28 @@
+# Render.com Blueprint — one-click deploy
+# https://render.com/docs/blueprint-spec
+#
+# Deploy steps:
+#   1. Push this repo to GitHub
+#   2. Go to https://dashboard.render.com/new -> Blueprint
+#   3. Connect your repo
+#   4. Render reads this file automatically
+#   5. Set GEMINI_API_KEY in the environment variables
+#
+# Or deploy via button in README.md:
+#   [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+services:
+  - type: web
+    name: serbian-data-mcp-demo
+    runtime: python
+    buildCommand: pip install gunicorn && pip install -e .
+    startCommand: gunicorn wsgi:app --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: PORT
+        value: "10000"
+      - key: GEMINI_API_KEY
+        sync: false
+    healthCheckPath: /health
+    healthCheckInterval: 30
