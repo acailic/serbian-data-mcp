@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serbian Data MCP — Access 3400+ Serbian Government Datasets</title>
+    <meta name="description" content="MCP server for accessing and visualizing 3400+ datasets from the Serbian open data portal (data.gov.rs). Works with Claude, Cursor, and any MCP client.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a1a;
+            --bg-secondary: #111128;
+            --bg-card: #161638;
+            --bg-card-hover: #1c1c48;
+            --border: rgba(255,255,255,0.06);
+            --border-active: rgba(255,171,0,0.3);
+            --text-primary: #e8e8f0;
+            --text-secondary: #9898b8;
+            --text-muted: #6868a0;
+            --accent: #ffab00;
+            --accent-dim: rgba(255,171,0,0.1);
+            --accent-glow: rgba(255,171,0,0.15);
+            --red: #ef5350;
+            --green: #66bb6a;
+            --blue: #42a5f5;
+            --code-bg: #0d0d24;
+            --radius: 12px;
+            --radius-lg: 20px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Nav */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(10,10,26,0.85); backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px; height: 56px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.95rem; }
+        nav .brand .flag { font-size: 1.2rem; }
+        nav .links { display: flex; gap: 24px; }
+        nav .links a { color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; text-decoration: none; }
+        nav .links a:hover { color: var(--accent); }
+        nav .install-btn {
+            background: var(--accent); color: #0a0a1a; border: none; padding: 6px 16px;
+            border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer;
+        }
+        nav .install-btn:hover { text-decoration: none; }
+
+        /* Hero */
+        .hero {
+            padding: 140px 24px 80px;
+            max-width: 1100px; margin: 0 auto;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--accent-dim); border: 1px solid var(--border-active);
+            padding: 6px 16px; border-radius: 100px; font-size: 0.8rem;
+            font-weight: 600; color: var(--accent); margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900;
+            letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 20px;
+        }
+        .hero h1 span { color: var(--accent); }
+        .hero p {
+            font-size: 1.15rem; color: var(--text-secondary); max-width: 640px;
+            font-weight: 400; line-height: 1.7;
+        }
+
+        /* Stats */
+        .stats {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+            max-width: 900px; margin: 48px auto 0; width: 100%;
+        }
+        .stat {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 20px; text-align: center;
+        }
+        .stat .number { font-size: 2rem; font-weight: 900; letter-spacing: -0.02em; }
+        .stat .number.accent { color: var(--accent); }
+        .stat .label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* Sections */
+        section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+        .section-label {
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--accent); margin-bottom: 8px;
+        }
+        .section-title {
+            font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em;
+            margin-bottom: 12px;
+        }
+        .section-desc { color: var(--text-secondary); font-size: 0.95rem; max-width: 600px; margin-bottom: 40px; }
+
+        /* Code blocks */
+        .code-block {
+            background: var(--code-bg); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden; margin-bottom: 24px;
+        }
+        .code-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px; border-bottom: 1px solid var(--border);
+            font-size: 0.75rem; color: var(--text-muted); font-weight: 600;
+        }
+        .code-header .lang { display: flex; align-items: center; gap: 6px; }
+        .code-header .lang .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .code-header .copy-btn {
+            background: none; border: 1px solid var(--border); color: var(--text-muted);
+            padding: 3px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;
+            font-weight: 600;
+        }
+        .code-header .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+        pre {
+            padding: 16px; overflow-x: auto; font-size: 0.82rem; line-height: 1.7;
+            font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+        }
+        .kw { color: #c792ea; } .fn { color: #82aaff; } .str { color: #c3e88d; }
+        .cm { color: #546e7a; } .num { color: #f78c6c; } .op { color: #89ddff; }
+        .key { color: #ffcb6b; } .punc { color: #89ddff; }
+
+        /* Prompt examples */
+        .prompt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .prompt-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .prompt-card:hover { border-color: var(--border-active); transform: translateY(-2px); }
+        .prompt-card .card-header {
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .prompt-card .card-header h3 { font-size: 0.95rem; font-weight: 700; }
+        .prompt-card .card-header .tag {
+            font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+            padding: 3px 8px; border-radius: 6px; letter-spacing: 0.04em;
+        }
+        .tag-search { background: rgba(66,165,245,0.12); color: var(--blue); }
+        .tag-viz { background: rgba(102,187,106,0.12); color: var(--green); }
+        .tag-analysis { background: rgba(255,171,0,0.12); color: var(--accent); }
+        .tag-journalism { background: rgba(239,83,80,0.12); color: var(--red); }
+
+        .prompt-card .card-body { padding: 16px 20px; }
+        .prompt-card .prompt-text {
+            background: var(--code-bg); border-radius: 8px; padding: 12px 14px;
+            font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 12px;
+            border-left: 3px solid var(--accent);
+        }
+        .prompt-card .prompt-text strong { color: var(--text-primary); }
+        .prompt-card .result-preview {
+            font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;
+        }
+        .prompt-card .result-preview code {
+            background: rgba(255,255,255,0.04); padding: 1px 5px; border-radius: 4px;
+            font-size: 0.75rem; color: var(--text-secondary);
+        }
+
+        /* Chart gallery */
+        .chart-gallery {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;
+        }
+        .chart-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden;
+        }
+        .chart-card img {
+            width: 100%; height: 200px; object-fit: cover; background: #1a1a2e;
+        }
+        .chart-card .chart-info {
+            padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .chart-card .chart-info span { font-size: 0.8rem; font-weight: 600; }
+        .chart-card .chart-info .type {
+            font-size: 0.65rem; color: var(--accent); background: var(--accent-dim);
+            padding: 3px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase;
+        }
+
+        /* Options section */
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .option-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 24px;
+        }
+        .option-card h3 {
+            font-size: 1rem; font-weight: 700; margin-bottom: 6px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .option-card h3 .icon { font-size: 1.3rem; }
+        .option-card .desc { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px; }
+        .option-card pre {
+            background: var(--code-bg); border-radius: 8px; padding: 12px;
+            font-size: 0.75rem; overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        /* Tools grid */
+        .tools-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;
+        }
+        .tool-chip {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 14px;
+            font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);
+            transition: border-color 0.15s;
+        }
+        .tool-chip:hover { border-color: var(--border-active); color: var(--text-primary); }
+
+        /* Footer */
+        footer {
+            max-width: 1100px; margin: 0 auto; padding: 40px 24px 60px;
+            border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 0.78rem; color: var(--text-muted);
+        }
+        footer .links { display: flex; gap: 16px; }
+
+        @media (max-width: 768px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .hero { padding: 120px 20px 60px; }
+            .hero h1 { font-size: 2rem; }
+            nav .links { display: none; }
+            section { padding: 60px 20px; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate { animation: fadeInUp 0.5s ease-out both; }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="brand">
+        <span class="flag">🇷🇸</span>
+        Serbian Data MCP
+    </div>
+    <div class="links">
+        <a href="#prompts">Prompts</a>
+        <a href="#charts">Charts</a>
+        <a href="#tools">Tools</a>
+        <a href="#options">Install</a>
+    </div>
+    <a class="install-btn" href="#options">pip install</a>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+    <div class="hero-badge animate">v0.2.0 — Modular Architecture</div>
+    <h1 class="animate delay-1">Access <span>3,400+</span> Serbian<br>Government Datasets</h1>
+    <p class="animate delay-2">
+        An MCP server that connects AI assistants to Serbia's open data portal.
+        Search, analyze, and visualize population, budgets, air quality,
+        real estate, and more — in Serbian or English.
+    </p>
+    <div class="stats animate delay-3">
+        <div class="stat">
+            <div class="number accent">3,400+</div>
+            <div class="label">Datasets</div>
+        </div>
+        <div class="stat">
+            <div class="number">180+</div>
+            <div class="label">Organizations</div>
+        </div>
+        <div class="stat">
+            <div class="number">13</div>
+            <div class="label">Chart Types</div>
+        </div>
+        <div class="stat">
+            <div class="number">28</div>
+            <div class="label">MCP Tools</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Start -->
+<section id="quickstart">
+    <div class="section-label">Quick Start</div>
+    <div class="section-title">Up and running in 30 seconds</div>
+    <div class="section-desc">Install the package, add to your MCP client, and start querying Serbian government data.</div>
+
+    <div class="code-block">
+        <div class="code-header">
+            <span class="lang"><span class="dot" style="background:var(--green)"></span> Terminal</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><span class="cm"># Install from PyPI</span>
+pip install serbian-data-mcp
+
+<span class="cm"># Add to Claude Desktop (~/.claude/claude_desktop_config.json)</span>
+<span class="punc">{</span>
+  <span class="key">"mcpServers"</span>: <span class="punc">{</span>
+    <span class="key">"serbian-data"</span>: <span class="punc">{</span>
+      <span class="key">"command"</span>: <span class="str">"serbian-data-mcp"</span>
+    <span class="punc">}</span>
+  <span class="punc">}</span>
+<span class="punc">}</span></pre>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">
+            <span class="lang"><span class="dot" style="background:var(--accent)"></span> Claude Desktop Config</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><span class="punc">{</span>
+  <span class="key">"mcpServers"</span>: <span class="punc">{</span>
+    <span class="key">"serbian-data"</span>: <span class="punc">{</span>
+      <span class="key">"command"</span>: <span class="str">"serbian-data-mcp"</span>
+    <span class="punc">}</span>
+  <span class="punc">}</span>
+<span class="punc">}</span></pre>
+    </div>
+</section>
+
+<!-- Prompts Showcase -->
+<section id="prompts">
+    <div class="section-label">Prompts & Results</div>
+    <div class="section-title">What you can ask</div>
+    <div class="section-desc">Real examples of prompts that work with the server. Paste any of these into Claude, Cursor, or any MCP client.</div>
+
+    <div class="prompt-grid">
+
+        <div class="prompt-card">
+            <div class="card-header">
+                <h3>🔍 Find Population Data</h3>
+                <span class="tag tag-search">search</span>
+            </div>
+            <div class="card-body">
+                <div class="prompt-text">
+                    <strong>"Search for population census data from the Serbian statistical office"</strong>
+                </div>
+                <div class="result-preview">
+                    Returns <code>{datasets: [{id, title, organization}], total: 42}</code> —
+                    42 matching datasets from РЗС with resource IDs ready for download.
+                </div>
+            </div>
+        </div>
+
+        <div class="prompt-card">
+            <div class="card-header">
+                <h3>📊 Visualize Air Quality</h3>
+                <span class="tag tag-viz">visualization</span>
+            </div>
+            <div class="card-body">
+                <div class="prompt-text">
+                    <strong>"Search for air quality data, download it, create a line chart of PM10 levels over time in Niš"</strong>
+                </div>
+                <div class="result-preview">
+                    Auto-executes: <code>search → get_resource_data → data_profile → create_chart(line)</code> —
+                    returns interactive Plotly chart with hover tooltips.
+                </div>
+            </div>
+        </div>
+
+        <div class="prompt-card">
+            <div class="card-header">
+                <h3>🇷🇸 Serbia Population Map</h3>
+                <span class="tag tag-viz">map</span>
+            </div>
+            <div class="card-body">
+                <div class="prompt-text">
+                    <strong>"Create a choropleth map of Serbia showing population density by district"</strong>
+                </div>
+                <div class="result-preview">
+                    Renders 25 okrug boundaries from Natural Earth data.
+                    Returns <code>{filepath: "exports/serbia_map.html"}</code> —
+                    self-contained interactive HTML map.
+                </div>
+            </div>
+        </div>
+
+        <div class="prompt-card">
+            <div class="card-header">
+                <h3>📈 Budget Analysis</h3>
+                <span class="tag tag-analysis">analysis</span>
+            </div>
+            <div class="card-body">
+                <div class="prompt-text">
+                    <strong>"Find budget execution data, extract insights showing the biggest spending changes year-over-year"</strong>
+                </div>
+                <div class="result-preview">
+                    Auto-executes: <code>search → download → data_profile → extract_data_insights</code> —
+                    returns severity-ranked findings like <code>"Defense spending +23% YoY"</code>.
+                </div>
+            </div>
+        </div>
+
+        <div class="prompt-card">
+            <div class="card-header">
+                <h3>📰 Data Journalism Story</h3>
+                <span class="tag tag-journalism">story</span>
+            </div>
+            <div class="card-body">
+                <div class="prompt-text">
+                    <strong>"Create a data story about Serbia's population decline — find data, show trends, generate an infographic"</strong>
+                </div>
+                <div class="result-preview">
+                    Auto-executes full pipeline: <code>search → download → insights → chart → infographic</code> —
+                    returns <code>{filepath, headline: "-12% decline", big_number: "1.4M"}</code>.
+                </div>
+            </div>
+        </div>
+
+        <div class="prompt-card">
+            <div class="card-header">
+                <h3>📉 Forecast Future Trends</h3>
+                <span class="tag tag-analysis">forecast</span>
+            </div>
+            <div class="card-body">
+                <div class="prompt-text">
+                    <strong>"Download population data and forecast what the population will be in 2035 at the current rate"</strong>
+                </div>
+                <div class="result-preview">
+                    Runs <code>forecast_data(method='linear', periods_ahead=10)</code> —
+                    returns <code>{projection_note: "At -0.4%/yr, Serbia will have ~5.8M by 2035", r_squared: 0.97}</code>.
+                </div>
+            </div>
+        </div>
+
+        <div class="prompt-card">
+            <div class="card-header">
+                <h3>🏛️ Real Estate Prices</h3>
+                <span class="tag tag-search">search</span>
+            </div>
+            <div class="card-body">
+                <div class="prompt-text">
+                    <strong>"Pronađi podatke o cenama stanova u Beogradu i napravi bar chart po opštinama"</strong>
+                </div>
+                <div class="result-preview">
+                    Serbian queries work natively. Returns Belgrade real estate datasets
+                    with XLSX resources. Creates per-municipality price comparison chart.
+                </div>
+            </div>
+        </div>
+
+        <div class="prompt-card">
+            <div class="card-header">
+                <h3>🔗 Compare Two Datasets</h3>
+                <span class="tag tag-analysis">compare</span>
+            </div>
+            <div class="card-body">
+                <div class="prompt-text">
+                    <strong>"Compare these two population datasets: id-A and id-B. Which has better data quality and more recent updates?"</strong>
+                </div>
+                <div class="result-preview">
+                    Returns <code>{same_organization: false, shared_formats: ["xlsx"], quality_score: 0.85}</code> —
+                    side-by-side comparison with recommendations.
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Chart Gallery -->
+<section id="charts">
+    <div class="section-label">Visualization Gallery</div>
+    <div class="section-title">13 chart types, zero configuration</div>
+    <div class="section-desc">All charts are interactive Plotly visualizations exported as self-contained HTML. Dark, light, and infographic themes built in.</div>
+
+    <div class="chart-gallery">
+        <div class="chart-card">
+            <img src="docs/images/line_chart.gif" alt="Line chart" loading="lazy">
+            <div class="chart-info">
+                <span>Line Chart</span>
+                <span class="type">trends</span>
+            </div>
+        </div>
+        <div class="chart-card">
+            <img src="docs/images/bar_chart.gif" alt="Bar chart" loading="lazy">
+            <div class="chart-info">
+                <span>Bar Chart</span>
+                <span class="type">comparison</span>
+            </div>
+        </div>
+        <div class="chart-card">
+            <img src="docs/images/pie_chart.gif" alt="Pie chart" loading="lazy">
+            <div class="chart-info">
+                <span>Pie Chart</span>
+                <span class="type">distribution</span>
+            </div>
+        </div>
+        <div class="chart-card">
+            <img src="docs/images/scatter_plot.gif" alt="Scatter plot" loading="lazy">
+            <div class="chart-info">
+                <span>Scatter Plot</span>
+                <span class="type">correlation</span>
+            </div>
+        </div>
+        <div class="chart-card">
+            <img src="docs/images/histogram.gif" alt="Histogram" loading="lazy">
+            <div class="chart-info">
+                <span>Histogram</span>
+                <span class="type">frequency</span>
+            </div>
+        </div>
+        <div class="chart-card">
+            <img src="docs/images/box_plot.gif" alt="Box plot" loading="lazy">
+            <div class="chart-info">
+                <span>Box Plot</span>
+                <span class="type">statistics</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Tools -->
+<section id="tools">
+    <div class="section-label">28 MCP Tools</div>
+    <div class="section-title">Complete toolkit</div>
+    <div class="section-desc">Every tool designed for LLM-first usage. Output of tool A feeds directly into tool B.</div>
+
+    <div class="tools-grid">
+        <div class="tool-chip">search_datasets</div>
+        <div class="tool-chip">suggest_datasets</div>
+        <div class="tool-chip">search_by_tag</div>
+        <div class="tool-chip">list_organizations</div>
+        <div class="tool-chip">get_portal_statistics</div>
+        <div class="tool-chip">get_dataset</div>
+        <div class="tool-chip">get_resource_data</div>
+        <div class="tool-chip">compare_datasets</div>
+        <div class="tool-chip">browse_recent_datasets</div>
+        <div class="tool-chip">transform_data</div>
+        <div class="tool-chip">filter_data_tool</div>
+        <div class="tool-chip">data_profile</div>
+        <div class="tool-chip">create_chart</div>
+        <div class="tool-chip">apply_chart_theme</div>
+        <div class="tool-chip">build_infographic</div>
+        <div class="tool-chip">build_dashboard</div>
+        <div class="tool-chip">create_serbia_map</div>
+        <div class="tool-chip">list_serbia_districts</div>
+        <div class="tool-chip">create_bubble_map</div>
+        <div class="tool-chip">create_multi_layer_map</div>
+        <div class="tool-chip">extract_data_insights</div>
+        <div class="tool-chip">generate_data_narrative</div>
+        <div class="tool-chip">compute_metrics</div>
+        <div class="tool-chip">forecast_data</div>
+        <div class="tool-chip">benchmark_data</div>
+        <div class="tool-chip">export_visualization</div>
+        <div class="tool-chip">export_data</div>
+        <div class="tool-chip">health_check</div>
+    </div>
+</section>
+
+<!-- Install Options -->
+<section id="options">
+    <div class="section-label">Installation Options</div>
+    <div class="section-title">Works everywhere</div>
+    <div class="section-desc">Install on any MCP-compatible client. No API keys needed.</div>
+
+    <div class="options-grid">
+        <div class="option-card">
+            <h3><span class="icon">🐍</span> PyPI (Recommended)</h3>
+            <div class="desc">Install globally and add to any MCP client configuration.</div>
+            <pre>pip install serbian-data-mcp</pre>
+        </div>
+
+        <div class="option-card">
+            <h3><span class="icon">🟣</span> Claude Desktop</h3>
+            <div class="desc">Add to your Claude Desktop config file.</div>
+            <pre>{
+  "mcpServers": {
+    "serbian-data": {
+      "command": "serbian-data-mcp"
+    }
+  }
+}</pre>
+        </div>
+
+        <div class="option-card">
+            <h3><span class="icon">📦</span> Smithery</h3>
+            <div class="desc">Install via the Smithery CLI — auto-configures your client.</div>
+            <pre>smithery mcp add acailic/serbian-data-mcp --client claude</pre>
+        </div>
+
+        <div class="option-card">
+            <h3><span class="icon">⬡</span> Cursor</h3>
+            <div class="desc">Add to Cursor's MCP settings.</div>
+            <pre>{
+  "mcpServers": {
+    "serbian-data": {
+      "command": "serbian-data-mcp"
+    }
+  }
+}</pre>
+        </div>
+
+        <div class="option-card">
+            <h3><span class="icon">🔧</span> uvx (No Install)</h3>
+            <div class="desc">Run directly without installing — good for testing.</div>
+            <pre>{
+  "mcpServers": {
+    "serbian-data": {
+      "command": "uvx",
+      "args": ["serbian-data-mcp"]
+    }
+  }
+}</pre>
+        </div>
+
+        <div class="option-card">
+            <h3><span class="icon">💻</span> From Source</h3>
+            <div class="desc">Clone and run for development or customization.</div>
+            <pre>git clone https://github.com/acailic/serbian-data-mcp
+cd serbian-data-mcp
+uv sync
+uv run python -m serbian_data_mcp</pre>
+        </div>
+    </div>
+</section>
+
+<!-- Workflow -->
+<section id="workflow">
+    <div class="section-label">Recommended Workflow</div>
+    <div class="section-title">7 steps from question to answer</div>
+    <div class="section-desc">The LLM resource guide teaches this automatically. But here's the pattern:</div>
+
+    <div class="code-block">
+        <div class="code-header">
+            <span class="lang"><span class="dot" style="background:var(--blue)"></span> MCP Tool Pipeline</span>
+        </div>
+        <pre><span class="cm">1.</span> <span class="fn">search_datasets</span><span class="punc">(</span><span class="str">"kvalitet vazduha"</span><span class="punc">)</span>        <span class="cm">← Find datasets</span>
+<span class="cm">2.</span> <span class="fn">get_dataset</span><span class="punc">(</span><span class="str">"id-123"</span><span class="punc">,</span> <span class="str">detail_level="metadata"</span><span class="punc">)</span> <span class="cm">← See resources</span>
+<span class="cm">3.</span> <span class="fn">get_resource_data</span><span class="punc">(</span><span class="str">"res-456"</span><span class="punc">)</span>            <span class="cm">← Download data</span>
+<span class="cm">4.</span> <span class="fn">data_profile</span><span class="punc">(</span>data<span class="punc">)</span>                      <span class="cm">← Learn columns</span>
+<span class="cm">5.</span> <span class="fn">transform_data</span><span class="punc">(</span>data<span class="punc">,</span> <span class="str">"filter"</span><span class="punc">,</span> <span class="punc">...)</span>        <span class="cm">← Clean data</span>
+<span class="cm">6.</span> <span class="fn">create_chart</span><span class="punc">(</span>data<span class="punc">,</span> <span class="str">"line"</span><span class="punc">,</span> <span class="punc">...)</span>            <span class="cm">← Visualize</span>
+<span class="cm">7.</span> <span class="fn">export_visualization</span><span class="punc">(</span>figure<span class="punc">,</span> <span class="str">"html"</span><span class="punc">)</span>    <span class="cm">← Save file</span></pre>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div>
+        <strong>Serbian Data MCP</strong> · v0.2.0 · Open data for AI
+    </div>
+    <div class="links">
+        <a href="https://github.com/acailic/serbian-data-mcp">GitHub</a>
+        <a href="https://pypi.org/project/serbian-data-mcp">PyPI</a>
+        <a href="https://smithery.ai/server/acailic/serbian-data-mcp">Smithery</a>
+        <a href="https://data.gov.rs">data.gov.rs</a>
+    </div>
+</footer>
+
+<script>
+function copyCode(btn) {
+    const block = btn.closest('.code-block');
+    const pre = block.querySelector('pre');
+    const text = pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        btn.style.color = 'var(--green)';
+        btn.style.borderColor = 'var(--green)';
+        setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        }, 2000);
+    });
+}
+</script>
+
+</body>
+</html>
