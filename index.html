@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serbian Data MCP — Access 3400+ Serbian Government Datasets</title>
-    <meta name="description" content="MCP server for accessing and visualizing 3400+ datasets from the Serbian open data portal (data.gov.rs). Works with Claude, Cursor, and any MCP client.">
+    <title>Српски подаци MCP — Приступ 3400+ скупова података</title>
+    <meta name="description" content="MCP сервер за приступ и визуализацију 3400+ скупова података са портала отворених података Републике Србије (data.gov.rs). Ради са Claude, Cursor и било којим MCP клијентом.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -51,14 +51,21 @@
         }
         nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.95rem; }
         nav .brand .flag { font-size: 1.2rem; }
-        nav .links { display: flex; gap: 24px; }
-        nav .links a { color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; text-decoration: none; }
-        nav .links a:hover { color: var(--accent); }
+        nav .nav-center { display: flex; gap: 24px; }
+        nav .nav-center a { color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; text-decoration: none; }
+        nav .nav-center a:hover { color: var(--accent); }
+        nav .nav-right { display: flex; align-items: center; gap: 12px; }
         nav .install-btn {
             background: var(--accent); color: #0a0a1a; border: none; padding: 6px 16px;
             border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer;
         }
         nav .install-btn:hover { text-decoration: none; }
+        nav .lang-toggle {
+            background: none; border: 1px solid var(--border); color: var(--text-secondary);
+            padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer;
+            font-weight: 600; transition: all 0.15s;
+        }
+        nav .lang-toggle:hover { border-color: var(--accent); color: var(--accent); }
 
         /* Hero */
         .hero {
@@ -233,7 +240,7 @@
             .stats { grid-template-columns: repeat(2, 1fr); }
             .hero { padding: 120px 20px 60px; }
             .hero h1 { font-size: 2rem; }
-            nav .links { display: none; }
+            nav .nav-center { display: none; }
             section { padding: 60px 20px; }
         }
 
@@ -252,61 +259,64 @@
 <nav>
     <div class="brand">
         <span class="flag">🇷🇸</span>
-        Serbian Data MCP
+        <span>Serbian Data MCP</span>
     </div>
-    <div class="links">
-        <a href="#prompts">Prompts</a>
-        <a href="#charts">Charts</a>
-        <a href="#tools">Tools</a>
-        <a href="#options">Install</a>
+    <div class="nav-center">
+        <a href="#prompts" data-i18n="nav.prompts">Промптови</a>
+        <a href="#charts" data-i18n="nav.charts">Графикони</a>
+        <a href="#tools" data-i18n="nav.tools">Алатке</a>
+        <a href="#options" data-i18n="nav.install">Инсталација</a>
     </div>
-    <a class="install-btn" href="#options">pip install</a>
+    <div class="nav-right">
+        <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+        <a class="install-btn" href="#options" data-i18n="nav.pip">pip install</a>
+    </div>
 </nav>
 
 <!-- Hero -->
 <div class="hero">
-    <div class="hero-badge animate">v0.2.0 — Modular Architecture</div>
-    <h1 class="animate delay-1">Access <span>3,400+</span> Serbian<br>Government Datasets</h1>
-    <p class="animate delay-2">
-        An MCP server that connects AI assistants to Serbia's open data portal.
-        Search, analyze, and visualize population, budgets, air quality,
-        real estate, and more — in Serbian or English.
+    <div class="hero-badge animate" data-i18n="hero.badge">v0.2.0 — Модулна архитектура</div>
+    <h1 class="animate delay-1" data-i18n="hero.title">Приступ <span>3.400+</span> скупова података<br>владе Републике Србије</h1>
+    <p class="animate delay-2" data-i18n="hero.desc">
+        MCP сервер који повезује AI асистенте са портом отворених података Србије.
+        Претражујте, анализирајте и визуализујте демографију, буџете, kvalitet vazduha,
+        некретнине и остало — на српском или енглеском.
     </p>
     <div class="stats animate delay-3">
         <div class="stat">
-            <div class="number accent">3,400+</div>
-            <div class="label">Datasets</div>
+            <div class="number accent">3.400+</div>
+            <div class="label" data-i18n="stat.datasets">Скупова података</div>
         </div>
         <div class="stat">
             <div class="number">180+</div>
-            <div class="label">Organizations</div>
+            <div class="label" data-i18n="stat.orgs">Организација</div>
         </div>
         <div class="stat">
             <div class="number">13</div>
-            <div class="label">Chart Types</div>
+            <div class="label" data-i18n="stat.charts">Типова графикона</div>
         </div>
         <div class="stat">
             <div class="number">28</div>
-            <div class="label">MCP Tools</div>
+            <div class="label" data-i18n="stat.tools">MCP алатки</div>
         </div>
     </div>
 </div>
 
 <!-- Quick Start -->
 <section id="quickstart">
-    <div class="section-label">Quick Start</div>
-    <div class="section-title">Up and running in 30 seconds</div>
-    <div class="section-desc">Install the package, add to your MCP client, and start querying Serbian government data.</div>
+    <div class="section-label" data-i18n="qs.label">Брзи почетак</div>
+    <div class="section-title" data-i18n="qs.title">Спремни за 30 секунди</div>
+    <div class="section-desc" data-i18n="qs.desc">Инсталирајте пакет, додајте у MCP клијент и почните да кверијете податке владе Србије.</div>
 
     <div class="code-block">
         <div class="code-header">
             <span class="lang"><span class="dot" style="background:var(--green)"></span> Terminal</span>
-            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <button class="copy-btn" onclick="copyCode(this)" data-i18n="btn.copy">Копирај</button>
         </div>
-        <pre><span class="cm"># Install from PyPI</span>
+        <pre><span class="cm"># Инсталирање са PyPI</span>
 pip install serbian-data-mcp
 
-<span class="cm"># Add to Claude Desktop (~/.claude/claude_desktop_config.json)</span>
+<span class="cm"># Додајте у Claude Desktop (~/.claude/claude_desktop_config.json)</span>
 <span class="punc">{</span>
   <span class="key">"mcpServers"</span>: <span class="punc">{</span>
     <span class="key">"serbian-data"</span>: <span class="punc">{</span>
@@ -319,7 +329,7 @@ pip install serbian-data-mcp
     <div class="code-block">
         <div class="code-header">
             <span class="lang"><span class="dot" style="background:var(--accent)"></span> Claude Desktop Config</span>
-            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <button class="copy-btn" onclick="copyCode(this)" data-i18n="btn.copy">Копирај</button>
         </div>
         <pre><span class="punc">{</span>
   <span class="key">"mcpServers"</span>: <span class="punc">{</span>
@@ -333,137 +343,137 @@ pip install serbian-data-mcp
 
 <!-- Prompts Showcase -->
 <section id="prompts">
-    <div class="section-label">Prompts & Results</div>
-    <div class="section-title">What you can ask</div>
-    <div class="section-desc">Real examples of prompts that work with the server. Paste any of these into Claude, Cursor, or any MCP client.</div>
+    <div class="section-label" data-i18n="prompts.label">Промптови и резултати</div>
+    <div class="section-title" data-i18n="prompts.title">Шта можете да питате</div>
+    <div class="section-desc" data-i18n="prompts.desc">Реални примери промптова који раде са сервером. Налепите било који у Claude, Cursor или било који MCP клијент.</div>
 
     <div class="prompt-grid">
 
         <div class="prompt-card">
             <div class="card-header">
-                <h3>🔍 Find Population Data</h3>
+                <h3>🔍 <span data-i18n="p1.title">Пронађите демографске податке</span></h3>
                 <span class="tag tag-search">search</span>
             </div>
             <div class="card-body">
                 <div class="prompt-text">
-                    <strong>"Search for population census data from the Serbian statistical office"</strong>
+                    <strong data-i18n="p1.prompt">"Претражи податке о попису становништва од Републичког завода за статистику"</strong>
                 </div>
-                <div class="result-preview">
-                    Returns <code>{datasets: [{id, title, organization}], total: 42}</code> —
-                    42 matching datasets from РЗС with resource IDs ready for download.
+                <div class="result-preview" data-i18n-html="p1.result">
+                    Враћа <code>{datasets: [{id, title, organization}], total: 42}</code> —
+                    42 одговарајућа скупа података од РЗС са ID ресурса спремних за преузимање.
                 </div>
             </div>
         </div>
 
         <div class="prompt-card">
             <div class="card-header">
-                <h3>📊 Visualize Air Quality</h3>
+                <h3>📊 <span data-i18n="p2.title">Визуализација kvaliteta vazduha</span></h3>
                 <span class="tag tag-viz">visualization</span>
             </div>
             <div class="card-body">
                 <div class="prompt-text">
-                    <strong>"Search for air quality data, download it, create a line chart of PM10 levels over time in Niš"</strong>
+                    <strong data-i18n="p2.prompt">"Претражи податке о kvalitetu vazduha, преузми их, направи линијски графикон нивоа PM10 кроз време у Нишу"</strong>
                 </div>
-                <div class="result-preview">
-                    Auto-executes: <code>search → get_resource_data → data_profile → create_chart(line)</code> —
-                    returns interactive Plotly chart with hover tooltips.
+                <div class="result-preview" data-i18n-html="p2.result">
+                    Аутоматски извршава: <code>search → get_resource_data → data_profile → create_chart(line)</code> —
+                    враћа интерактивни Plotly графикон са обавештењима.
                 </div>
             </div>
         </div>
 
         <div class="prompt-card">
             <div class="card-header">
-                <h3>🇷🇸 Serbia Population Map</h3>
+                <h3>🇷🇸 <span data-i18n="p3.title">Мапа становништва Србије</span></h3>
                 <span class="tag tag-viz">map</span>
             </div>
             <div class="card-body">
                 <div class="prompt-text">
-                    <strong>"Create a choropleth map of Serbia showing population density by district"</strong>
+                    <strong data-i18n="p3.prompt">"Направи хороплет карту Србије са густином насељености по округу"</strong>
                 </div>
-                <div class="result-preview">
-                    Renders 25 okrug boundaries from Natural Earth data.
-                    Returns <code>{filepath: "exports/serbia_map.html"}</code> —
-                    self-contained interactive HTML map.
+                <div class="result-preview" data-i18n-html="p3.result">
+                    Рендерује 25 округа од Natural Earth података.
+                    Враћа <code>{filepath: "exports/serbia_map.html"}</code> —
+                    самодовољну интерактивну HTML карту.
                 </div>
             </div>
         </div>
 
         <div class="prompt-card">
             <div class="card-header">
-                <h3>📈 Budget Analysis</h3>
+                <h3>📈 <span data-i18n="p4.title">Анализа буџета</span></h3>
                 <span class="tag tag-analysis">analysis</span>
             </div>
             <div class="card-body">
                 <div class="prompt-text">
-                    <strong>"Find budget execution data, extract insights showing the biggest spending changes year-over-year"</strong>
+                    <strong data-i18n="p4.prompt">"Пронађи податке о извршењу буџета, издвој увиде са највећим променама у трошењу годишње"</strong>
                 </div>
-                <div class="result-preview">
-                    Auto-executes: <code>search → download → data_profile → extract_data_insights</code> —
-                    returns severity-ranked findings like <code>"Defense spending +23% YoY"</code>.
+                <div class="result-preview" data-i18n-html="p4.result">
+                    Аутоматски извршава: <code>search → download → data_profile → extract_data_insights</code> —
+                    враћа налазе рангиране по тежини као <code>"Одбрана +23% YoY"</code>.
                 </div>
             </div>
         </div>
 
         <div class="prompt-card">
             <div class="card-header">
-                <h3>📰 Data Journalism Story</h3>
+                <h3>📰 <span data-i18n="p5.title">Прича заснована на подацима</span></h3>
                 <span class="tag tag-journalism">story</span>
             </div>
             <div class="card-body">
                 <div class="prompt-text">
-                    <strong>"Create a data story about Serbia's population decline — find data, show trends, generate an infographic"</strong>
+                    <strong data-i18n="p5.prompt">"Направи причу о паду становништва Србије — пронађи податке, прикажи трендове, генериши инфографику"</strong>
                 </div>
-                <div class="result-preview">
-                    Auto-executes full pipeline: <code>search → download → insights → chart → infographic</code> —
-                    returns <code>{filepath, headline: "-12% decline", big_number: "1.4M"}</code>.
+                <div class="result-preview" data-i18n-html="p5.result">
+                    Извршава цео процес: <code>search → download → insights → chart → infographic</code> —
+                    враћа <code>{filepath, headline: "-12% пада", big_number: "1,4M"}</code>.
                 </div>
             </div>
         </div>
 
         <div class="prompt-card">
             <div class="card-header">
-                <h3>📉 Forecast Future Trends</h3>
+                <h3>📉 <span data-i18n="p6.title">Прогнозирање трендова</span></h3>
                 <span class="tag tag-analysis">forecast</span>
             </div>
             <div class="card-body">
                 <div class="prompt-text">
-                    <strong>"Download population data and forecast what the population will be in 2035 at the current rate"</strong>
+                    <strong data-i18n="p6.prompt">"Преузми податке о становништву и предвиди колико ће бити становника 2035. по текућем тренду"</strong>
                 </div>
-                <div class="result-preview">
-                    Runs <code>forecast_data(method='linear', periods_ahead=10)</code> —
-                    returns <code>{projection_note: "At -0.4%/yr, Serbia will have ~5.8M by 2035", r_squared: 0.97}</code>.
+                <div class="result-preview" data-i18n-html="p6.result">
+                    Извршава <code>forecast_data(method='linear', periods_ahead=10)</code> —
+                    враћа <code>{projection_note: "По -0,4%/год, Србија ће имати ~5,8M до 2035.", r_squared: 0.97}</code>.
                 </div>
             </div>
         </div>
 
         <div class="prompt-card">
             <div class="card-header">
-                <h3>🏛️ Real Estate Prices</h3>
+                <h3>🏛️ <span data-i18n="p7.title">Цене некретнина</span></h3>
                 <span class="tag tag-search">search</span>
             </div>
             <div class="card-body">
                 <div class="prompt-text">
-                    <strong>"Pronađi podatke o cenama stanova u Beogradu i napravi bar chart po opštinama"</strong>
+                    <strong data-i18n="p7.prompt">"Пронађи податке о ценама станова у Београду и направи bar chart по општинама"</strong>
                 </div>
-                <div class="result-preview">
-                    Serbian queries work natively. Returns Belgrade real estate datasets
-                    with XLSX resources. Creates per-municipality price comparison chart.
+                <div class="result-preview" data-i18n-html="p7.result">
+                    Упити на српском раде нативно. Враћа скупове података о некретнинама у Београду
+                    са XLSX ресурсима. Прави графикон поређења по општинама.
                 </div>
             </div>
         </div>
 
         <div class="prompt-card">
             <div class="card-header">
-                <h3>🔗 Compare Two Datasets</h3>
+                <h3>🔗 <span data-i18n="p8.title">Поређење два скупа података</span></h3>
                 <span class="tag tag-analysis">compare</span>
             </div>
             <div class="card-body">
                 <div class="prompt-text">
-                    <strong>"Compare these two population datasets: id-A and id-B. Which has better data quality and more recent updates?"</strong>
+                    <strong data-i18n="p8.prompt">"Упореди ова два скупа података: id-A и id-B. Који има бољи квалитет података и новије ажурирања?"</strong>
                 </div>
-                <div class="result-preview">
-                    Returns <code>{same_organization: false, shared_formats: ["xlsx"], quality_score: 0.85}</code> —
-                    side-by-side comparison with recommendations.
+                <div class="result-preview" data-i18n-html="p8.result">
+                    Враћа <code>{same_organization: false, shared_formats: ["xlsx"], quality_score: 0.85}</code> —
+                    поређење један поред другог са препорукама.
                 </div>
             </div>
         </div>
@@ -473,51 +483,51 @@ pip install serbian-data-mcp
 
 <!-- Chart Gallery -->
 <section id="charts">
-    <div class="section-label">Visualization Gallery</div>
-    <div class="section-title">13 chart types, zero configuration</div>
-    <div class="section-desc">All charts are interactive Plotly visualizations exported as self-contained HTML. Dark, light, and infographic themes built in.</div>
+    <div class="section-label" data-i18n="charts.label">Галерија визуализација</div>
+    <div class="section-title" data-i18n="charts.title">13 типова графикона, без подешавања</div>
+    <div class="section-desc" data-i18n="charts.desc">Сви графикони су интерактивне Plotly визуализације извезене као самодовољни HTML. Тамна, светла и инфографика тема су уграђене.</div>
 
     <div class="chart-gallery">
         <div class="chart-card">
             <img src="docs/images/line_chart.gif" alt="Line chart" loading="lazy">
             <div class="chart-info">
-                <span>Line Chart</span>
-                <span class="type">trends</span>
+                <span data-i18n="chart.line">Линијски графикон</span>
+                <span class="type" data-i18n="chart.type.trends">трендови</span>
             </div>
         </div>
         <div class="chart-card">
             <img src="docs/images/bar_chart.gif" alt="Bar chart" loading="lazy">
             <div class="chart-info">
-                <span>Bar Chart</span>
-                <span class="type">comparison</span>
+                <span data-i18n="chart.bar">Стубасти графикон</span>
+                <span class="type" data-i18n="chart.type.comparison">поређење</span>
             </div>
         </div>
         <div class="chart-card">
             <img src="docs/images/pie_chart.gif" alt="Pie chart" loading="lazy">
             <div class="chart-info">
-                <span>Pie Chart</span>
-                <span class="type">distribution</span>
+                <span data-i18n="chart.pie">Питасти графикон</span>
+                <span class="type" data-i18n="chart.type.distribution">расподела</span>
             </div>
         </div>
         <div class="chart-card">
             <img src="docs/images/scatter_plot.gif" alt="Scatter plot" loading="lazy">
             <div class="chart-info">
-                <span>Scatter Plot</span>
-                <span class="type">correlation</span>
+                <span data-i18n="chart.scatter">Расипни графикон</span>
+                <span class="type" data-i18n="chart.type.correlation">корелација</span>
             </div>
         </div>
         <div class="chart-card">
             <img src="docs/images/histogram.gif" alt="Histogram" loading="lazy">
             <div class="chart-info">
-                <span>Histogram</span>
-                <span class="type">frequency</span>
+                <span data-i18n="chart.histogram">Хистограм</span>
+                <span class="type" data-i18n="chart.type.frequency">фреквенција</span>
             </div>
         </div>
         <div class="chart-card">
             <img src="docs/images/box_plot.gif" alt="Box plot" loading="lazy">
             <div class="chart-info">
-                <span>Box Plot</span>
-                <span class="type">statistics</span>
+                <span data-i18n="chart.box">Кутијасти графикон</span>
+                <span class="type" data-i18n="chart.type.statistics">статистика</span>
             </div>
         </div>
     </div>
@@ -525,9 +535,9 @@ pip install serbian-data-mcp
 
 <!-- Tools -->
 <section id="tools">
-    <div class="section-label">28 MCP Tools</div>
-    <div class="section-title">Complete toolkit</div>
-    <div class="section-desc">Every tool designed for LLM-first usage. Output of tool A feeds directly into tool B.</div>
+    <div class="section-label" data-i18n="tools.label">28 MCP алатки</div>
+    <div class="section-title" data-i18n="tools.title">Комплетан скуп алата</div>
+    <div class="section-desc" data-i18n="tools.desc">Свака алатка је дизајнирана за LLM употребу. Излаз алатке А директно се уводи у алатку Б.</div>
 
     <div class="tools-grid">
         <div class="tool-chip">search_datasets</div>
@@ -563,20 +573,20 @@ pip install serbian-data-mcp
 
 <!-- Install Options -->
 <section id="options">
-    <div class="section-label">Installation Options</div>
-    <div class="section-title">Works everywhere</div>
-    <div class="section-desc">Install on any MCP-compatible client. No API keys needed.</div>
+    <div class="section-label" data-i18n="install.label">Начини инсталације</div>
+    <div class="section-title" data-i18n="install.title">Ради свуда</div>
+    <div class="section-desc" data-i18n="install.desc">Инсталирајте на било који MCP компатибилан клијент. Нisu потребне API кључеви.</div>
 
     <div class="options-grid">
         <div class="option-card">
-            <h3><span class="icon">🐍</span> PyPI (Recommended)</h3>
-            <div class="desc">Install globally and add to any MCP client configuration.</div>
+            <h3><span class="icon">🐍</span> <span data-i18n="install.py.title">PyPI (Препоручено)</span></h3>
+            <div class="desc" data-i18n="install.py.desc">Инсталирајте глобално и додајте у MCP конфигурацију било ког клијента.</div>
             <pre>pip install serbian-data-mcp</pre>
         </div>
 
         <div class="option-card">
             <h3><span class="icon">🟣</span> Claude Desktop</h3>
-            <div class="desc">Add to your Claude Desktop config file.</div>
+            <div class="desc" data-i18n="install.claude.desc">Додајте у Claude Desktop конфигурациону датотеку.</div>
             <pre>{
   "mcpServers": {
     "serbian-data": {
@@ -588,13 +598,13 @@ pip install serbian-data-mcp
 
         <div class="option-card">
             <h3><span class="icon">📦</span> Smithery</h3>
-            <div class="desc">Install via the Smithery CLI — auto-configures your client.</div>
+            <div class="desc" data-i18n="install.smithery.desc">Инсталирајте преко Smithery CLI — аутоматски подешава клијент.</div>
             <pre>smithery mcp add acailic/serbian-data-mcp --client claude</pre>
         </div>
 
         <div class="option-card">
             <h3><span class="icon">⬡</span> Cursor</h3>
-            <div class="desc">Add to Cursor's MCP settings.</div>
+            <div class="desc" data-i18n="install.cursor.desc">Додајте у Cursor MCP подешавања.</div>
             <pre>{
   "mcpServers": {
     "serbian-data": {
@@ -605,8 +615,8 @@ pip install serbian-data-mcp
         </div>
 
         <div class="option-card">
-            <h3><span class="icon">🔧</span> uvx (No Install)</h3>
-            <div class="desc">Run directly without installing — good for testing.</div>
+            <h3><span class="icon">🔧</span> uvx (<span data-i18n="install.uvx.noinstall">Без инсталације</span>)</h3>
+            <div class="desc" data-i18n="install.uvx.desc">Покрените директно без инсталације — добро за тестирање.</div>
             <pre>{
   "mcpServers": {
     "serbian-data": {
@@ -618,8 +628,8 @@ pip install serbian-data-mcp
         </div>
 
         <div class="option-card">
-            <h3><span class="icon">💻</span> From Source</h3>
-            <div class="desc">Clone and run for development or customization.</div>
+            <h3><span class="icon">💻</span> <span data-i18n="install.source.title">Изворни код</span></h3>
+            <div class="desc" data-i18n="install.source.desc">Клонирајте и покрените за развој или прилагођавање.</div>
             <pre>git clone https://github.com/acailic/serbian-data-mcp
 cd serbian-data-mcp
 uv sync
@@ -630,28 +640,28 @@ uv run python -m serbian_data_mcp</pre>
 
 <!-- Workflow -->
 <section id="workflow">
-    <div class="section-label">Recommended Workflow</div>
-    <div class="section-title">7 steps from question to answer</div>
-    <div class="section-desc">The LLM resource guide teaches this automatically. But here's the pattern:</div>
+    <div class="section-label" data-i18n="wf.label">Препоручени ток рада</div>
+    <div class="section-title" data-i18n="wf.title">7 корака од питања до одговора</div>
+    <div class="section-desc" data-i18n="wf.desc">LLM водич за ресурсе ово подучава аутоматски. Али ево шаблона:</div>
 
     <div class="code-block">
         <div class="code-header">
-            <span class="lang"><span class="dot" style="background:var(--blue)"></span> MCP Tool Pipeline</span>
+            <span class="lang"><span class="dot" style="background:var(--blue)"></span> <span data-i18n="wf.pipeline">MCP ток алатки</span></span>
         </div>
-        <pre><span class="cm">1.</span> <span class="fn">search_datasets</span><span class="punc">(</span><span class="str">"kvalitet vazduha"</span><span class="punc">)</span>        <span class="cm">← Find datasets</span>
-<span class="cm">2.</span> <span class="fn">get_dataset</span><span class="punc">(</span><span class="str">"id-123"</span><span class="punc">,</span> <span class="str">detail_level="metadata"</span><span class="punc">)</span> <span class="cm">← See resources</span>
-<span class="cm">3.</span> <span class="fn">get_resource_data</span><span class="punc">(</span><span class="str">"res-456"</span><span class="punc">)</span>            <span class="cm">← Download data</span>
-<span class="cm">4.</span> <span class="fn">data_profile</span><span class="punc">(</span>data<span class="punc">)</span>                      <span class="cm">← Learn columns</span>
-<span class="cm">5.</span> <span class="fn">transform_data</span><span class="punc">(</span>data<span class="punc">,</span> <span class="str">"filter"</span><span class="punc">,</span> <span class="punc">...)</span>        <span class="cm">← Clean data</span>
-<span class="cm">6.</span> <span class="fn">create_chart</span><span class="punc">(</span>data<span class="punc">,</span> <span class="str">"line"</span><span class="punc">,</span> <span class="punc">...)</span>            <span class="cm">← Visualize</span>
-<span class="cm">7.</span> <span class="fn">export_visualization</span><span class="punc">(</span>figure<span class="punc">,</span> <span class="str">"html"</span><span class="punc">)</span>    <span class="cm">← Save file</span></pre>
+        <pre><span class="cm" data-i18n-html="wf.c1">1.</span> <span class="fn">search_datasets</span><span class="punc">(</span><span class="str">"kvalitet vazduha"</span><span class="punc">)</span>        <span class="cm" data-i18n="wf.c1s">← Пронађи скупове</span>
+<span class="cm" data-i18n-html="wf.c2">2.</span> <span class="fn">get_dataset</span><span class="punc">(</span><span class="str">"id-123"</span><span class="punc">,</span> <span class="str">detail_level="metadata"</span><span class="punc">)</span> <span class="cm" data-i18n="wf.c2s">← Погледај ресурсе</span>
+<span class="cm" data-i18n-html="wf.c3">3.</span> <span class="fn">get_resource_data</span><span class="punc">(</span><span class="str">"res-456"</span><span class="punc">)</span>            <span class="cm" data-i18n="wf.c3s">← Преузми податке</span>
+<span class="cm" data-i18n-html="wf.c4">4.</span> <span class="fn">data_profile</span><span class="punc">(</span>data<span class="punc">)</span>                      <span class="cm" data-i18n="wf.c4s">← Упознај колоне</span>
+<span class="cm" data-i18n-html="wf.c5">5.</span> <span class="fn">transform_data</span><span class="punc">(</span>data<span class="punc">,</span> <span class="str">"filter"</span><span class="punc">,</span> <span class="punc">...)</span>        <span class="cm" data-i18n="wf.c5s">← Очисти податке</span>
+<span class="cm" data-i18n-html="wf.c6">6.</span> <span class="fn">create_chart</span><span class="punc">(</span>data<span class="punc">,</span> <span class="str">"line"</span><span class="punc">,</span> <span class="punc">...)</span>            <span class="cm" data-i18n="wf.c6s">← Визуализуј</span>
+<span class="cm" data-i18n-html="wf.c7">7.</span> <span class="fn">export_visualization</span><span class="punc">(</span>figure<span class="punc">,</span> <span class="str">"html"</span><span class="punc">)</span>    <span class="cm" data-i18n="wf.c7s">← Сачувај датотеку</span></pre>
     </div>
 </section>
 
 <!-- Footer -->
 <footer>
     <div>
-        <strong>Serbian Data MCP</strong> · v0.2.0 · Open data for AI
+        <strong>Serbian Data MCP</strong> · v0.2.0 · <span data-i18n="footer.tagline">Отворени подаци за AI</span>
     </div>
     <div class="links">
         <a href="https://github.com/acailic/serbian-data-mcp">GitHub</a>
@@ -662,16 +672,241 @@ uv run python -m serbian_data_mcp</pre>
 </footer>
 
 <script>
+const T = {
+sr: {
+    "nav.prompts": "Промптови",
+    "nav.charts": "Графикони",
+    "nav.tools": "Алатке",
+    "nav.install": "Инсталација",
+    "nav.pip": "pip install",
+    "hero.badge": "v0.2.0 — Модулна архитектура",
+    "hero.title": 'Приступ <span>3.400+</span> скупова података<br>владе Републике Србије',
+    "hero.desc": "MCP сервер који повезује AI асистенте са портом отворених података Србије. Претражујте, анализирајте и визуализујте демографију, буџете, kvalitet vazduha, некретнине и остало — на српском или енглеском.",
+    "stat.datasets": "Скупова података",
+    "stat.orgs": "Организација",
+    "stat.charts": "Типова графикона",
+    "stat.tools": "MCP алатки",
+    "qs.label": "Брзи почетак",
+    "qs.title": "Спремни за 30 секунди",
+    "qs.desc": "Инсталирајте пакет, додајте у MCP клијент и почните да кверијете податке владе Србије.",
+    "btn.copy": "Копирај",
+    "prompts.label": "Промптови и резултати",
+    "prompts.title": "Шта можете да питате",
+    "prompts.desc": "Реални примери промптова који раде са сервером. Налепите било који у Claude, Cursor или било који MCP клијент.",
+    "p1.title": "Пронађите демографске податке",
+    "p1.prompt": "\"Претражи податке о попису становништва од Републичког завода за статистику\"",
+    "p1.result": 'Враћа <code>{datasets: [{id, title, organization}], total: 42}</code> — 42 одговарајућа скупа података од РЗС са ID ресурса спремних за преузимање.',
+    "p2.title": "Визуализација kvaliteta vazduha",
+    "p2.prompt": "\"Претражи податке о kvalitetu vazduha, преузми их, направи линијски графикон нивоа PM10 кроз време у Нишу\"",
+    "p2.result": 'Аутоматски извршава: <code>search → get_resource_data → data_profile → create_chart(line)</code> — враћа интерактивни Plotly графикон са обавештењима.',
+    "p3.title": "Мапа становништва Србије",
+    "p3.prompt": "\"Направи хороплет карту Србије са густином насељености по округу\"",
+    "p3.result": 'Рендерује 25 округа од Natural Earth података. Враћа <code>{filepath: "exports/serbia_map.html"}</code> — самодовољну интерактивну HTML карту.',
+    "p4.title": "Анализа буџета",
+    "p4.prompt": "\"Пронађи податке о извршењу буџета, издвој увиде са највећим променама у трошењу годишње\"",
+    "p4.result": 'Аутоматски извршава: <code>search → download → data_profile → extract_data_insights</code> — враћа налазе рангиране по тежини као <code>"Одбрана +23% YoY"</code>.',
+    "p5.title": "Прича заснована на подацима",
+    "p5.prompt": "\"Направи причу о паду становништва Србије — пронађи податке, прикажи трендове, генериши инфографику\"",
+    "p5.result": 'Извршава цео процес: <code>search → download → insights → chart → infographic</code> — враћа <code>{filepath, headline: "-12% пада", big_number: "1,4M"}</code>.',
+    "p6.title": "Прогнозирање трендова",
+    "p6.prompt": "\"Преузми податке о становништву и предвиди колико ће бити становника 2035. по текућем тренду\"",
+    "p6.result": 'Извршава <code>forecast_data(method=\'linear\', periods_ahead=10)</code> — враћа <code>{projection_note: "По -0,4%/год, Србија ће имати ~5,8M до 2035.", r_squared: 0.97}</code>.',
+    "p7.title": "Цене некретнина",
+    "p7.prompt": "\"Пронађи податке о ценама станова у Београду и направи bar chart по општинама\"",
+    "p7.result": "Упити на српском раде нативно. Враћа скупове података о некретнинама у Београду са XLSX ресурсима. Прави графикон поређења по општинама.",
+    "p8.title": "Поређење два скупа података",
+    "p8.prompt": "\"Упореди ова два скупа података: id-A и id-B. Који има бољи квалитет података и новије ажурирања?\"",
+    "p8.result": 'Враћа <code>{same_organization: false, shared_formats: ["xlsx"], quality_score: 0.85}</code> — поређење један поред другог са препорукама.',
+    "charts.label": "Галерија визуализација",
+    "charts.title": "13 типова графикона, без подешавања",
+    "charts.desc": "Сви графикони су интерактивне Plotly визуализације извезене као самодовољни HTML. Тамна, светла и инфографика тема су уграђене.",
+    "chart.line": "Линијски графикон",
+    "chart.bar": "Стубасти графикон",
+    "chart.pie": "Питасти графикон",
+    "chart.scatter": "Расипни графикон",
+    "chart.histogram": "Хистограм",
+    "chart.box": "Кутијасти графикон",
+    "chart.type.trends": "трендови",
+    "chart.type.comparison": "поређење",
+    "chart.type.distribution": "расподела",
+    "chart.type.correlation": "корелација",
+    "chart.type.frequency": "фреквенција",
+    "chart.type.statistics": "статистика",
+    "tools.label": "28 MCP алатки",
+    "tools.title": "Комплетан скуп алата",
+    "tools.desc": "Свака алатка је дизајнирана за LLM употребу. Излаз алатке А директно се уводи у алатку Б.",
+    "install.label": "Начини инсталације",
+    "install.title": "Ради свуда",
+    "install.desc": "Инсталирајте на било који MCP компатибилан клијент. Није потребан API кључ.",
+    "install.py.title": "PyPI (Препоручено)",
+    "install.py.desc": "Инсталирајте глобално и додајте у MCP конфигурацију било ког клијента.",
+    "install.claude.desc": "Додајте у Claude Desktop конфигурациону датотеку.",
+    "install.smithery.desc": "Инсталирајте преко Smithery CLI — аутоматски подешава клијент.",
+    "install.cursor.desc": "Додајте у Cursor MCP подешавања.",
+    "install.uvx.noinstall": "Без инсталације",
+    "install.uvx.desc": "Покрените директно без инсталације — добро за тестирање.",
+    "install.source.title": "Изворни код",
+    "install.source.desc": "Клонирајте и покрените за развој или прилагођавање.",
+    "wf.label": "Препоручени ток рада",
+    "wf.title": "7 корака од питања до одговора",
+    "wf.desc": "LLM водич за ресурсе ово подучава аутоматски. Али ево шаблона:",
+    "wf.pipeline": "MCP ток алатки",
+    "wf.c1": "1.", "wf.c1s": "← Пронађи скупове",
+    "wf.c2": "2.", "wf.c2s": "← Погледај ресурсе",
+    "wf.c3": "3.", "wf.c3s": "← Преузми податке",
+    "wf.c4": "4.", "wf.c4s": "← Упознај колоне",
+    "wf.c5": "5.", "wf.c5s": "← Очисти податке",
+    "wf.c6": "6.", "wf.c6s": "← Визуализуј",
+    "wf.c7": "7.", "wf.c7s": "← Сачувај датотеку",
+    "footer.tagline": "Отворени подаци за AI"
+},
+en: {
+    "nav.prompts": "Prompts",
+    "nav.charts": "Charts",
+    "nav.tools": "Tools",
+    "nav.install": "Install",
+    "nav.pip": "pip install",
+    "hero.badge": "v0.2.0 — Modular Architecture",
+    "hero.title": 'Access <span>3,400+</span> Serbian<br>Government Datasets',
+    "hero.desc": "An MCP server that connects AI assistants to Serbia's open data portal. Search, analyze, and visualize population, budgets, air quality, real estate, and more — in Serbian or English.",
+    "stat.datasets": "Datasets",
+    "stat.orgs": "Organizations",
+    "stat.charts": "Chart Types",
+    "stat.tools": "MCP Tools",
+    "qs.label": "Quick Start",
+    "qs.title": "Up and running in 30 seconds",
+    "qs.desc": "Install the package, add to your MCP client, and start querying Serbian government data.",
+    "btn.copy": "Copy",
+    "prompts.label": "Prompts & Results",
+    "prompts.title": "What you can ask",
+    "prompts.desc": "Real examples of prompts that work with the server. Paste any of these into Claude, Cursor, or any MCP client.",
+    "p1.title": "Find Population Data",
+    "p1.prompt": "\"Search for population census data from the Serbian statistical office\"",
+    "p1.result": 'Returns <code>{datasets: [{id, title, organization}], total: 42}</code> — 42 matching datasets from RZS with resource IDs ready for download.',
+    "p2.title": "Visualize Air Quality",
+    "p2.prompt": "\"Search for air quality data, download it, create a line chart of PM10 levels over time in Niš\"",
+    "p2.result": 'Auto-executes: <code>search → get_resource_data → data_profile → create_chart(line)</code> — returns interactive Plotly chart with hover tooltips.',
+    "p3.title": "Serbia Population Map",
+    "p3.prompt": "\"Create a choropleth map of Serbia showing population density by district\"",
+    "p3.result": 'Renders 25 okrug boundaries from Natural Earth data. Returns <code>{filepath: "exports/serbia_map.html"}</code> — self-contained interactive HTML map.',
+    "p4.title": "Budget Analysis",
+    "p4.prompt": "\"Find budget execution data, extract insights showing the biggest spending changes year-over-year\"",
+    "p4.result": 'Auto-executes: <code>search → download → data_profile → extract_data_insights</code> — returns severity-ranked findings like <code>"Defense spending +23% YoY"</code>.',
+    "p5.title": "Data Journalism Story",
+    "p5.prompt": "\"Create a data story about Serbia's population decline — find data, show trends, generate an infographic\"",
+    "p5.result": 'Auto-executes full pipeline: <code>search → download → insights → chart → infographic</code> — returns <code>{filepath, headline: "-12% decline", big_number: "1.4M"}</code>.',
+    "p6.title": "Forecast Future Trends",
+    "p6.prompt": "\"Download population data and forecast what the population will be in 2035 at the current rate\"",
+    "p6.result": 'Runs <code>forecast_data(method=\'linear\', periods_ahead=10)</code> — returns <code>{projection_note: "At -0.4%/yr, Serbia will have ~5.8M by 2035", r_squared: 0.97}</code>.',
+    "p7.title": "Real Estate Prices",
+    "p7.prompt": "\"Find data on apartment prices in Belgrade and make a bar chart by municipality\"",
+    "p7.result": "Serbian queries work natively. Returns Belgrade real estate datasets with XLSX resources. Creates per-municipality price comparison chart.",
+    "p8.title": "Compare Two Datasets",
+    "p8.prompt": "\"Compare these two population datasets: id-A and id-B. Which has better data quality and more recent updates?\"",
+    "p8.result": 'Returns <code>{same_organization: false, shared_formats: ["xlsx"], quality_score: 0.85}</code> — side-by-side comparison with recommendations.',
+    "charts.label": "Visualization Gallery",
+    "charts.title": "13 chart types, zero configuration",
+    "charts.desc": "All charts are interactive Plotly visualizations exported as self-contained HTML. Dark, light, and infographic themes built in.",
+    "chart.line": "Line Chart",
+    "chart.bar": "Bar Chart",
+    "chart.pie": "Pie Chart",
+    "chart.scatter": "Scatter Plot",
+    "chart.histogram": "Histogram",
+    "chart.box": "Box Plot",
+    "chart.type.trends": "trends",
+    "chart.type.comparison": "comparison",
+    "chart.type.distribution": "distribution",
+    "chart.type.correlation": "correlation",
+    "chart.type.frequency": "frequency",
+    "chart.type.statistics": "statistics",
+    "tools.label": "28 MCP Tools",
+    "tools.title": "Complete toolkit",
+    "tools.desc": "Every tool designed for LLM-first usage. Output of tool A feeds directly into tool B.",
+    "install.label": "Installation Options",
+    "install.title": "Works everywhere",
+    "install.desc": "Install on any MCP-compatible client. No API keys needed.",
+    "install.py.title": "PyPI (Recommended)",
+    "install.py.desc": "Install globally and add to any MCP client configuration.",
+    "install.claude.desc": "Add to your Claude Desktop config file.",
+    "install.smithery.desc": "Install via the Smithery CLI — auto-configures your client.",
+    "install.cursor.desc": "Add to Cursor's MCP settings.",
+    "install.uvx.noinstall": "No Install",
+    "install.uvx.desc": "Run directly without installing — good for testing.",
+    "install.source.title": "From Source",
+    "install.source.desc": "Clone and run for development or customization.",
+    "wf.label": "Recommended Workflow",
+    "wf.title": "7 steps from question to answer",
+    "wf.desc": "The LLM resource guide teaches this automatically. But here's the pattern:",
+    "wf.pipeline": "MCP Tool Pipeline",
+    "wf.c1": "1.", "wf.c1s": "← Find datasets",
+    "wf.c2": "2.", "wf.c2s": "← See resources",
+    "wf.c3": "3.", "wf.c3s": "← Download data",
+    "wf.c4": "4.", "wf.c4s": "← Learn columns",
+    "wf.c5": "5.", "wf.c5s": "← Clean data",
+    "wf.c6": "6.", "wf.c6s": "← Visualize",
+    "wf.c7": "7.", "wf.c7s": "← Save file",
+    "footer.tagline": "Open data for AI"
+}
+};
+
+let currentLang = localStorage.getItem('lang') || 'sr';
+
+function toggleLang() {
+    currentLang = currentLang === 'sr' ? 'en' : 'sr';
+    localStorage.setItem('lang', currentLang);
+    applyLang();
+}
+
+function applyLang() {
+    const lang = T[currentLang];
+    const isHtml = currentLang === 'sr';
+    document.documentElement.lang = currentLang;
+
+    // Update toggle button
+    const btn = document.getElementById('langBtn');
+    btn.textContent = currentLang === 'sr' ? 'EN' : 'СР';
+
+    // Update title
+    document.title = currentLang === 'sr'
+        ? 'Српски подаци MCP — Приступ 3400+ скупова података'
+        : 'Serbian Data MCP — Access 3400+ Serbian Government Datasets';
+
+    // Update meta description
+    const meta = document.querySelector('meta[name="description"]');
+    meta.content = currentLang === 'sr'
+        ? 'MCP сервер за приступ и визуализацију 3400+ скупова података са портала отворених података Републике Србије (data.gov.rs).'
+        : 'MCP server for accessing and visualizing 3400+ datasets from the Serbian open data portal (data.gov.rs). Works with Claude, Cursor, and any MCP client.';
+
+    // Update all data-i18n elements
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (lang[key] !== undefined) {
+            el.textContent = lang[key];
+        }
+    });
+
+    // Update all data-i18n-html elements
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        if (lang[key] !== undefined) {
+            el.innerHTML = lang[key];
+        }
+    });
+}
+
+applyLang();
+
 function copyCode(btn) {
     const block = btn.closest('.code-block');
     const pre = block.querySelector('pre');
     const text = pre.textContent;
     navigator.clipboard.writeText(text).then(() => {
-        btn.textContent = 'Copied!';
+        const msg = currentLang === 'sr' ? 'Копирано!' : 'Copied!';
+        btn.textContent = msg;
         btn.style.color = 'var(--green)';
         btn.style.borderColor = 'var(--green)';
         setTimeout(() => {
-            btn.textContent = 'Copy';
+            btn.textContent = T[currentLang]['btn.copy'];
             btn.style.color = '';
             btn.style.borderColor = '';
         }, 2000);
