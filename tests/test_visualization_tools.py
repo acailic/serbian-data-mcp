@@ -114,7 +114,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
     except ToolError as e:
         msg = str(e)
         # Every supported type must be listed in the error so clients can self-correct.
-        for t in ("line", "bar", "pie", "heatmap", "gauge", "sparklines"):
+        for t in ("line", "bar", "pie", "heatmap", "gauge", "sparklines", "violin"):
             assert t in msg
     else:  # pragma: no cover - defensive
         raise AssertionError("expected ToolError")
@@ -275,6 +275,23 @@ async def test_create_chart_heatmap_missing_columns_raises(monkeypatch) -> None:
     _wire_builders(monkeypatch, {})
     with pytest.raises(ToolError, match="heatmap requires x_column, y_column, and z_column"):
         await create_chart(data=[{"x": 1}], chart_type="heatmap", x_column="x", y_column="y", z_column="")
+
+
+async def test_create_chart_violin_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(data=[{"v": 1, "g": "a"}], chart_type="violin", y_column="v", x_column="g", theme="light")
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "violin"
+    assert sink["args"] == ("v",)
+    assert sink["kwargs"]["x_column"] == "g"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_violin_missing_y_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="violin requires y_column"):
+        await create_chart(data=[{"x": 1}], chart_type="violin", y_column="")
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:

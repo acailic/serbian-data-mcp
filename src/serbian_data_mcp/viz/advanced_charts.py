@@ -174,6 +174,51 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def violin(
+        self,
+        y_column: str,
+        title: str = "",
+        theme: str = "dark",
+        x_column: Optional[str] = None,
+        color_column: Optional[str] = None,
+        box_overlay: bool = False,
+        points: Any = False,
+    ) -> go.Figure:
+        """Create a violin plot — the distribution shape + density of a metric.
+
+        A richer cousin of the box plot: the mirrored kernel-density width shows
+        the full shape of a distribution (where values cluster, whether it is
+        bimodal, skewed), not just the quartile summary. Ideal for comparing
+        how a measurement spreads across groups (e.g. PM2.5 readings per city,
+        salaries per sector). Pass ``x_column`` to split violins side-by-side
+        by category, ``color_column`` for a second grouping, ``box_overlay`` to
+        draw a miniature box-and-whisker inside each violin, and ``points`` to
+        jitter the raw observations ('outliers', 'all', or False).
+
+        Args:
+            y_column: Column whose distribution is plotted
+            title: Chart title
+            theme: 'dark', 'light', or 'infographic'
+            x_column: Optional category column splitting violins across the X axis
+            color_column: Optional second grouping column (one violin per group)
+            box_overlay: Draw an inner box-and-whisker summary inside each violin
+            points: Show raw points — 'outliers', 'all', or False (default)
+        """
+        kwargs: dict[str, Any] = {
+            "y": y_column,
+            "title": title,
+            "box": box_overlay,
+            "points": points,
+        }
+        if x_column:
+            kwargs["x"] = x_column
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        fig = px.violin(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,

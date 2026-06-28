@@ -59,6 +59,15 @@ SPARK_DATA: list[dict[str, Any]] = [
     {"entity": "C", "t": 2, "val": 60, "last": 60},
 ]
 
+VIOLIN_DATA: list[dict[str, Any]] = [
+    {"g": "a", "v": 1},
+    {"g": "a", "v": 2},
+    {"g": "a", "v": 3},
+    {"g": "b", "v": 10},
+    {"g": "b", "v": 20},
+    {"g": "b", "v": 30},
+]
+
 
 # ---------------------------------------------------------------------------
 # __init__
@@ -310,3 +319,42 @@ class TestSparklineContainer:
         # at least the entity names appear without the "entity=" prefix
         assert "A" in ann_texts
         assert all("=" not in t for t in ann_texts)
+
+
+# ---------------------------------------------------------------------------
+# violin
+# ---------------------------------------------------------------------------
+
+
+class TestViolin:
+    def test_returns_violin_trace_with_y(self) -> None:
+        fig = AdvancedChartBuilder(VIOLIN_DATA).violin("v", title="T")
+        assert isinstance(fig, go.Figure)
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Violin)
+        assert list(fig.data[0].y) == [1, 2, 3, 10, 20, 30]
+        assert fig.layout.title.text == "T"
+
+    def test_x_grouping_passes_categories(self) -> None:
+        fig = AdvancedChartBuilder(VIOLIN_DATA).violin("v", x_column="g")
+        assert isinstance(fig.data[0], go.Violin)
+        assert list(fig.data[0].x) == ["a", "a", "a", "b", "b", "b"]
+
+    def test_box_overlay_enables_inner_box(self) -> None:
+        fig = AdvancedChartBuilder(VIOLIN_DATA).violin("v", box_overlay=True)
+        assert fig.data[0].box.visible is True
+        # default: no inner box
+        fig_default = AdvancedChartBuilder(VIOLIN_DATA).violin("v")
+        assert fig_default.data[0].box.visible is False
+
+    def test_points_passthrough(self) -> None:
+        fig = AdvancedChartBuilder(VIOLIN_DATA).violin("v", points="all")
+        assert fig.data[0].points == "all"
+
+    def test_color_column_splits_traces_and_themed(self) -> None:
+        fig = AdvancedChartBuilder(VIOLIN_DATA).violin("v", color_column="g", theme="light")
+        # one Violin trace per color group
+        assert len(fig.data) >= 2
+        assert all(isinstance(t, go.Violin) for t in fig.data)
+        # apply_theme ran: light theme sets a concrete paper_bgcolor
+        assert fig.layout.paper_bgcolor is not None

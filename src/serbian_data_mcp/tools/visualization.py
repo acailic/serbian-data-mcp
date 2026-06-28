@@ -66,6 +66,7 @@ async def create_chart(
       - "treemap": names_column + values_column → nested breakdowns
       - "gauge": value (float, 0-100) → single metric display
       - "funnel": names_column + values_column → cascading flow
+      - "violin": y_column (+ optional x_column) → distribution shape + density
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -109,6 +110,7 @@ async def create_chart(
         "treemap",
         "gauge",
         "funnel",
+        "violin",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -242,6 +244,11 @@ def _build_chart(
         if not names_column or not values_column:
             raise ToolError("funnel requires names_column and values_column")
         return builder.funnel(names_column, values_column, title=title, theme=theme)
+
+    if chart_type == "violin":
+        if not y_column:
+            raise ToolError("violin requires y_column")
+        return builder.violin(y_column, x_column=x_column or None, title=title, theme=theme)
 
     if chart_type == "animated_line":
         if not x_column or not y_column or not frame_column:
