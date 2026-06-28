@@ -221,3 +221,93 @@ async def get_dataset_resources(dataset_id: str) -> dict[str, Any]:
         "resources": [h.resource_to_dict(r) for r in dataset.resources],
         "count": len(dataset.resources),
     }
+
+
+@mcp.tool()
+async def get_data_summary(resource_id: str) -> dict[str, Any]:
+    """Quick schema summary of a resource's data without downloading the full file.
+
+    Returns column names, dtypes, row count, and sample values for the first
+    few rows. Much faster than get_resource_data() for large XLSX/CSV files
+    where you only need to know the schema.
+
+    Workflow:
+        1. get_dataset_resources(dataset_id) → find resource_id
+        2. get_data_summary(resource_id) → understand structure
+        3. get_resource_data(resource_id) → download full data if useful
+        4. data_profile(data) → detailed stats after download
+
+    Args:
+        resource_id: Resource identifier from a dataset's resources list
+
+    Returns: Dict with 'columns' (list of {name, dtype, sample_values}),
+             'estimated_rows', 'format', 'resource_id'.
+    """
+    client = await h.get_client()
+    try:
+        data = await client.get_resource_data(resource_id)
+    except Exception as e:
+        raise ToolError(f"Failed to summarize resource '{resource_id}': {e}") from e
+
+    if isinstance(data, pd.DataFrame):
+        df = data.head(20)
+        columns = [
+            {
+                "name": col,
+                "dtype": str(df[col].dtype),
+                "sample_values": df[col].dropna().head(5).tolist(),
+            }
+            for col in df.columns
+        ]
+        return {
+            "columns": columns,
+            "estimated_rows": len(data),
+            "format": "tabular",
+            "resource_id": resource_id,
+        }
+
+    if isinstance(data, dict):
+        top_keys = list(data.keys())[:20]
+        sample: dict[str, Any] = {}
+        for k in top_keys:
+            val = data[k]
+            if isinstance(val, list):
+                sample[k] = {"type": "list", "length": len(val), "first_items": val[:3]}
+            elif isinstance(val, dict):
+                sample[k] = {"type": "dict", "keys": list(val.keys())[:10]}
+            else:
+                sample[k] = val
+        return {
+            "columns": [{"name": k, "dtype": "key", "sample_values": None} for k in top_keys],
+            "estimated_rows": "N/A (dict structure)",
+            "format": "json-dict",
+            "sample": sample,
+            "resource_id": resource_id,
+        }
+
+    if isinstance(data, list) and data:
+        sample_items = data[:5]
+        if isinstance(sample_items[0], dict):
+            columns = [
+                {
+                    "name": col,
+                    "dtype": type(sample_items[0][col]).__name__,
+                    "sample_values": [item.get(col) for item in sample_items if col in item][:5],
+                }
+                for col in sample_items[0]
+            ]
+            return {
+                "columns": columns,
+                "estimated_rows": len(data),
+                "format": "json-list",
+                "resource_id": resource_id,
+            }
+        return {
+            "columns": [],
+            "estimated_rows": len(data),
+            "format": "json-list-scalar",
+            "sample": sample_items[:3],
+            "resource_id": resource_id,
+        }
+
+    raise ToolError(f"Unexpected data type for resource '{resource_id}': {type(data).__name__}")
