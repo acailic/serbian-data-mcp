@@ -541,6 +541,76 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def sankey(
+        self,
+        source_column: str,
+        target_column: str,
+        values_column: str,
+        title: str = "",
+        theme: str = "dark",
+        node_pad: int = 15,
+        node_thickness: int = 20,
+        arrangement: str = "snap",
+    ) -> go.Figure:
+        """Create a Sankey diagram — proportional flow between source→target nodes.
+
+        Each row is one directed transfer from a ``source_column`` category to a
+        ``target_column`` category, sized by ``values_column``: a ribbon whose
+        width encodes the magnitude flowing between two nodes. The canonical
+        professional chart for transfers that a bar or pie cannot express —
+        budget allocation ministry→programme→project, energy source→sector→use,
+        migration country→country, or user journey stage→stage. Distinct from
+        funnel (a single linear cascade with no branching) and treemap/sunburst
+        (part-to-whole of a fixed total, not directed flow): Sankey shows where
+        a quantity comes from AND where it goes, including splits and merges.
+
+        Duplicate (source, target) rows are aggregated by summing their values,
+        since a Sankey link between the same two nodes must be a single ribbon.
+        Nodes are the union of all source and target labels.
+
+        Args:
+            source_column: Origin node labels for each flow
+            target_column: Destination node labels for each flow
+            values_column: Flow magnitude (ribbon width) per row
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            node_pad: Vertical padding between nodes (px)
+            node_thickness: Node bar thickness (px)
+            arrangement: Node placement — 'snap' (default), 'perpendicular', 'freeform', 'fixed'
+        """
+        sources = self.data[source_column].astype(str)
+        targets = self.data[target_column].astype(str)
+        values = pd.to_numeric(self.data[values_column], errors="coerce").fillna(0.0)
+
+        # Union of all node labels, preserving first-seen order for stable indices.
+        labels = list(dict.fromkeys([*sources.tolist(), *targets.tolist()]))
+        index = {label: i for i, label in enumerate(labels)}
+
+        # Aggregate duplicate source→target pairs into single ribbons by summing.
+        link_df = pd.DataFrame({"s": sources.values, "t": targets.values, "v": values.values})
+        agg = link_df.groupby(["s", "t"], sort=False, as_index=False)["v"].sum()
+
+        fig = go.Figure(
+            go.Sankey(
+                arrangement=arrangement,
+                node={
+                    "label": labels,
+                    "pad": node_pad,
+                    "thickness": node_thickness,
+                    "color": [SEMANTIC_COLORS[i % len(SEMANTIC_COLORS)] for i in range(len(labels))],
+                    "line": {"color": "rgba(0,0,0,0)", "width": 0},
+                },
+                link={
+                    "source": [index[s] for s in agg["s"]],
+                    "target": [index[t] for t in agg["t"]],
+                    "value": agg["v"].tolist(),
+                },
+            )
+        )
+        fig.update_layout(title=title)
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,

@@ -58,6 +58,8 @@ async def create_chart(
     b_column: str = "",
     c_column: str = "",
     columns: list[str] = [],
+    source_column: str = "",
+    target_column: str = "",
 ) -> dict[str, Any]:
     """Create interactive charts from data. Supports 20+ chart types.
 
@@ -82,6 +84,7 @@ async def create_chart(
       - "parcoords": columns (list) → parallel coordinates for high-dim records
       - "density_contour": x_column + y_column → 2D density bands
       - "sunburst": names_column + values_column (+ hierarchy_column) → radial hierarchy rings
+      - "sankey": source_column + target_column + values_column → proportional flow between nodes
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -133,6 +136,7 @@ async def create_chart(
         "parcoords",
         "density_contour",
         "sunburst",
+        "sankey",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -173,6 +177,8 @@ async def create_chart(
             b_column=b_column,
             c_column=c_column,
             columns=columns,
+            source_column=source_column,
+            target_column=target_column,
         )
     except ToolError:
         raise
@@ -217,6 +223,8 @@ def _build_chart(
     b_column: str = "",
     c_column: str = "",
     columns: list[str] = [],
+    source_column: str = "",
+    target_column: str = "",
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -284,6 +292,11 @@ def _build_chart(
             color_column=color_column,
             hierarchy_column=hierarchy_column,
         )
+
+    if chart_type == "sankey":
+        if not source_column or not target_column or not values_column:
+            raise ToolError("sankey requires source_column, target_column, and values_column")
+        return builder.sankey(source_column, target_column, values_column, title=title, theme=theme)
 
     if chart_type == "gauge":
         if value is None:

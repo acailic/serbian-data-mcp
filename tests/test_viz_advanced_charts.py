@@ -713,3 +713,80 @@ class TestDensityContour:
         # apply_theme ran: light theme sets a concrete paper_bgcolor; Histogram2dContour
         # has a marker attr so the trace-polish loop runs cleanly
         assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
+# sankey
+# ---------------------------------------------------------------------------
+
+SANKEY_DATA: list[dict[str, Any]] = [
+    {"src": "Budget", "dst": "Health", "amt": 100},
+    {"src": "Budget", "dst": "Schools", "amt": 80},
+    {"src": "Health", "dst": "Hospitals", "amt": 60},
+    {"src": "Budget", "dst": "Health", "amt": 20},  # duplicate Budget→Health ribbon
+    {"src": "Schools", "dst": "Wages", "amt": "40"},  # string-numeric → coerced to 40.0
+]
+
+
+class TestSankey:
+    def test_returns_single_sankey_trace(self) -> None:
+        fig = AdvancedChartBuilder(SANKEY_DATA).sankey("src", "dst", "amt", title="Flow")
+        assert isinstance(fig, go.Figure)
+        # one Sankey trace carrying node + link sub-objects
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Sankey)
+        assert fig.layout.title.text == "Flow"
+
+    def test_node_labels_are_union_of_source_and_target(self) -> None:
+        fig = AdvancedChartBuilder(SANKEY_DATA).sankey("src", "dst", "amt")
+        # nodes = every distinct label appearing in either column
+        labels = list(fig.data[0].node.label)
+        assert set(labels) == {"Budget", "Health", "Schools", "Hospitals", "Wages"}
+
+    def test_link_source_target_value_mapping(self) -> None:
+        fig = AdvancedChartBuilder(SANKEY_DATA).sankey("src", "dst", "amt")
+        t = fig.data[0]
+        index = {label: i for i, label in enumerate(t.node.label)}
+        # Budget→Health: 100 + 20 (duplicated) aggregated = 120
+        # Budget→Schools: 80
+        # Health→Hospitals: 60
+        # Schools→Wages: 40 (string coerced)
+        pairs = sorted(zip(t.link.source, t.link.target, t.link.value, strict=False), key=lambda r: (r[0], r[1]))
+        expected = sorted(
+            [
+                (index["Budget"], index["Health"], 120.0),
+                (index["Budget"], index["Schools"], 80.0),
+                (index["Health"], index["Hospitals"], 60.0),
+                (index["Schools"], index["Wages"], 40.0),
+            ],
+            key=lambda r: (r[0], r[1]),
+        )
+        assert pairs == expected
+
+    def test_duplicate_pairs_aggregated_by_sum(self) -> None:
+        data = [
+            {"s": "A", "d": "B", "v": 10},
+            {"s": "A", "d": "B", "v": 3},
+            {"s": "A", "d": "B", "v": 7},
+        ]
+        fig = AdvancedChartBuilder(data).sankey("s", "d", "v")
+        # three identical A→B rows collapse to one ribbon of summed value 20
+        assert len(fig.data[0].link.source) == 1
+        assert fig.data[0].link.value[0] == 20.0
+
+    def test_string_numeric_values_coerced(self) -> None:
+        data = [{"s": "A", "d": "B", "v": "12.5"}]
+        fig = AdvancedChartBuilder(data).sankey("s", "d", "v")
+        # to_numeric coerces '12.5' to 12.5; non-numeric would fall back to 0.0
+        assert fig.data[0].link.value[0] == 12.5
+
+    def test_node_pad_and_thickness_passthrough(self) -> None:
+        fig = AdvancedChartBuilder(SANKEY_DATA).sankey("src", "dst", "amt", node_pad=25, node_thickness=30)
+        assert fig.data[0].node.pad == 25
+        assert fig.data[0].node.thickness == 30
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(SANKEY_DATA).sankey("src", "dst", "amt", theme="light")
+        # go.Sankey has no trace-level marker, so apply_theme's marker-polish loop
+        # skips it cleanly; layout paper_bgcolor is still set by the light theme
+        assert fig.layout.paper_bgcolor is not None

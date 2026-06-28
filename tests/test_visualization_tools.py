@@ -129,6 +129,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "parcoords",
             "density_contour",
             "sunburst",
+            "sankey",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -524,6 +525,33 @@ async def test_create_chart_sunburst_missing_columns_raises(monkeypatch) -> None
         await create_chart(data=[{"x": 1}], chart_type="sunburst", names_column="n", values_column="")
     with pytest.raises(ToolError, match="sunburst requires names_column and values_column"):
         await create_chart(data=[{"x": 1}], chart_type="sunburst", names_column="", values_column="v")
+
+
+async def test_create_chart_sankey_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"s": "A", "d": "B", "v": 1}],
+        chart_type="sankey",
+        source_column="s",
+        target_column="d",
+        values_column="v",
+        theme="dark",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "sankey"
+    assert sink["args"] == ("s", "d", "v")
+    assert sink["kwargs"]["theme"] == "dark"
+
+
+async def test_create_chart_sankey_missing_columns_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="sankey requires source_column, target_column, and values_column"):
+        await create_chart(data=[{"x": 1}], chart_type="sankey", source_column="", target_column="d", values_column="v")
+    with pytest.raises(ToolError, match="sankey requires source_column, target_column, and values_column"):
+        await create_chart(data=[{"x": 1}], chart_type="sankey", source_column="s", target_column="", values_column="v")
+    with pytest.raises(ToolError, match="sankey requires source_column, target_column, and values_column"):
+        await create_chart(data=[{"x": 1}], chart_type="sankey", source_column="s", target_column="d", values_column="")
 
 
 async def test_create_chart_gauge_passthrough(monkeypatch) -> None:
