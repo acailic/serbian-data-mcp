@@ -139,6 +139,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "bar_polar",
             "radar",
             "scatter_polar",
+            "scatter_geo",
             "timeline",
             "area",
             "funnel_area",
@@ -697,6 +698,37 @@ async def test_create_chart_scatter_polar_missing_column_raises(monkeypatch) -> 
     _wire_builders(monkeypatch, {})
     with pytest.raises(ToolError, match="scatter_polar requires r_column and x_column"):
         await create_chart(data=[{"dir": "N", "spd": 5}], chart_type="scatter_polar", r_column="", x_column="dir")
+
+
+async def test_create_chart_scatter_geo_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"city": "Belgrade", "lat": 44.8, "lon": 20.4, "pop": 100, "g": "north"}],
+        chart_type="scatter_geo",
+        lat_column="lat",
+        lon_column="lon",
+        size_column="pop",
+        color_column="g",
+        names_column="city",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "scatter_geo"
+    assert sink["args"] == ("lat", "lon")
+    assert sink["kwargs"]["title"] == ""
+    assert sink["kwargs"]["theme"] == "light"
+    assert sink["kwargs"]["color_column"] == "g"
+    assert sink["kwargs"]["size_column"] == "pop"
+    assert sink["kwargs"]["hover_name_column"] == "city"
+
+
+async def test_create_chart_scatter_geo_missing_column_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="scatter_geo requires lat_column and lon_column"):
+        await create_chart(
+            data=[{"city": "Belgrade", "lat": 44.8}], chart_type="scatter_geo", lat_column="", lon_column="lon"
+        )
 
 
 async def test_create_chart_timeline_passthrough(monkeypatch) -> None:

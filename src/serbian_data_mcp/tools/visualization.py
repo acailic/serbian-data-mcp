@@ -65,6 +65,8 @@ async def create_chart(
     end_column: str = "",
     markers: bool = False,
     fill: str = "none",
+    lat_column: str = "",
+    lon_column: str = "",
 ) -> dict[str, Any]:
     """Create interactive charts from data. Supports 20+ chart types.
 
@@ -100,6 +102,7 @@ async def create_chart(
       - "bar_polar": r_column + x_column (angular) → radial bars around a circle (wind rose)
       - "radar": r_column + x_column (angular) → closed polar profile (spider/radar)
       - "scatter_polar": r_column + x_column (angular) (+ size_column) → bare points on a cyclic polar grid
+      - "scatter_geo": lat_column + lon_column (+ color/size) → points placed on a real-world map (spatial distribution)
       - "timeline": start_column + end_column (+ names_column) → Gantt interval bars (duration/overlap)
       - "area": x_column + y_column (+ color_column) → stacked composition over an axis (energy/budget mix)
       - "animated_line": x_column + y_column + frame_column → time playback
@@ -166,6 +169,7 @@ async def create_chart(
         "bar_polar",
         "radar",
         "scatter_polar",
+        "scatter_geo",
         "timeline",
         "area",
         "animated_line",
@@ -215,6 +219,8 @@ async def create_chart(
             end_column=end_column,
             markers=markers,
             fill=fill,
+            lat_column=lat_column,
+            lon_column=lon_column,
         )
     except ToolError:
         raise
@@ -266,6 +272,8 @@ def _build_chart(
     end_column: str = "",
     markers: bool = False,
     fill: str = "none",
+    lat_column: str = "",
+    lon_column: str = "",
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -500,6 +508,19 @@ def _build_chart(
             raise ToolError("scatter_polar requires r_column and x_column (angular)")
         return builder.scatter_polar(
             r_column, x_column, title=title, theme=theme, color_column=color_column, size_column=size_column
+        )
+
+    if chart_type == "scatter_geo":
+        if not lat_column or not lon_column:
+            raise ToolError("scatter_geo requires lat_column and lon_column")
+        return builder.scatter_geo(
+            lat_column,
+            lon_column,
+            title=title,
+            theme=theme,
+            color_column=color_column,
+            size_column=size_column,
+            hover_name_column=names_column or None,
         )
 
     if chart_type == "timeline":

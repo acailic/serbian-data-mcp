@@ -929,6 +929,61 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def scatter_geo(
+        self,
+        lat_column: str,
+        lon_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        size_column: Optional[str] = None,
+        hover_name_column: Optional[str] = None,
+        scope: str = "world",
+    ) -> go.Figure:
+        """Create a geographic scatter plot — points placed by lat/lon on a map.
+
+        Each observation is a single marker plotted at its real-world latitude
+        /longitude on a base geographic map (coastlines + landmass). The
+        canonical professional chart for the *spatial distribution* of events
+        or measurements — air-quality stations by city, monitoring sites,
+        incident/quake epicentres, store/branch locations. Distinct register
+        from every Cartesian chart (which ignores geography entirely) and from
+        choropleth/density_map (which shade whole *regions*, not individual
+        points): scatter_geo answers "where are the points?".
+
+        Pass ``color_column`` to give each group its own point set,
+        ``size_column`` to size each marker by a third variable,
+        ``hover_name_column`` for richer per-point labels, and ``scope``
+        ('world'|'europe'|'asia'|'north america'|...) to focus the base map.
+
+        Args:
+            lat_column: Numeric latitude column (decimal degrees)
+            lon_column: Numeric longitude column (decimal degrees)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional grouping column (one point set per group)
+            size_column: Optional numeric column sizing each marker
+            hover_name_column: Optional column shown bold in the hover tooltip
+            scope: Geographic focus of the base map ('world' by default)
+        """
+        kwargs: dict[str, Any] = {
+            "lat": lat_column,
+            "lon": lon_column,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        if size_column:
+            kwargs["size"] = size_column
+        if hover_name_column:
+            kwargs["hover_name"] = hover_name_column
+        if scope and scope != "world":
+            kwargs["scope"] = scope
+        fig = px.scatter_geo(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def sunburst(
         self,
         names_column: str,
