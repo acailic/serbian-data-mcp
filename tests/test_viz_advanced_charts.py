@@ -87,6 +87,12 @@ TERNARY_DATA: list[dict[str, Any]] = [
     {"a": 30, "b": 40, "c": 30, "grp": "x", "sz": 15},
 ]
 
+SPLOM_DATA: list[dict[str, Any]] = [
+    {"a": 1, "b": 2, "c": 3, "grp": "x"},
+    {"a": 2, "b": 3, "c": 1, "grp": "y"},
+    {"a": 3, "b": 1, "c": 2, "grp": "x"},
+]
+
 
 # ---------------------------------------------------------------------------
 # __init__
@@ -524,4 +530,47 @@ class TestTernary:
         fig = AdvancedChartBuilder(TERNARY_DATA).ternary("a", "b", "c", theme="light")
         # apply_theme ran: light theme sets a concrete paper_bgcolor; ternary
         # uses the separate `ternary` sub-axis, which apply_theme does not touch
+        assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
+# splom
+# ---------------------------------------------------------------------------
+
+
+class TestSplom:
+    def test_returns_single_splom_trace_with_dimensions(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).splom(["a", "b", "c"], title="T")
+        assert isinstance(fig, go.Figure)
+        # px.scatter_matrix with no color grouping emits ONE go.Splom trace
+        # carrying the whole NxN matrix on its nested .dimensions
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Splom)
+        assert len(fig.data[0].dimensions) == 3
+        assert fig.data[0].dimensions[0].label == "a"
+        assert fig.data[0].dimensions[1].label == "b"
+        assert fig.data[0].dimensions[2].label == "c"
+        assert list(fig.data[0].dimensions[0].values) == [1, 2, 3]
+        assert fig.layout.title.text == "T"
+
+    def test_two_columns_single_trace(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).splom(["a", "b"])
+        assert isinstance(fig.data[0], go.Splom)
+        assert len(fig.data[0].dimensions) == 2
+
+    def test_color_column_splits_one_trace_per_group(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).splom(["a", "b", "c"], color_column="grp")
+        # one Splom trace per group value (grp has 2 values: x, y)
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Splom) for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["x", "y"]
+
+    def test_size_column_sets_marker_size(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).splom(["a", "b", "c"], size_column="a")
+        # px maps the size column onto the trace's marker.size array
+        assert fig.data[0].marker.size is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).splom(["a", "b", "c"], theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor
         assert fig.layout.paper_bgcolor is not None

@@ -125,6 +125,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "waterfall",
             "candlestick",
             "ternary",
+            "splom",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -391,6 +392,33 @@ async def test_create_chart_ternary_missing_component_raises(monkeypatch) -> Non
             b_column="b",
             c_column="",
         )
+
+
+async def test_create_chart_splom_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"a": 1, "b": 2, "c": 3}],
+        chart_type="splom",
+        columns=["a", "b", "c"],
+        color_column="grp",
+        size_column="sz",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "splom"
+    assert sink["args"] == (["a", "b", "c"],)
+    assert sink["kwargs"]["color_column"] == "grp"
+    assert sink["kwargs"]["size_column"] == "sz"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_splom_too_few_columns_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="splom requires columns"):
+        await create_chart(data=[{"a": 1}], chart_type="splom", columns=["a"])
+    with pytest.raises(ToolError, match="splom requires columns"):
+        await create_chart(data=[{"a": 1}], chart_type="splom", columns=[])
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:

@@ -373,6 +373,44 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def splom(
+        self,
+        columns: list[str],
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        size_column: Optional[str] = None,
+    ) -> go.Figure:
+        """Create a scatter plot matrix (SPLOM) — pairwise scatter for N columns.
+
+        One matrix cell per ordered pair of columns (every column plotted against
+        every other), so the full pairwise-correlation structure of a multivariate
+        dataset is visible at a glance. The canonical professional chart for
+        exploratory correlation analysis — spotting which variables move together,
+        which trade off, and which clusters form — that no single scatter can show
+        because it only handles two variables. Ideal for multi-indicator datasets
+        (pollutants + weather + population, socioeconomic indices).
+
+        Args:
+            columns: Columns to scatter pairwise (≥ 2 recommended)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional grouping column (one splom trace per group)
+            size_column: Optional per-point marker-size column
+        """
+        kwargs: dict[str, Any] = {
+            "dimensions": columns,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        if size_column:
+            kwargs["size"] = size_column
+        fig = px.scatter_matrix(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,

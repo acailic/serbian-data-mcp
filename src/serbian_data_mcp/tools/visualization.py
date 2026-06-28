@@ -57,6 +57,7 @@ async def create_chart(
     a_column: str = "",
     b_column: str = "",
     c_column: str = "",
+    columns: list[str] = [],
 ) -> dict[str, Any]:
     """Create interactive charts from data. Supports 20+ chart types.
 
@@ -77,6 +78,7 @@ async def create_chart(
       - "waterfall": x_column + values_column → cumulative running-total bridge
       - "candlestick": open/high/low/close columns → OHLC price candles
       - "ternary": a/b/c columns → 3-part compositional mixture triangle
+      - "splom": columns (list) → pairwise scatter matrix for N variables
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -124,6 +126,7 @@ async def create_chart(
         "waterfall",
         "candlestick",
         "ternary",
+        "splom",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -163,6 +166,7 @@ async def create_chart(
             a_column=a_column,
             b_column=b_column,
             c_column=c_column,
+            columns=columns,
         )
     except ToolError:
         raise
@@ -206,6 +210,7 @@ def _build_chart(
     a_column: str = "",
     b_column: str = "",
     c_column: str = "",
+    columns: list[str] = [],
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -302,6 +307,17 @@ def _build_chart(
             a_column,
             b_column,
             c_column,
+            title=title,
+            theme=theme,
+            color_column=color_column,
+            size_column=size_column,
+        )
+
+    if chart_type == "splom":
+        if not columns or len(columns) < 2:
+            raise ToolError("splom requires columns (list of 2 or more)")
+        return builder.splom(
+            columns,
             title=title,
             theme=theme,
             color_column=color_column,
