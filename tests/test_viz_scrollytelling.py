@@ -9,6 +9,7 @@ substring / regex reads against the returned HTML string.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import plotly.graph_objects as go
@@ -99,9 +100,7 @@ def test_theme_light_colors() -> None:
 
 
 def test_header_color_and_accent_color_interpolated() -> None:
-    html = scrollytelling(
-        steps=[], title="T", header_color="#112233", accent_color="#445566"
-    )
+    html = scrollytelling(steps=[], title="T", header_color="#112233", accent_color="#445566")
     assert "#112233" in html
     assert "#445566" in html
 
@@ -261,15 +260,27 @@ def test_invalid_theme_falls_through_to_dark_branch() -> None:
     assert "#0d1117" not in html
 
 
-def test_chart_json_default_serializer_handles_non_serializable() -> None:
-    """chart_fig.to_dict() with a non-JSON-native value must not crash; the
-    default=lambda _x: None serializer swallows it."""
+def test_chart_json_default_serializer_handles_non_serializable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """chart_fig.to_dict() returning a non-JSON-native value must not crash; the
+    default=lambda _x: None serializer (scrollytelling.py:109) swallows it.
+
+    Two seams are required: scrollytelling calls plotly's to_html(fig) at line 75
+    BEFORE fig.to_dict() at line 109, and to_html walks the real figure — so a
+    non-serializable injected via to_dict alone breaks to_html. Patching the
+    module-level to_html to a stub div lets execution reach the json.dumps call,
+    and patching fig.to_dict to return a dict carrying an _Opaque exercises the
+    default= callback (the opaque object is serialized to null).
+    """
 
     class _Opaque:
         pass
 
+    scrolly_mod = sys.modules["serbian_data_mcp.viz.scrollytelling"]
+    monkeypatch.setattr(scrolly_mod, "to_html", lambda *a, **k: "<div>stub</div>")
     fig = go.Figure(data=[go.Bar(x=["a"], y=[1])])
-    # attach a non-serializable attr into the layout to exercise the default=
-    fig.layout.template = _Opaque()  # type: ignore[assignment]
+    monkeypatch.setattr(fig, "to_dict", lambda: {"data": [{"x": [_Opaque()]}]})
     html = scrollytelling(steps=[{"chart": fig}], title="T")
     assert "Plotly.newPlot" in html
+    # the non-serializable object was serialized to null via the default= callback
+    assert "[null]" in html
+    assert "null" in html
