@@ -24,7 +24,6 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from fastmcp import Client
 from fastmcp.client import FastMCPTransport
 from serbian_data_mcp import mcp
-from serbian_data_mcp.tools import _reset_client
 
 
 # ---------- pretty-printing helpers ----------
@@ -270,7 +269,6 @@ async def main() -> None:
     print(f"{DIM}{'─' * 60}{RESET}")
     start = time.perf_counter()
 
-    _reset_client()
     transport = FastMCPTransport(mcp)
     async with Client(transport) as client:
         await discover_server(client)

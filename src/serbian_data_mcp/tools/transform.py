@@ -116,3 +116,102 @@ async def filter_data_tool(
         return h.dataframe_to_dict(result)
     except Exception as e:
         raise ToolError(f"Filter failed: {e}") from e
+
+
+@mcp.tool()
+async def group_data_tool(
+    data: list[dict[str, Any]],
+    group_by: str | list[str],
+    aggregations: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Group data by one or more columns with optional aggregations.
+
+    Shorthand for transform_data(operation='group'). Returns one row per group
+    with the requested aggregation(s) applied.
+
+    Aggregation functions: sum, mean, median, min, max, count, std, var.
+
+    Args:
+        data: Row dicts from get_resource_data()
+        group_by: Column name or list of column names to group by
+        aggregations: {column: agg_func} e.g. {"population": "sum"}
+    """
+    try:
+        result = group_data(data, group_by, aggregations)
+        return h.dataframe_to_dict(result)
+    except Exception as e:
+        raise ToolError(f"Group failed: {e}") from e
+
+
+@mcp.tool()
+async def aggregate_data_tool(
+    data: list[dict[str, Any]],
+    column: str,
+    function: str = "sum",
+) -> dict[str, Any]:
+    """Aggregate a single column using a function.
+
+    Shorthand for transform_data(operation='aggregate'). Returns the scalar
+    result as {"value": ..., "column": ..., "function": ...}.
+
+    Functions: sum, mean, median, min, max, count, std, var.
+
+    Args:
+        data: Row dicts from get_resource_data()
+        column: Column to aggregate
+        function: Aggregation function (default "sum")
+    """
+    try:
+        value = aggregate_data(data, column, function)
+        if value is not None:
+            import numpy as np
+
+            if isinstance(value, np.integer):
+                value = int(value)
+            elif isinstance(value, np.floating):
+                value = float(value)
+        return {"value": value, "column": column, "function": function}
+    except Exception as e:
+        raise ToolError(f"Aggregate failed: {e}") from e
+
+
+@mcp.tool()
+async def sort_data_tool(
+    data: list[dict[str, Any]],
+    by: str | list[str],
+    ascending: bool = True,
+) -> dict[str, Any]:
+    """Sort data by one or more columns.
+
+    Shorthand for transform_data(operation='sort').
+
+    Args:
+        data: Row dicts from get_resource_data()
+        by: Column name or list of column names to sort by
+        ascending: Sort direction (default True)
+    """
+    try:
+        result = sort_data(data, by, ascending)
+        return h.dataframe_to_dict(result)
+    except Exception as e:
+        raise ToolError(f"Sort failed: {e}") from e
+
+
+@mcp.tool()
+async def select_columns_tool(
+    data: list[dict[str, Any]],
+    columns: list[str],
+) -> dict[str, Any]:
+    """Select specific columns from data, dropping all others.
+
+    Shorthand for transform_data(operation='select').
+
+    Args:
+        data: Row dicts from get_resource_data()
+        columns: Column names to keep
+    """
+    try:
+        result = select_columns(data, columns)
+        return h.dataframe_to_dict(result)
+    except Exception as e:
+        raise ToolError(f"Select failed: {e}") from e
