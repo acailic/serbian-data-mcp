@@ -273,6 +273,49 @@ class TestIcicle:
 
 
 # ---------------------------------------------------------------------------
+# funnel_area
+# ---------------------------------------------------------------------------
+
+
+class TestFunnelArea:
+    def test_returns_single_funnelarea_trace(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).funnel_area("name", "value", title="T")
+        assert isinstance(fig, go.Figure)
+        # px.funnel_area -> one Funnelarea trace (area-proportional radial wedges)
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Funnelarea)
+        assert fig.layout.title.text == "T"
+
+    def test_labels_carry_names(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).funnel_area("name", "value")
+        # slice labels are the name column values
+        labels = list(fig.data[0].labels)
+        assert "A" in labels and "B" in labels and "C" in labels
+
+    def test_values_mapped_to_slice_area(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).funnel_area("name", "value")
+        # trace.values carries the raw per-slice value column (area driver)
+        assert list(fig.data[0].values) == [100, 200, 50]
+
+    def test_color_column_assigns_per_slice_colors(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).funnel_area("name", "value", color_column="color")
+        # discrete color -> marker.colors array (one hex per slice), NOT a trace split
+        assert len(fig.data) == 1
+        colors = fig.data[0].marker.colors
+        assert colors is not None and len(colors) == len(fig.data[0].labels)
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).funnel_area("name", "value", theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor
+        assert fig.layout.paper_bgcolor is not None
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).funnel_area("name", "value", theme="professional")
+        # professional salmon-paper register applied
+        assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
 # gauge
 # ---------------------------------------------------------------------------
 

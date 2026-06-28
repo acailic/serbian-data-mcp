@@ -174,6 +174,46 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def funnel_area(
+        self,
+        names_column: str,
+        values_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+    ) -> go.Figure:
+        """Create a funnel-area chart — area-proportional radial funnel.
+
+        A single-level composition laid out as funnel-shaped wedges whose
+        AREA (not just sweep angle) encodes each slice's value, so the
+        perceived area of every wedge matches its share. The canonical
+        professional chart for part-to-whole share where larger slices must
+        dominate visually by area (website sections by traffic share, cost
+        centres by spend share, product lines by revenue share). A genuine
+        register distinct from ``funnel`` (rectangular drop-off stages whose
+        width = remaining value, not a share-of-whole split) and from
+        ``pie``/``sunburst`` (angle-proportional wedges): funnel-area scales
+        BOTH radius and sweep so perceived area tracks the value — a stronger
+        match to human perception than angle-only pie charts.
+
+        Args:
+            names_column: Labels for each slice
+            values_column: Numeric size per slice (drives slice area)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional column for per-slice color grouping
+        """
+        fig = px.funnel_area(
+            self.data,
+            names=names_column,
+            values=values_column,
+            color=color_column,
+            title=title,
+            color_discrete_sequence=SEMANTIC_COLORS,
+        )
+        apply_theme(fig, theme)
+        return fig
+
     def violin(
         self,
         y_column: str,

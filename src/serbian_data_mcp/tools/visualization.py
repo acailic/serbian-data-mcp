@@ -79,6 +79,7 @@ async def create_chart(
       - "treemap": names_column + values_column → nested breakdowns
       - "gauge": value (float, 0-100) → single metric display
       - "funnel": names_column + values_column → cascading flow
+      - "funnel_area": names_column + values_column → area-proportional radial funnel (share by area)
       - "violin": y_column (+ optional x_column) → distribution shape + density
       - "waterfall": x_column + values_column → cumulative running-total bridge
       - "candlestick": open/high/low/close columns → OHLC price candles
@@ -142,6 +143,7 @@ async def create_chart(
         "treemap",
         "gauge",
         "funnel",
+        "funnel_area",
         "violin",
         "waterfall",
         "candlestick",
@@ -348,6 +350,17 @@ def _build_chart(
         if not names_column or not values_column:
             raise ToolError("funnel requires names_column and values_column")
         return builder.funnel(names_column, values_column, title=title, theme=theme)
+
+    if chart_type == "funnel_area":
+        if not names_column or not values_column:
+            raise ToolError("funnel_area requires names_column and values_column")
+        return builder.funnel_area(
+            names_column,
+            values_column,
+            title=title,
+            theme=theme,
+            color_column=color_column,
+        )
 
     if chart_type == "violin":
         if not y_column:

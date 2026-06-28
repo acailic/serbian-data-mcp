@@ -139,6 +139,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "radar",
             "timeline",
             "area",
+            "funnel_area",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -772,6 +773,31 @@ async def test_create_chart_icicle_missing_columns_raises(monkeypatch) -> None:
         await create_chart(data=[{"x": 1}], chart_type="icicle", names_column="n", values_column="")
     with pytest.raises(ToolError, match="icicle requires names_column and values_column"):
         await create_chart(data=[{"x": 1}], chart_type="icicle", names_column="", values_column="v")
+
+
+async def test_create_chart_funnel_area_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"n": "A", "v": 1, "c": "x"}],
+        chart_type="funnel_area",
+        names_column="n",
+        values_column="v",
+        color_column="c",
+        theme="dark",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "funnel_area"
+    assert sink["args"] == ("n", "v")
+    assert sink["kwargs"]["color_column"] == "c"
+
+
+async def test_create_chart_funnel_area_missing_columns_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="funnel_area requires names_column and values_column"):
+        await create_chart(data=[{"x": 1}], chart_type="funnel_area", names_column="n", values_column="")
+    with pytest.raises(ToolError, match="funnel_area requires names_column and values_column"):
+        await create_chart(data=[{"x": 1}], chart_type="funnel_area", names_column="", values_column="v")
 
 
 async def test_create_chart_sankey_passthrough(monkeypatch) -> None:
