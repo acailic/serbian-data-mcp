@@ -67,6 +67,7 @@ async def create_chart(
     fill: str = "none",
     lat_column: str = "",
     lon_column: str = "",
+    locationmode: str = "country names",
 ) -> dict[str, Any]:
     """Create interactive charts from data. Supports 20+ chart types.
 
@@ -103,6 +104,7 @@ async def create_chart(
       - "radar": r_column + x_column (angular) → closed polar profile (spider/radar)
       - "scatter_polar": r_column + x_column (angular) (+ size_column) → bare points on a cyclic polar grid
       - "scatter_geo": lat_column + lon_column (+ color/size) → points placed on a real-world map (spatial distribution)
+      - "choropleth": names_column + values_column (+ locationmode) → geographic regions shaded by a value (spatial comparison)
       - "timeline": start_column + end_column (+ names_column) → Gantt interval bars (duration/overlap)
       - "area": x_column + y_column (+ color_column) → stacked composition over an axis (energy/budget mix)
       - "animated_line": x_column + y_column + frame_column → time playback
@@ -170,6 +172,7 @@ async def create_chart(
         "radar",
         "scatter_polar",
         "scatter_geo",
+        "choropleth",
         "timeline",
         "area",
         "animated_line",
@@ -221,6 +224,7 @@ async def create_chart(
             fill=fill,
             lat_column=lat_column,
             lon_column=lon_column,
+            locationmode=locationmode,
         )
     except ToolError:
         raise
@@ -274,6 +278,7 @@ def _build_chart(
     fill: str = "none",
     lat_column: str = "",
     lon_column: str = "",
+    locationmode: str = "country names",
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -521,6 +526,17 @@ def _build_chart(
             color_column=color_column,
             size_column=size_column,
             hover_name_column=names_column or None,
+        )
+
+    if chart_type == "choropleth":
+        if not names_column or not values_column:
+            raise ToolError("choropleth requires names_column and values_column")
+        return builder.choropleth(
+            names_column,
+            values_column,
+            title=title,
+            theme=theme,
+            locationmode=locationmode,
         )
 
     if chart_type == "timeline":

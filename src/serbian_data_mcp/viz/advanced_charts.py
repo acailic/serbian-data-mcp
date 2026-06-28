@@ -984,6 +984,55 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def choropleth(
+        self,
+        locations_column: str,
+        values_column: str,
+        title: str = "",
+        theme: str = "dark",
+        locationmode: str = "country names",
+        color_continuous_scale: Optional[str] = None,
+        scope: str = "world",
+    ) -> go.Figure:
+        """Create a choropleth — geographic regions shaded by a value.
+
+        Each region (country / US state) is filled with a single color whose
+        intensity encodes a per-region aggregate metric, drawn on a base
+        geographic map (coastlines + landmass). The canonical professional
+        chart for the *spatial comparison of an aggregate statistic* — GDP per
+        country, population density, voter turnout, pollution index by region.
+        Distinct register from scatter_geo (which plots individual *points* by
+        lat/lon and ignores region totals): choropleth answers "which regions
+        rank highest/lowest on the metric?".
+
+        Pass ``locationmode`` ('country names' | 'ISO-3' | 'USA states') to
+        match the format of ``locations_column``, ``color_continuous_scale``
+        for a named Plotly color ramp, and ``scope`` ('world'|'europe'|...)
+        to focus the base map.
+
+        Args:
+            locations_column: Region-identifier column (country name, ISO-3, ...)
+            values_column: Numeric metric column shading each region
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            locationmode: How locations are encoded ('country names' default)
+            color_continuous_scale: Optional named Plotly color ramp
+            scope: Geographic focus of the base map ('world' by default)
+        """
+        kwargs: dict[str, Any] = {
+            "locations": locations_column,
+            "locationmode": locationmode,
+            "color": values_column,
+            "title": title,
+        }
+        if color_continuous_scale:
+            kwargs["color_continuous_scale"] = color_continuous_scale
+        if scope and scope != "world":
+            kwargs["scope"] = scope
+        fig = px.choropleth(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def sunburst(
         self,
         names_column: str,

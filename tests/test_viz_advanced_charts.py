@@ -1377,6 +1377,60 @@ class TestScatterGeo:
         assert fig.layout.paper_bgcolor == "#ffffff"
 
 
+CHOROPLETH_DATA: list[dict[str, Any]] = [
+    {"country": "Serbia", "gdp": 100, "pop": 7},
+    {"country": "Croatia", "gdp": 80, "pop": 4},
+    {"country": "Hungary", "gdp": 60, "pop": 10},
+    {"country": "Romania", "gdp": 50, "pop": 19},
+    {"country": "Bulgaria", "gdp": 40, "pop": 7},
+]
+
+
+class TestChoropleth:
+    def test_returns_single_choropleth_trace_shaded_regions(self) -> None:
+        fig = AdvancedChartBuilder(CHOROPLETH_DATA[:3]).choropleth("country", "gdp", title="GDP")
+        assert isinstance(fig, go.Figure)
+        # px.choropleth emits a SINGLE go.Choropleth trace carrying the region
+        # locations + the shading metric; whole regions filled on a base map.
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Choropleth)
+        assert list(fig.data[0].locations) == ["Serbia", "Croatia", "Hungary"]
+        assert [int(v) for v in fig.data[0].z] == [100, 80, 60]
+        assert fig.layout.title.text == "GDP"
+        assert fig.layout.geo is not None
+
+    def test_default_locationmode_is_country_names(self) -> None:
+        fig = AdvancedChartBuilder(CHOROPLETH_DATA[:3]).choropleth("country", "gdp")
+        # locationmode defaults to 'country names' on the trace
+        assert fig.data[0].locationmode == "country names"
+
+    def test_locationmode_iso3_set_on_trace(self) -> None:
+        fig = AdvancedChartBuilder(CHOROPLETH_DATA[:3]).choropleth("country", "gdp", locationmode="ISO-3")
+        assert fig.data[0].locationmode == "ISO-3"
+
+    def test_color_continuous_scale_set_on_coloraxis(self) -> None:
+        fig = AdvancedChartBuilder(CHOROPLETH_DATA[:3]).choropleth("country", "gdp", color_continuous_scale="Viridis")
+        # color_continuous_scale lands on layout.coloraxis (shared color ramp)
+        assert fig.layout.coloraxis.colorscale is not None
+
+    def test_scope_focuses_base_map(self) -> None:
+        fig = AdvancedChartBuilder(CHOROPLETH_DATA[:3]).choropleth("country", "gdp", scope="europe")
+        # scope= sets layout.geo.scope to focus the base map on a continent
+        assert fig.layout.geo.scope == "europe"
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(CHOROPLETH_DATA[:3]).choropleth("country", "gdp", theme="professional")
+        # go.Choropleth has a marker WITH a line sub-prop, so apply_theme's
+        # trace-polish loop runs cleanly; geographic axis lives on layout.geo.
+        assert fig.layout.paper_bgcolor == "#fff1e5"
+        assert fig.layout.geo is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(CHOROPLETH_DATA[:3]).choropleth("country", "gdp", theme="light")
+        # light theme = white paper; apply_theme is choropleth-safe
+        assert fig.layout.paper_bgcolor == "#ffffff"
+
+
 TIMELINE_DATA: list[dict[str, Any]] = [
     {"task": "Design", "start": "2024-01-01", "end": "2024-01-10", "grp": "A"},
     {"task": "Build", "start": "2024-01-05", "end": "2024-01-20", "grp": "B"},

@@ -731,6 +731,36 @@ async def test_create_chart_scatter_geo_missing_column_raises(monkeypatch) -> No
         )
 
 
+async def test_create_chart_choropleth_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"country": "Serbia", "gdp": 100}],
+        chart_type="choropleth",
+        names_column="country",
+        values_column="gdp",
+        locationmode="ISO-3",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "choropleth"
+    assert sink["args"] == ("country", "gdp")
+    assert sink["kwargs"]["title"] == ""
+    assert sink["kwargs"]["theme"] == "light"
+    assert sink["kwargs"]["locationmode"] == "ISO-3"
+
+
+async def test_create_chart_choropleth_missing_column_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="choropleth requires names_column"):
+        await create_chart(
+            data=[{"country": "Serbia", "gdp": 100}],
+            chart_type="choropleth",
+            names_column="",
+            values_column="gdp",
+        )
+
+
 async def test_create_chart_timeline_passthrough(monkeypatch) -> None:
     sink: dict[str, Any] = {}
     _wire_builders(monkeypatch, sink)
