@@ -6,6 +6,9 @@ Covers iters 8-11 ports that previously had no direct test coverage:
   - refresh_catalog       (resources.py)
   - get_dataset_resources (data.py)
   - get_data_summary      (data.py)
+  - intelligent_search    (search.py)
+  - preview_dataset       (search.py)
+  - export_to_datawrapper (export.py)
 
 All tests are deterministic and network-free: the API client and catalog
 singletons are replaced with fakes via monkeypatch so behaviour is exercised
@@ -22,8 +25,11 @@ import pandas as pd
 import pytest
 from fastmcp.exceptions import ToolError
 
+from serbian_data_mcp.catalog.exceptions import DatasetNotFound
 from serbian_data_mcp.tools import data as data_mod
+from serbian_data_mcp.tools import export as export_mod
 from serbian_data_mcp.tools import resources as resources_mod
+from serbian_data_mcp.tools import search as search_mod
 
 
 # ---------------------------------------------------------------------------
@@ -322,3 +328,249 @@ async def test_refresh_catalog_failure_raises_toolerror(monkeypatch: pytest.Monk
 
     with pytest.raises(ToolError, match="Catalog refresh failed"):
         await refresh_catalog()
+
+
+# ===========================================================================
+# intelligent_search
+# ===========================================================================
+
+
+def _async_return(value: Any) -> Any:
+    """Build an async factory returning a fixed value (for get_catalog patches)."""
+
+    async def _factory() -> Any:
+        return value
+
+    return _factory
+
+
+class _SearchResult:
+    """Stand-in for catalog SearchResult exposing .to_dict()."""
+
+    def __init__(self, payload: dict[str, Any]) -> None:
+        self._payload = payload
+
+    def to_dict(self) -> dict[str, Any]:
+        return self._payload
+
+
+class _FakeSearchEngine:
+    """Stand-in for SearchEngine exercising search + query expansion paths."""
+
+    def __init__(
+        self,
+        *,
+        results: list[Any] | None = None,
+        expanded_terms: list[str] | None = None,
+        captured: dict[str, Any] | None = None,
+    ) -> None:
+        self._results = results or []
+        self._expanded_terms = expanded_terms or []
+        self._captured = captured
+        self.query_expander = SimpleNamespace(expand=self._expand)
+
+    async def _expand(self, query: str) -> list[str]:
+        return self._expanded_terms
+
+    async def search(self, query: str, max_results: int = 10, min_score: float = 0.3) -> list[Any]:
+        if self._captured is not None:
+            self._captured.update(query=query, max_results=max_results, min_score=min_score)
+        return self._results
+
+
+class _FakeSuggestions:
+    """Stand-in for AlternativeSuggestions returning a fixed suggestion dict."""
+
+    def __init__(self, data: dict[str, Any]) -> None:
+        self._data = data
+
+    async def suggest(self, query: str, max_alternatives: int = 10) -> Any:
+        return SimpleNamespace(to_dict=lambda: self._data)
+
+
+@pytest.mark.asyncio
+async def test_intelligent_search_with_results(monkeypatch: pytest.MonkeyPatch) -> None:
+    from serbian_data_mcp.tools.search import intelligent_search
+
+    engine = _FakeSearchEngine(
+        results=[_SearchResult({"id": "ds-1", "title": "Stanovništvo", "score": 0.9})],
+        expanded_terms=["population", "stanovništvo"],
+    )
+    monkeypatch.setattr(search_mod.h, "get_catalog", _async_return(object()))
+    monkeypatch.setattr(search_mod, "SearchEngine", lambda catalog: engine)
+
+    result = await intelligent_search("population")
+
+    assert result["total_found"] == 1
+    assert result["query"] == "population"
+    assert result["expanded_terms"] == ["population", "stanovništvo"]
+    assert result["results"][0]["id"] == "ds-1"
+    assert "suggestions" not in result
+
+
+@pytest.mark.asyncio
+async def test_intelligent_search_no_match_clamps_and_suggests(monkeypatch: pytest.MonkeyPatch) -> None:
+    from serbian_data_mcp.tools.search import intelligent_search
+
+    captured: dict[str, Any] = {}
+    engine = _FakeSearchEngine(results=[], expanded_terms=["zzz"], captured=captured)
+    monkeypatch.setattr(search_mod.h, "get_catalog", _async_return(object()))
+    monkeypatch.setattr(search_mod, "SearchEngine", lambda catalog: engine)
+    monkeypatch.setattr(
+        search_mod,
+        "AlternativeSuggestions",
+        lambda catalog, engine_: _FakeSuggestions({"alternatives": ["ds-9", "ds-8"]}),
+    )
+
+    result = await intelligent_search("zzz", max_results=500, min_score=0.9, suggest_alternatives=True)
+
+    assert result["total_found"] == 0
+    assert captured["max_results"] == 50  # clamped from 500
+    assert captured["min_score"] == 0.9
+    assert result["suggestions"] == {"alternatives": ["ds-9", "ds-8"]}
+    assert "note" in result
+
+
+# ===========================================================================
+# preview_dataset
+# ===========================================================================
+
+
+class _FakePreview:
+    """Stand-in for DatasetPreview exercising the preview + not-found paths."""
+
+    def __init__(
+        self,
+        payload: dict[str, Any] | None = None,
+        captured: dict[str, Any] | None = None,
+    ) -> None:
+        self._payload = payload
+        self._captured = captured
+
+    async def preview_dataset(self, dataset_id: str, nrows: int = 10) -> dict[str, Any]:
+        if self._captured is not None:
+            self._captured.update(dataset_id=dataset_id, nrows=nrows)
+        if self._payload is None:
+            raise DatasetNotFound(dataset_id)
+        return self._payload
+
+
+@pytest.mark.asyncio
+async def test_preview_dataset_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    from serbian_data_mcp.tools.search import preview_dataset
+
+    payload = {"metadata": {"id": "ds-1"}, "sample_data": [{"x": 1}], "columns": ["x"], "preview_reason": "ok"}
+    preview = _FakePreview(payload=payload)
+    monkeypatch.setattr(search_mod.h, "get_catalog", _async_return(object()))
+    monkeypatch.setattr(search_mod, "DatasetPreview", lambda catalog: preview)
+
+    result = await preview_dataset("ds-1", nrows=5)
+
+    assert result["metadata"]["id"] == "ds-1"
+    assert result["columns"] == ["x"]
+
+
+@pytest.mark.asyncio
+async def test_preview_dataset_clamps_nrows(monkeypatch: pytest.MonkeyPatch) -> None:
+    from serbian_data_mcp.tools.search import preview_dataset
+
+    captured: dict[str, Any] = {}
+    preview = _FakePreview(
+        payload={"metadata": {}, "sample_data": [], "columns": [], "preview_reason": "ok"},
+        captured=captured,
+    )
+    monkeypatch.setattr(search_mod.h, "get_catalog", _async_return(object()))
+    monkeypatch.setattr(search_mod, "DatasetPreview", lambda catalog: preview)
+
+    await preview_dataset("ds-1", nrows=500)
+
+    assert captured["nrows"] == 100  # clamped from 500
+    assert captured["dataset_id"] == "ds-1"
+
+
+@pytest.mark.asyncio
+async def test_preview_dataset_not_found_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    from serbian_data_mcp.tools.search import preview_dataset
+
+    preview = _FakePreview(payload=None)  # raises DatasetNotFound
+    monkeypatch.setattr(search_mod.h, "get_catalog", _async_return(object()))
+    monkeypatch.setattr(search_mod, "DatasetPreview", lambda catalog: preview)
+
+    with pytest.raises(ToolError, match="not found in catalog"):
+        await preview_dataset("missing")
+
+
+# ===========================================================================
+# export_to_datawrapper
+# ===========================================================================
+
+
+class _FakeExporter:
+    """Stand-in for DatawrapperExporter tracking close() for leak checks."""
+
+    def __init__(
+        self,
+        *,
+        available: bool = True,
+        payload: dict[str, Any] | None = None,
+        raise_exc: Exception | None = None,
+    ) -> None:
+        self.available = available
+        self._payload = payload
+        self._raise = raise_exc
+        self.closed = False
+
+    def create_and_publish(self, data: Any, title: str, chart_type: str, labels: Any) -> dict[str, Any]:
+        if self._raise is not None:
+            raise self._raise
+        return self._payload or {}
+
+    def close(self) -> None:
+        self.closed = True
+
+
+@pytest.mark.asyncio
+async def test_export_to_datawrapper_empty_raises() -> None:
+    from serbian_data_mcp.tools.export import export_to_datawrapper
+
+    with pytest.raises(ToolError, match="No data to export"):
+        await export_to_datawrapper([], "title")
+
+
+@pytest.mark.asyncio
+async def test_export_to_datawrapper_no_token_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    from serbian_data_mcp.tools.export import export_to_datawrapper
+
+    monkeypatch.setattr(export_mod, "DatawrapperExporter", lambda: _FakeExporter(available=False))
+
+    with pytest.raises(ToolError, match="requires an API token"):
+        await export_to_datawrapper([{"x": 1}], "title")
+
+
+@pytest.mark.asyncio
+async def test_export_to_datawrapper_success_closes_exporter(monkeypatch: pytest.MonkeyPatch) -> None:
+    from serbian_data_mcp.tools.export import export_to_datawrapper
+
+    exporter = _FakeExporter(
+        available=True,
+        payload={"id": "abc", "url": "u", "embed_url": "eu", "embed_code": "<x>"},
+    )
+    monkeypatch.setattr(export_mod, "DatawrapperExporter", lambda: exporter)
+
+    result = await export_to_datawrapper([{"region": "BG", "value": 1}], "My chart", chart_type="d3-lines")
+
+    assert result == {"id": "abc", "url": "u", "embed_url": "eu", "embed_code": "<x>"}
+    assert exporter.closed is True  # close() invoked via finally — no httpx leak
+
+
+@pytest.mark.asyncio
+async def test_export_to_datawrapper_failure_closes_exporter(monkeypatch: pytest.MonkeyPatch) -> None:
+    from serbian_data_mcp.tools.export import export_to_datawrapper
+
+    exporter = _FakeExporter(available=True, raise_exc=RuntimeError("api 500"))
+    monkeypatch.setattr(export_mod, "DatawrapperExporter", lambda: exporter)
+
+    with pytest.raises(ToolError, match="Datawrapper export failed"):
+        await export_to_datawrapper([{"x": 1}], "t")
+
+    assert exporter.closed is True  # finally still closes on the failure path
