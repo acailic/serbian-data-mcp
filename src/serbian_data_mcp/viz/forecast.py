@@ -42,6 +42,9 @@ def forecast_linear(
     if not data:
         return {"error": "No data provided"}
 
+    if periods_ahead < 1:
+        return {"error": "periods_ahead must be at least 1"}
+
     df = pd.DataFrame(data)
     df = df.sort_values(time_column)
 
