@@ -75,6 +75,12 @@ WATERFALL_DATA: list[dict[str, Any]] = [
     {"step": "End", "amount": 1150, "measure": "total"},
 ]
 
+CANDLESTICK_DATA: list[dict[str, Any]] = [
+    {"date": "2024-01-01", "open": 100, "high": 110, "low": 95, "close": 105},
+    {"date": "2024-01-02", "open": 105, "high": 108, "low": 98, "close": 99},
+    {"date": "2024-01-03", "open": 99, "high": 120, "low": 97, "close": 118},
+]
+
 
 # ---------------------------------------------------------------------------
 # __init__
@@ -418,5 +424,61 @@ class TestWaterfall:
 
     def test_apply_theme_light_runs(self) -> None:
         fig = AdvancedChartBuilder(WATERFALL_DATA).waterfall("step", "amount", theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor
+        assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
+# candlestick
+# ---------------------------------------------------------------------------
+
+
+class TestCandlestick:
+    def test_returns_candlestick_trace_with_ohlc(self) -> None:
+        fig = AdvancedChartBuilder(CANDLESTICK_DATA).candlestick("open", "high", "low", "close", title="T")
+        assert isinstance(fig, go.Figure)
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Candlestick)
+        assert list(fig.data[0].open) == [100, 105, 99]
+        assert list(fig.data[0].high) == [110, 108, 120]
+        assert list(fig.data[0].low) == [95, 98, 97]
+        assert list(fig.data[0].close) == [105, 99, 118]
+        assert fig.layout.title.text == "T"
+        # professional register: no rangeslider, no legend
+        assert fig.layout.xaxis.rangeslider.visible is False
+        assert fig.layout.showlegend is False
+
+    def test_x_column_used_for_period_axis(self) -> None:
+        fig = AdvancedChartBuilder(CANDLESTICK_DATA).candlestick("open", "high", "low", "close", x_column="date")
+        assert list(fig.data[0].x) == ["2024-01-01", "2024-01-02", "2024-01-03"]
+
+    def test_default_x_is_row_index(self) -> None:
+        fig = AdvancedChartBuilder(CANDLESTICK_DATA).candlestick("open", "high", "low", "close")
+        # no x_column -> falls back to the DataFrame's integer row order
+        assert list(fig.data[0].x) == [0, 1, 2]
+
+    def test_default_colors_green_up_red_down(self) -> None:
+        fig = AdvancedChartBuilder(CANDLESTICK_DATA).candlestick("open", "high", "low", "close")
+        t = fig.data[0]
+        assert t.increasing.fillcolor == "#2e7d32"
+        assert t.increasing.line.color == "#2e7d32"
+        assert t.decreasing.fillcolor == "#c62828"
+        assert t.decreasing.line.color == "#c62828"
+
+    def test_color_overrides(self) -> None:
+        fig = AdvancedChartBuilder(CANDLESTICK_DATA).candlestick(
+            "open",
+            "high",
+            "low",
+            "close",
+            increasing_color="#00ff00",
+            decreasing_color="#ff0000",
+        )
+        t = fig.data[0]
+        assert t.increasing.fillcolor == "#00ff00"
+        assert t.decreasing.fillcolor == "#ff0000"
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(CANDLESTICK_DATA).candlestick("open", "high", "low", "close", theme="light")
         # apply_theme ran: light theme sets a concrete paper_bgcolor
         assert fig.layout.paper_bgcolor is not None

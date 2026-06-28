@@ -50,6 +50,10 @@ async def create_chart(
     comparison_columns: list[str] = [],
     trend_column: str = "",
     top_n: int = 10,
+    open_column: str = "",
+    high_column: str = "",
+    low_column: str = "",
+    close_column: str = "",
 ) -> dict[str, Any]:
     """Create interactive charts from data. Supports 20+ chart types.
 
@@ -68,6 +72,7 @@ async def create_chart(
       - "funnel": names_column + values_column → cascading flow
       - "violin": y_column (+ optional x_column) → distribution shape + density
       - "waterfall": x_column + values_column → cumulative running-total bridge
+      - "candlestick": open/high/low/close columns → OHLC price candles
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -113,6 +118,7 @@ async def create_chart(
         "funnel",
         "violin",
         "waterfall",
+        "candlestick",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -145,6 +151,10 @@ async def create_chart(
             comparison_columns=comparison_columns,
             trend_column=trend_column,
             top_n=top_n,
+            open_column=open_column,
+            high_column=high_column,
+            low_column=low_column,
+            close_column=close_column,
         )
     except ToolError:
         raise
@@ -181,6 +191,10 @@ def _build_chart(
     comparison_columns: list[str] = [],
     trend_column: str = "",
     top_n: int = 10,
+    open_column: str = "",
+    high_column: str = "",
+    low_column: str = "",
+    close_column: str = "",
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -256,6 +270,19 @@ def _build_chart(
         if not x_column or not values_column:
             raise ToolError("waterfall requires x_column and values_column")
         return builder.waterfall(x_column, values_column, title=title, theme=theme)
+
+    if chart_type == "candlestick":
+        if not open_column or not high_column or not low_column or not close_column:
+            raise ToolError("candlestick requires open_column, high_column, low_column, and close_column")
+        return builder.candlestick(
+            open_column,
+            high_column,
+            low_column,
+            close_column,
+            title=title,
+            theme=theme,
+            x_column=x_column or None,
+        )
 
     if chart_type == "animated_line":
         if not x_column or not y_column or not frame_column:

@@ -114,7 +114,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
     except ToolError as e:
         msg = str(e)
         # Every supported type must be listed in the error so clients can self-correct.
-        for t in ("line", "bar", "pie", "heatmap", "gauge", "sparklines", "violin", "waterfall"):
+        for t in ("line", "bar", "pie", "heatmap", "gauge", "sparklines", "violin", "waterfall", "candlestick"):
             assert t in msg
     else:  # pragma: no cover - defensive
         raise AssertionError("expected ToolError")
@@ -314,6 +314,39 @@ async def test_create_chart_waterfall_missing_values_raises(monkeypatch) -> None
     _wire_builders(monkeypatch, {})
     with pytest.raises(ToolError, match="waterfall requires x_column and values_column"):
         await create_chart(data=[{"step": "A"}], chart_type="waterfall", x_column="step", values_column="")
+
+
+async def test_create_chart_candlestick_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"date": "d", "open": 1, "high": 2, "low": 0, "close": 1.5}],
+        chart_type="candlestick",
+        open_column="open",
+        high_column="high",
+        low_column="low",
+        close_column="close",
+        x_column="date",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "candlestick"
+    assert sink["args"] == ("open", "high", "low", "close")
+    assert sink["kwargs"]["x_column"] == "date"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_candlestick_missing_close_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="candlestick requires open_column, high_column, low_column, and close_column"):
+        await create_chart(
+            data=[{"open": 1, "high": 2, "low": 0}],
+            chart_type="candlestick",
+            open_column="open",
+            high_column="high",
+            low_column="low",
+            close_column="",
+        )
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:

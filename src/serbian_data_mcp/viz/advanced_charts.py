@@ -275,6 +275,59 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def candlestick(
+        self,
+        open_column: str,
+        high_column: str,
+        low_column: str,
+        close_column: str,
+        title: str = "",
+        theme: str = "dark",
+        x_column: Optional[str] = None,
+        increasing_color: str = "#2e7d32",
+        decreasing_color: str = "#c62828",
+    ) -> go.Figure:
+        """Create a candlestick chart — the professional OHLC price chart.
+
+        Each bar's body spans the open→close range (green when close ≥ open,
+        red when close < open), with thin wicks to the period high and low.
+        The canonical professional chart for financial time series — stock,
+        FX, commodity prices, or any ordered open/high/low/close data — far
+        denser than a line chart because it encodes four values per point and
+        the direction of each move.
+
+        ``x_column`` sets the period axis (e.g. a date/time column). When
+        omitted, the DataFrame's row order is used. The Plotly rangeslider
+        is disabled for a clean editorial register.
+
+        Args:
+            open_column: Period-open price column
+            high_column: Period-high price column
+            low_column: Period-low price column
+            close_column: Period-close price column
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            x_column: Optional period/date column for the X axis
+            increasing_color: Body color for up (close ≥ open) candles
+            decreasing_color: Body color for down (close < open) candles
+        """
+        x = self.data[x_column] if (x_column and x_column in self.data.columns) else self.data.index
+        fig = go.Figure(
+            go.Candlestick(
+                x=x,
+                open=self.data[open_column],
+                high=self.data[high_column],
+                low=self.data[low_column],
+                close=self.data[close_column],
+                increasing={"fillcolor": increasing_color, "line": {"color": increasing_color}},
+                decreasing={"fillcolor": decreasing_color, "line": {"color": decreasing_color}},
+                hoverlabel={"namelength": 0},
+            )
+        )
+        fig.update_layout(title=title, showlegend=False, xaxis_rangeslider_visible=False)
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,
