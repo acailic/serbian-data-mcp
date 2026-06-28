@@ -41,7 +41,7 @@ def get_validated_input(prompt, validator, default, error_message):
 
             result = validator(response)
             return result
-        except ValueError as e:
+        except ValueError:
             print(f"   ❌ {error_message}")
 
 

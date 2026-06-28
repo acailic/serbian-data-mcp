@@ -34,6 +34,7 @@ from serbian_data_mcp.viz.infographics import create_infographic
 from serbian_data_mcp.viz.maps import SerbiaMapBuilder
 from serbian_data_mcp.viz.forecast import forecast_linear
 from serbian_data_mcp.viz.advanced_charts import AdvancedChartBuilder
+import contextlib
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -193,13 +194,13 @@ async def demo_employment(client: UDataClient) -> Path:
     fore = forecast.get("forecast_data", [])
     trend = forecast.get("trend_line", [])
 
-    all_years = hist + fore
+    hist + fore
     fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=[h["year"] for h in hist], y=[h["total"] for h in hist], mode="lines+markers", name="Actual", line=dict(color="#1565c0", width=3)))
+    fig2.add_trace(go.Scatter(x=[h["year"] for h in hist], y=[h["total"] for h in hist], mode="lines+markers", name="Actual", line={"color": "#1565c0", "width": 3}))
     if fore:
-        fig2.add_trace(go.Scatter(x=[f["year"] for f in fore], y=[f["_forecast"] for f in fore], mode="lines+markers", name="Forecast", line=dict(color="#ffab00", width=3, dash="dash")))
+        fig2.add_trace(go.Scatter(x=[f["year"] for f in fore], y=[f["_forecast"] for f in fore], mode="lines+markers", name="Forecast", line={"color": "#ffab00", "width": 3, "dash": "dash"}))
     if trend:
-        fig2.add_trace(go.Scatter(x=[t["year"] for t in trend], y=[t["_trend"] for t in trend], mode="lines", name="Trend", line=dict(color="rgba(255,255,255,0.2)", width=1)))
+        fig2.add_trace(go.Scatter(x=[t["year"] for t in trend], y=[t["_trend"] for t in trend], mode="lines", name="Trend", line={"color": "rgba(255,255,255,0.2)", "width": 1}))
     fig2.update_layout(title="Employment Forecast to 2030", **ChartBuilder(yearly).data.attrs.get("_layout_base", {}))
     fig2 = apply_theme(fig2, "dark")
     chart2 = fig_to_embed_html(fig2, "emp_forecast")
@@ -265,10 +266,8 @@ async def demo_air_quality(client: UDataClient) -> Path:
         for i, st in enumerate(stations):
             val = row[i + 1] if i + 1 < len(row) else None
             if val is not None and val != "" and val != 0:
-                try:
+                with contextlib.suppress(ValueError, TypeError):
                     tidy.append({"date": date_str, "station": st, "pm10": float(val)})
-                except (ValueError, TypeError):
-                    pass
 
     df = pd.DataFrame(tidy)
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
@@ -416,16 +415,15 @@ async def demo_cross_analysis(client: UDataClient) -> Path:
     ds_emp = await client.get_dataset("607fd7da7de272771a0d3973")
     data_emp = await fetch_json_url(client, ds_emp.resources[0].url)
 
-    emp_years = sorted(set(r["god"] for r in data_emp if r["IDTer"] != "RS"), reverse=True)
+    emp_years = sorted({r["god"] for r in data_emp if r["IDTer"] != "RS"}, reverse=True)
     latest = emp_years[0]
 
     emp_by_muni = {}
     for r in data_emp:
         if r["god"] == latest and r["IDTer"] != "RS":
-            key = r["IDModalitetRegZap"] if "IDModalitetRegZap" in r else "0"
-            if key == "0":
-                if r["nTer"] not in emp_by_muni or r["vrednost"] > emp_by_muni[r["nTer"]]:
-                    emp_by_muni[r["nTer"]] = r["vrednost"]
+            key = r.get("IDModalitetRegZap", "0")
+            if key == "0" and (r["nTer"] not in emp_by_muni or r["vrednost"] > emp_by_muni[r["nTer"]]):
+                emp_by_muni[r["nTer"]] = r["vrednost"]
 
     # Census households
     ds_census = await client.get_dataset("65fc2fc669c6e53ef2b38c50")
@@ -458,7 +456,7 @@ async def demo_cross_analysis(client: UDataClient) -> Path:
     chart2 = fig_to_embed_html(fig2, "cross_scatter")
 
     # Insights
-    insights = extract_insights(df.to_dict("records"), entity_column="municipality")
+    extract_insights(df.to_dict("records"), entity_column="municipality")
 
     body = f"""
     <div class="stats">
@@ -532,7 +530,7 @@ async def demo_budgets(client: UDataClient) -> Path:
                     resp = await ext2.get(res.url)
                     resp.raise_for_status()
                     lines = resp.text.split("\n")
-                    sample_csv = "<br>".join(f'<span style="color:var(--text-muted);font-size:0.8rem">{l[:120]}</span>' for l in lines[:8])
+                    sample_csv = "<br>".join(f'<span style="color:var(--text-muted);font-size:0.8rem">{line[:120]}</span>' for line in lines[:8])
                     break
             except Exception:
                 continue
@@ -591,7 +589,7 @@ async def demo_real_estate(client: UDataClient) -> Path:
                         headers = [str(h).strip() if h else "" for h in rows[0]]
                         for r in rows[1:]:
                             vals = [str(v)[:30] if v else "" for v in r]
-                            price_data.append(dict(zip(headers, vals)))
+                            price_data.append(dict(zip(headers, vals, strict=False)))
                     break
             except Exception:
                 continue

@@ -40,7 +40,7 @@ async def main():
                     desc = ds.description[:150] + "..." if len(ds.description) > 150 else ds.description
                     print(f"   {desc}")
                 if ds.resources:
-                    print(f"   Resources: {len(ds.resources)} ({', '.join(set(r.format for r in ds.resources if r.format))})")
+                    print(f"   Resources: {len(ds.resources)} ({', '.join({r.format for r in ds.resources if r.format})})")
                 print()
         else:
             # Show first 10 datasets

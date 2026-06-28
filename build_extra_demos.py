@@ -155,7 +155,7 @@ async def build_population_pyramid() -> str:
     fig1.update_layout(
         **THEME,
         barmode="overlay",
-        title=dict(text="Пирамида становништва Србије — Попис 2022", font=dict(size=16)),
+        title={"text": "Пирамида становништва Србије — Попис 2022", "font": {"size": 16}},
         xaxis_title="Становништво",
         xaxis=dict(
             **AXIS,
@@ -164,17 +164,17 @@ async def build_population_pyramid() -> str:
             range=[-300000, 300000],
         ),
         yaxis=dict(**AXIS, dtick=1),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-        margin=dict(l=100, r=40, t=60, b=40),
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "center", "x": 0.5},
+        margin={"l": 100, "r": 40, "t": 60, "b": 40},
         height=700,
-        hoverlabel=dict(bgcolor="#1a1a3e", font_size=13),
+        hoverlabel={"bgcolor": "#1a1a3e", "font_size": 13},
     )
 
     # 2. Age Distribution Bar (stacked)
     fig2 = go.Figure()
     m_vals = [-pyramid[a]["Мушко"] for a in ages]
     f_vals = [pyramid[a]["Женско"] for a in ages]
-    total_vals = [abs(m) + abs(f) for m, f in zip(m_vals, f_vals)]
+    [abs(m) + abs(f) for m, f in zip(m_vals, f_vals, strict=False)]
 
     fig2.add_trace(go.Bar(
         x=labels, y=[pyramid[a]["Мушко"] for a in ages],
@@ -190,7 +190,7 @@ async def build_population_pyramid() -> str:
     ratios = [pyramid[a]["Женско"] / max(pyramid[a]["Мушко"], 1) for a in ages]
     fig2.add_trace(go.Scatter(
         x=labels, y=ratios, name="Однос Ж/М",
-        mode="lines+markers", line=dict(color="#ffab00", width=2),
+        mode="lines+markers", line={"color": "#ffab00", "width": 2},
         yaxis="y2",
         hovertemplate="%{x}<br>Ж/М: %{y:.2f}",
     ))
@@ -198,15 +198,15 @@ async def build_population_pyramid() -> str:
     fig2.update_layout(
         **THEME,
         barmode="stack",
-        title=dict(text="Старосна структура — Опажање по групама", font=dict(size=14)),
+        title={"text": "Старосна структура — Опажање по групама", "font": {"size": 14}},
         yaxis=dict(**AXIS, title="Број становника", side="left", tickformat=","),
         yaxis2=dict(
             **AXIS, title="Однос Ж/М", side="right",
             overlaying="y", range=[0.5, 2.5],
         ),
         xaxis=dict(**AXIS, tickangle=45, title="Старосна група"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-        margin=dict(l=80, r=80, t=60, b=80),
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "center", "x": 0.5},
+        margin={"l": 80, "r": 80, "t": 60, "b": 80},
         height=550,
     )
 
@@ -228,19 +228,19 @@ async def build_population_pyramid() -> str:
 
     colors = ["#66bb6a", "#42a5f5", "#ffab00", "#ef5350"]
     fig3 = go.Figure(go.Pie(
-        labels=[f"{n}<br>{v:,} ({p:.1f}%)" for n, v, p in zip(cat_names, cat_vals, pct_vals)],
+        labels=[f"{n}<br>{v:,} ({p:.1f}%)" for n, v, p in zip(cat_names, cat_vals, pct_vals, strict=False)],
         values=pct_vals,
         marker_colors=colors,
         textinfo="label",
-        textfont=dict(size=12, color="#e8e8f0"),
+        textfont={"size": 12, "color": "#e8e8f0"},
         hole=0.4,
         hovertemplate="<b>%{label}</b><extra></extra>",
     ))
     fig3.update_layout(
         **THEME,
-        title=dict(text="Старосне категорије Србије — Попис 2022", font=dict(size=14)),
-        legend=dict(font=dict(size=11)),
-        margin=dict(t=50),
+        title={"text": "Старосне категорије Србије — Попис 2022", "font": {"size": 14}},
+        legend={"font": {"size": 11}},
+        margin={"t": 50},
         height=500,
         showlegend=False,
     )
@@ -322,7 +322,7 @@ async def build_electricity() -> str:
         ]
     }
 
-    years = sorted(set(r["god"] for r in elec))
+    years = sorted({r["god"] for r in elec})
 
     # Build data arrays
     sector_data = {s: [] for s in sectors}
@@ -346,21 +346,21 @@ async def build_electricity() -> str:
 
     # 1. Stacked area — consumption by sector
     fig1 = go.Figure()
-    for s, label, color in zip(sectors, sector_labels, sector_colors):
+    for s, label, color in zip(sectors, sector_labels, sector_colors, strict=False):
         fig1.add_trace(go.Scatter(
             x=years, y=sector_data[s], name=label,
-            stackgroup="one", fillcolor=color, line=dict(width=0),
+            stackgroup="one", fillcolor=color, line={"width": 0},
             hovertemplate=f"{label}<br>%{{x}}: %{{y:,.0f}} TJ",
         ))
     fig1.update_layout(
         **THEME,
-        title=dict(text="Fina potrošnja električne energije po sektorima (TJ)", font=dict(size=14)),
+        title={"text": "Fina potrošnja električne energije po sektorima (TJ)", "font": {"size": 14}},
         yaxis=dict(**AXIS, title="Terađuli (TJ)", tickformat=","),
         xaxis=dict(**AXIS, title="Godina"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-        margin=dict(t=60, b=40),
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "center", "x": 0.5},
+        margin={"t": 60, "b": 40},
         height=500,
-        hoverlabel=dict(bgcolor="#1a1a3e"),
+        hoverlabel={"bgcolor": "#1a1a3e"},
     )
 
     # 2. kWh per capita line
@@ -368,11 +368,11 @@ async def build_electricity() -> str:
     fig2.add_trace(go.Scatter(
         x=years, y=kwh_cap,
         mode="lines+markers+text",
-        line=dict(color="#ffab00", width=3),
-        marker=dict(size=8, color="#ffab00"),
+        line={"color": "#ffab00", "width": 3},
+        marker={"size": 8, "color": "#ffab00"},
         text=[f"{v:,.0f}" for v in kwh_cap],
         textposition="top center",
-        textfont=dict(size=10, color="#ffab00"),
+        textfont={"size": 10, "color": "#ffab00"},
         hovertemplate="Godina %{x}<br>%{y:,.0f} kWh/stanovniku",
     ))
     # EU average reference line
@@ -380,21 +380,21 @@ async def build_electricity() -> str:
         y=4200, line_dash="dash", line_color="#66bb6a",
         annotation_text="EU prosek ≈ 5,500 kWh",
         annotation_position="top right",
-        annotation_font=dict(color="#66bb6a", size=11),
+        annotation_font={"color": "#66bb6a", "size": 11},
     )
     fig2.update_layout(
         **THEME,
-        title=dict(text="Potrošnja električne energije po stanovniku (kWh/godišnje)", font=dict(size=14)),
+        title={"text": "Potrošnja električne energije po stanovniku (kWh/godišnje)", "font": {"size": 14}},
         yaxis=dict(**AXIS, title="kWh po stanovniku", tickformat=","),
         xaxis=dict(**AXIS, title="Godina"),
-        margin=dict(t=60, b=40),
+        margin={"t": 60, "b": 40},
         height=450,
         showlegend=False,
     )
 
     # 3. Production mix — stacked bar
     fig3 = go.Figure()
-    for s, label, color in zip(prod_sources, prod_labels, prod_colors):
+    for s, label, color in zip(prod_sources, prod_labels, prod_colors, strict=False):
         fig3.add_trace(go.Bar(
             x=years, y=prod_data[s], name=label,
             marker_color=color,
@@ -403,11 +403,11 @@ async def build_electricity() -> str:
     fig3.update_layout(
         **THEME,
         barmode="stack",
-        title=dict(text="Proizvodnja električne energije po izvorima (TJ)", font=dict(size=14)),
+        title={"text": "Proizvodnja električne energije po izvorima (TJ)", "font": {"size": 14}},
         yaxis=dict(**AXIS, title="Terađuli (TJ)", tickformat=","),
         xaxis=dict(**AXIS, title="Godina"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-        margin=dict(t=60, b=40),
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "center", "x": 0.5},
+        margin={"t": 60, "b": 40},
         height=500,
     )
 
@@ -415,18 +415,18 @@ async def build_electricity() -> str:
     idx_2024 = years.index("2024")
     vals_2024 = [sector_data[s][idx_2024] for s in sectors]
     fig4 = go.Figure(go.Pie(
-        labels=[f"{l}<br>{v:,.0f} TJ" for l, v in zip(sector_labels, vals_2024)],
+        labels=[f"{label}<br>{v:,.0f} TJ" for label, v in zip(sector_labels, vals_2024, strict=False)],
         values=vals_2024,
         marker_colors=sector_colors,
         textinfo="label",
-        textfont=dict(size=11, color="#e8e8f0"),
+        textfont={"size": 11, "color": "#e8e8f0"},
         hole=0.4,
     ))
     fig4.update_layout(
         **THEME,
-        title=dict(text="Struktura potrošnje — 2024", font=dict(size=14)),
+        title={"text": "Struktura potrošnje — 2024", "font": {"size": 14}},
         showlegend=False,
-        margin=dict(t=50),
+        margin={"t": 50},
         height=450,
     )
 

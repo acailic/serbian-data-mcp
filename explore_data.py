@@ -24,7 +24,7 @@ async def main():
                 print(f"    ID: {org.id}")
 
         # Get recent datasets across all orgs
-        print(f"\n📊 Recent datasets (across all organizations):\n")
+        print("\n📊 Recent datasets (across all organizations):\n")
         result = await client.search_datasets(page_size=20)
 
         for i, ds in enumerate(result.datasets[:15], 1):
@@ -36,7 +36,7 @@ async def main():
             print(f"   Organization: {org_name}")
 
             if ds.resources:
-                formats = set(r.format for r in ds.resources if r.format)
+                formats = {r.format for r in ds.resources if r.format}
                 print(f"   Formats: {', '.join(formats)}")
 
             # Show description for context

@@ -104,7 +104,7 @@ async def example_suggestions():
         # Get suggestions for a partial query
         suggestions = await client.suggest_datasets("pop", size=8)
 
-        print(f"\nSuggestions for 'pop':\n")
+        print("\nSuggestions for 'pop':\n")
         for i, suggestion in enumerate(suggestions, 1):
             print(f"{i}. {suggestion}")
 
@@ -142,7 +142,7 @@ async def example_visualization():
         print(f"Chart exported to: {result}")
 
         print(f"\n✅ Chart saved to: {output_path}")
-        print(f"   Open it in your browser to view the interactive chart")
+        print("   Open it in your browser to view the interactive chart")
 
     except Exception as e:
         print(f"\n⚠️  Visualization failed: {e}")

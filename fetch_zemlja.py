@@ -46,14 +46,14 @@ async def main():
 
                     # Try to fetch data if CSV/JSON
                     if resource.format in ['csv', 'json', 'xlsx']:
-                        print(f"\n   ⚡ Attempting to download...")
+                        print("\n   ⚡ Attempting to download...")
                         try:
                             data = await client.get_resource_data(resource.id)
-                            print(f"   ✅ Data fetched successfully")
+                            print("   ✅ Data fetched successfully")
 
                             # Show first few rows
                             if hasattr(data, 'head'):
-                                print(f"\n   First 5 rows:")
+                                print("\n   First 5 rows:")
                                 print(data.head().to_string(index=False))
                             elif isinstance(data, dict):
                                 print(f"\n   Data keys: {list(data.keys())}")

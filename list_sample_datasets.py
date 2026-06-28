@@ -61,8 +61,8 @@ async def main():
                     desc = ds.description[:100] + "..." if len(ds.description) > 100 else ds.description
                     print(f"      {desc}")
 
-        print(f"\n" + "=" * 70)
-        print(f"\nAvailable data formats:\n")
+        print("\n" + "=" * 70)
+        print("\nAvailable data formats:\n")
         for fmt in sorted(formats):
             count = sum(1 for ds in all_datasets for r in ds.resources if r.format == fmt)
             print(f"  • {fmt}: {count} resources")

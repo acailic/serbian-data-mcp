@@ -39,7 +39,7 @@ async def main():
                     for r in dataset.resources[:3]:
                         print(f"     - {r.title or r.format or 'N/A'} ({r.format or 'N/A'})")
                         if r.format == 'csv' or r.format == 'json':
-                            print(f"       ⚡ Downloadable for analysis")
+                            print("       ⚡ Downloadable for analysis")
 
                 print()
 

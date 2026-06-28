@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import contextlib
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -170,7 +171,7 @@ async def category_employment(client: Any) -> dict[str, Any]:
 
     # Employment by gender
     ds_gender = await client.get_dataset("607fd7f57de272771a0d3984")
-    data_gender = await fetch_json_url(client, ds_gender.resources[0].url)
+    await fetch_json_url(client, ds_gender.resources[0].url)
 
     # Save data
     csv_yearly = EXPORT_DIR / "employment_yearly.csv"
@@ -241,10 +242,8 @@ async def category_air_quality(client: Any) -> dict[str, Any]:
         for i, station in enumerate(station_names):
             val = row[i + 1] if i + 1 < len(row) else None
             if val is not None and val != "" and val != 0:
-                try:
+                with contextlib.suppress(ValueError, TypeError):
                     tidy_rows.append({"date": date_str, "station": station, "pm10": float(val)})
-                except (ValueError, TypeError):
-                    pass
 
     df = pd.DataFrame(tidy_rows)
     if not df.empty:
@@ -530,7 +529,7 @@ async def category_cross_analysis(client: Any) -> dict[str, Any]:
     data_emp = await fetch_json_url(client, ds_emp_mun.resources[0].url)
 
     # Get latest year employment by municipality
-    emp_years = sorted(set(r["god"] for r in data_emp if r["IDTer"] != "RS"), reverse=True)
+    emp_years = sorted({r["god"] for r in data_emp if r["IDTer"] != "RS"}, reverse=True)
     latest_year = emp_years[0] if emp_years else "2023"
 
     emp_by_muni = {}
@@ -667,14 +666,14 @@ async def build_index_html() -> None:
         name = f.stem.replace("_summary", "")
         summaries[name] = json.loads(f.read_text(encoding="utf-8"))
 
-    html = f"""<!DOCTYPE html>
+    html = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Serbian Open Data — What's Possible</title>
     <style>
-:root {{
+:root {
     --bg: #0f1117;
     --bg-card: #1a1d28;
     --text: #e8e8ed;
@@ -684,16 +683,16 @@ async def build_index_html() -> None:
     --accent3: #f4a261;
     --accent4: #2a9d8f;
     --border: rgba(255,255,255,0.08);
-}}
-* {{ margin: 0; padding: 0; box-sizing: border-box; }}
-body {{
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
     background: var(--bg);
     color: var(--text);
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     line-height: 1.7;
-}}
-.container {{ max-width: 1100px; margin: 0 auto; padding: 40px 24px; }}
-h1 {{
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+h1 {
     font-size: 2.4rem;
     font-weight: 800;
     text-align: center;
@@ -701,23 +700,23 @@ h1 {{
     background: linear-gradient(135deg, #e63946, #f4a261);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-}}
-.subtitle {{ text-align: center; color: var(--text-dim); margin-bottom: 48px; font-size: 1.1rem; }}
-.section {{
+}
+.subtitle { text-align: center; color: var(--text-dim); margin-bottom: 48px; font-size: 1.1rem; }
+.section {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 28px;
     margin-bottom: 24px;
-}}
-.section h2 {{
+}
+.section h2 {
     font-size: 1.4rem;
     margin-bottom: 4px;
     display: flex;
     align-items: center;
     gap: 10px;
-}}
-.badge {{
+}
+.badge {
     display: inline-block;
     padding: 2px 10px;
     border-radius: 20px;
@@ -725,52 +724,52 @@ h1 {{
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-}}
-.badge-high {{ background: #e63946; color: white; }}
-.badge-med {{ background: #f4a261; color: #0f1117; }}
-.section .desc {{ color: var(--text-dim); margin-bottom: 16px; font-size: 0.95rem; }}
-.big-num {{
+}
+.badge-high { background: #e63946; color: white; }
+.badge-med { background: #f4a261; color: #0f1117; }
+.section .desc { color: var(--text-dim); margin-bottom: 16px; font-size: 0.95rem; }
+.big-num {
     font-size: 2.2rem;
     font-weight: 800;
     color: var(--accent);
-}}
-.big-num.blue {{ color: var(--accent2); }}
-.big-num.green {{ color: var(--accent4); }}
-.big-num.gold {{ color: var(--accent3); }}
-.stats {{
+}
+.big-num.blue { color: var(--accent2); }
+.big-num.green { color: var(--accent4); }
+.big-num.gold { color: var(--accent3); }
+.stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 16px;
     margin: 16px 0;
-}}
-.stat-box {{
+}
+.stat-box {
     background: rgba(255,255,255,0.03);
     border-radius: 8px;
     padding: 16px;
     text-align: center;
-}}
-.stat-box .label {{ color: var(--text-dim); font-size: 0.8rem; margin-bottom: 4px; }}
-.findings {{ margin-top: 16px; }}
-.findings h3 {{ font-size: 1rem; margin-bottom: 8px; color: var(--accent3); }}
-.findings ul {{ padding-left: 20px; color: var(--text-dim); }}
-.findings li {{ margin-bottom: 6px; }}
-.findings strong {{ color: var(--text); }}
-table {{
+}
+.stat-box .label { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 4px; }
+.findings { margin-top: 16px; }
+.findings h3 { font-size: 1rem; margin-bottom: 8px; color: var(--accent3); }
+.findings ul { padding-left: 20px; color: var(--text-dim); }
+.findings li { margin-bottom: 6px; }
+.findings strong { color: var(--text); }
+table {
     width: 100%;
     border-collapse: collapse;
     margin: 12px 0;
     font-size: 0.85rem;
-}}
-th, td {{
+}
+th, td {
     padding: 8px 12px;
     text-align: left;
     border-bottom: 1px solid var(--border);
-}}
-th {{ color: var(--text-dim); font-weight: 600; }}
-td {{ color: var(--text); }}
-.negative {{ color: #e63946; }}
-.positive {{ color: #2a9d8f; }}
-.tag {{
+}
+th { color: var(--text-dim); font-weight: 600; }
+td { color: var(--text); }
+.negative { color: #e63946; }
+.positive { color: #2a9d8f; }
+.tag {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 4px;
@@ -778,8 +777,8 @@ td {{ color: var(--text); }}
     background: rgba(29,140,248,0.15);
     color: var(--accent2);
     margin: 2px;
-}}
-.footer {{ text-align: center; color: var(--text-dim); margin-top: 48px; font-size: 0.85rem; }}
+}
+.footer { text-align: center; color: var(--text-dim); margin-top: 48px; font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -951,7 +950,7 @@ td {{ color: var(--text); }}
         for row in worst[:5]:
             pct = row["avg_pm10"] / 40 * 100
             html += f'<tr><td>{row["station"]}</td><td>{row["avg_pm10"]}</td><td class="negative">{pct:.0f}% of limit</td></tr>'
-        html += f"""</table>
+        html += """</table>
             <h3>Cleanest Air</h3>
             <table><tr><th>Station</th><th>Avg PM₁₀ (µg/m³)</th></tr>"""
         for row in best[:5]:
@@ -1013,7 +1012,7 @@ td {{ color: var(--text); }}
             <ul>"""
         for ds in re_data.get("datasets", [])[:10]:
             html += f'<li><strong>{ds["title"]}</strong> — {ds["organization"]} ({", ".join(ds["formats"])})</li>'
-        html += f"""</ul>
+        html += """</ul>
             <h3>What's Possible</h3>
             <ul>
                 <li><strong>Property price comparison</strong> across municipalities</li>
@@ -1031,7 +1030,7 @@ td {{ color: var(--text); }}
     regs = summaries.get("registries", {})
     if regs.get("status") == "success":
         api = regs.get("company_api", {})
-        html += f"""
+        html += """
     <div class="section">
         <h2><span class="badge badge-med">MEDIUM</span> Public Registries — Address, Company, Energy</h2>
         <p class="desc">Government registries available as APIs and bulk downloads</p>
@@ -1084,7 +1083,7 @@ td {{ color: var(--text); }}
             <table><tr><th>Municipality</th><th>Employment</th><th>Households</th><th>Emp/HH</th></tr>"""
         for row in cross.get("top_10_emp_per_household", [])[:5]:
             html += f'<tr><td>{row["municipality"]}</td><td>{row["employment"]:,.0f}</td><td>{row["households"]:,.0f}</td><td>{row["emp_per_household"]}</td></tr>'
-        html += f"""
+        html += """
             </table>
             <h3>What's Possible</h3>
             <ul>

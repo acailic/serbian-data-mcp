@@ -73,8 +73,8 @@ async def main():
             if len(datasets) > 3:
                 print(f"   ... and {len(datasets) - 3} more")
 
-        print(f"\n" + "=" * 70)
-        print(f"\nData formats available:")
+        print("\n" + "=" * 70)
+        print("\nData formats available:")
         formats = set()
         for ds in all_datasets:
             for r in ds.resources:

@@ -57,7 +57,7 @@ async def main():
                     if matches:
                         print(f"   🔍 Keywords: {', '.join(matches)}")
                     if ds.resources:
-                        formats = set(r.format for r in ds.resources if r.format)
+                        formats = {r.format for r in ds.resources if r.format}
                         print(f"   Formats: {', '.join(formats)}")
                     print()
         else:
