@@ -337,7 +337,7 @@ def apply_theme(fig: go.Figure, theme: str = "dark") -> go.Figure:
         trace_updates["marker"]["opacity"] = 0.9
 
     for trace in fig.data:
-        if hasattr(trace, "marker"):
+        if hasattr(trace, "marker") and hasattr(trace.marker, "line"):
             trace.marker.update({"line": trace_updates["marker"]["line"]})
 
     return fig

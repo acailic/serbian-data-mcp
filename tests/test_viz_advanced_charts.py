@@ -621,3 +621,53 @@ class TestParcoords:
         # apply_theme ran: light theme sets a concrete paper_bgcolor; go.Parcoords
         # has no marker attr so its trace-polish loop skips it cleanly
         assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
+# density_contour
+# ---------------------------------------------------------------------------
+
+
+class TestDensityContour:
+    def test_returns_single_histogram2dcontour_trace(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).density_contour("a", "b", title="T")
+        assert isinstance(fig, go.Figure)
+        # px.density_contour with no color grouping emits ONE Histogram2dContour
+        # carrying the raw x/y sample arrays
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Histogram2dContour)
+        assert list(fig.data[0].x) == [1, 2, 3]
+        assert list(fig.data[0].y) == [2, 3, 1]
+        assert fig.layout.title.text == "T"
+
+    def test_filled_bands_and_colorscale_set(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).density_contour("a", "b")
+        t = fig.data[0]
+        # update_traces wired: filled bands, resolved colorscale, ncontours default
+        assert t.contours.coloring == "fill"
+        assert t.colorscale is not None
+        assert t.ncontours == 20
+
+    def test_colorscale_override(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).density_contour("a", "b", colorscale="Viridis")
+        # named scale resolves to a tuple-list; Viridis is dark-violet at stop 0
+        first = fig.data[0].colorscale[0]
+        assert first[0] == 0.0
+        assert first[1] == "#440154"
+
+    def test_ncontours_passthrough(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).density_contour("a", "b", ncontours=7)
+        assert fig.data[0].ncontours == 7
+
+    def test_color_column_splits_one_trace_per_group(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).density_contour("a", "b", color_column="grp")
+        # one Histogram2dContour trace per group value (grp has 2: x, y)
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Histogram2dContour) for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["x", "y"]
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).density_contour("a", "b", theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor; Histogram2dContour
+        # has a marker attr so the trace-polish loop runs cleanly
+        assert fig.layout.paper_bgcolor is not None

@@ -127,6 +127,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "ternary",
             "splom",
             "parcoords",
+            "density_contour",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -445,6 +446,32 @@ async def test_create_chart_parcoords_too_few_columns_raises(monkeypatch) -> Non
         await create_chart(data=[{"a": 1}], chart_type="parcoords", columns=["a"])
     with pytest.raises(ToolError, match="parcoords requires columns"):
         await create_chart(data=[{"a": 1}], chart_type="parcoords", columns=[])
+
+
+async def test_create_chart_density_contour_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"a": 1, "b": 2}],
+        chart_type="density_contour",
+        x_column="a",
+        y_column="b",
+        color_column="c",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "density_contour"
+    assert sink["args"] == ("a", "b")
+    assert sink["kwargs"]["color_column"] == "c"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_density_contour_missing_columns_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="density_contour requires x_column and y_column"):
+        await create_chart(data=[{"a": 1}], chart_type="density_contour", x_column="a", y_column="")
+    with pytest.raises(ToolError, match="density_contour requires x_column and y_column"):
+        await create_chart(data=[{"a": 1}], chart_type="density_contour", x_column="", y_column="b")
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:

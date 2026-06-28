@@ -450,6 +450,55 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def density_contour(
+        self,
+        x_column: str,
+        y_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        colorscale: str = "RdBu_r",
+        ncontours: int = 20,
+    ) -> go.Figure:
+        """Create a 2D density contour — continuous bivariate density estimation.
+
+        Smooth filled contour bands show where points are most concentrated in a
+        two-variable plane, so the joint distribution of two continuous variables
+        is visible at a glance. The canonical professional chart for spotting
+        clustering, correlation shape, and multimodality in a scatter — a plain
+        scatter only plots the raw points and hides where they pile up; a heatmap
+        shows a categorical grid, not continuous density. Ideal for large
+        point-clouds (every pollutant reading by city × weather reading), survey
+        microdata (income × age), and any case where overplotting buries the
+        structure. Pass ``color_column`` to overlay one contour set per group.
+
+        Args:
+            x_column: First continuous variable (X axis)
+            y_column: Second continuous variable (Y axis)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional grouping column (one contour set per group)
+            colorscale: Plotly colorscale name for the density bands
+            ncontours: Number of contour bands (higher = finer resolution)
+        """
+        kwargs: dict[str, Any] = {
+            "x": x_column,
+            "y": y_column,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+        fig = px.density_contour(self.data, **kwargs)
+        # Filled bands colored by density (default px output is line-only contours).
+        fig.update_traces(
+            contours_coloring="fill",
+            colorscale=colorscale,
+            ncontours=ncontours,
+            line_width=0,
+        )
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,
