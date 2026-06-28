@@ -8,6 +8,7 @@ Contracts:
   - create_isosurface_3d(data, x_column, y_column, z_column, value_column) → HTML filepath
   - create_cone_3d(data, x_column, y_column, z_column, u_column, v_column, w_column) → HTML filepath
   - create_streamtube_3d(data, x_column, y_column, z_column, u_column, v_column, w_column) → HTML filepath
+  - create_volume_3d(data, x_column, y_column, z_column, value_column) → HTML filepath
 
 These expose the WebGL-rendered 3D builders from ``viz.charts_3d.Chart3DBuilder``
 as MCP tools so the server's clients can produce orbit-able, depth-rich charts
@@ -426,3 +427,73 @@ async def create_streamtube_3d(
         return {"filepath": filepath, "title": title, "rows": len(data)}
     except Exception as e:
         raise ToolError(f"3D streamtube chart failed: {e}") from e
+
+
+@mcp.tool()
+async def create_volume_3d(
+    data: list[dict[str, Any]],
+    x_column: str,
+    y_column: str,
+    z_column: str,
+    value_column: str,
+    title: str = "",
+    theme: str = "dark",
+    isomin: Optional[float] = None,
+    isomax: Optional[float] = None,
+    opacity: float = 0.4,
+    colorscale: str = "Viridis",
+    surface_count: int = 2,
+    show_surface: bool = True,
+    filename: str = "volume_3d",
+) -> dict[str, Any]:
+    """Interactive 3D volume render of a volumetric scalar field (WebGL, orbit-able).
+
+    Renders the *full* semi-transparent scalar field across (x, y, z) — a
+    see-through cloud whose density + color encode ``value_column``, with a
+    configurable number of internal iso-surfaces. Distinct from
+    ``create_isosurface_3d`` (which draws only the single boundary where value
+    equals a threshold): a volume shows the *interior distribution* of the field,
+    not just its level-set shell. The ray-marched rendering runs client-side, so
+    scattered samples are accepted without a regular grid or SciPy.
+
+    Ideal for: 3D pollution / concentration clouds, temperature or humidity
+    fields across a monitoring volume, groundwater head distributions, any
+    scalar field where the interior structure — not just the boundary — matters.
+
+    Returns: {filepath, title, rows}
+
+    Args:
+        data: Row dicts (one per volumetric sample point)
+        x_column: Column for the X axis
+        y_column: Column for the Y axis
+        z_column: Column for the Z axis (depth)
+        value_column: Column whose values fill the volume
+        title: Chart title
+        theme: 'dark', 'light', or 'professional'
+        isomin: Lower scalar bound (defaults to column min)
+        isomax: Upper scalar bound (defaults to column max)
+        opacity: Volume opacity (0–1); keep low so the interior stays legible
+        colorscale: Plotly colorscale name for value mapping
+        surface_count: Number of internal iso-surfaces drawn inside the volume
+        show_surface: False = pure translucent cloud (no internal surfaces)
+        filename: Output filename (without .html)
+    """
+    try:
+        fig = Chart3DBuilder(data).volume_3d(
+            x_column,
+            y_column,
+            z_column,
+            value_column,
+            title=title,
+            theme=theme,
+            isomin=isomin,
+            isomax=isomax,
+            opacity=opacity,
+            colorscale=colorscale,
+            surface_count=surface_count,
+            show_surface=show_surface,
+        )
+        filepath = _save_html(fig, filename)
+        return {"filepath": filepath, "title": title, "rows": len(data)}
+    except Exception as e:
+        raise ToolError(f"3D volume chart failed: {e}") from e

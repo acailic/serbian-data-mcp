@@ -466,3 +466,73 @@ class Chart3DBuilder:
         )
         apply_theme(fig, theme)
         return fig
+
+    def volume_3d(
+        self,
+        x_column: str,
+        y_column: str,
+        z_column: str,
+        value_column: str,
+        title: str = "",
+        theme: str = "dark",
+        isomin: Optional[float] = None,
+        isomax: Optional[float] = None,
+        opacity: float = 0.4,
+        colorscale: str = "Viridis",
+        surface_count: int = 2,
+        show_surface: bool = True,
+    ) -> go.Figure:
+        """Create a 3D volume render of a volumetric scalar field.
+
+        Renders the *full* semi-transparent scalar field across (x, y, z) — a
+        see-through cloud whose density + color encode ``value_column``, with a
+        configurable number of internal iso-surfaces. Distinct from
+        :meth:`isosurface_3d`, which draws only the single boundary where value
+        equals a threshold: a volume shows the *interior distribution* of the
+        field (where pollution is dense vs sparse throughout a monitoring
+        domain), not just its level-set shell.
+
+        Plotly accepts scattered (x, y, z, value) samples and runs the
+        ray-marched volume rendering client-side at JS render time, so no SciPy
+        or regular grid is required to build the figure.
+
+        Args:
+            x_column: Column for the X axis
+            y_column: Column for the Y axis
+            z_column: Column for the Z axis (depth)
+            value_column: Column whose values fill the volume
+            title: Chart title
+            theme: 'dark', 'light', or 'professional'
+            isomin: Lower scalar bound of the rendered region; defaults to the
+                column minimum
+            isomax: Upper scalar bound of the rendered region; defaults to the
+                column maximum
+            opacity: Volume opacity (0–1); keep low so the interior remains
+                legible
+            colorscale: Plotly colorscale name for value mapping
+            surface_count: Number of internal iso-surfaces drawn inside the
+                volume (default 2) to reveal internal structure
+            show_surface: Whether to draw the internal iso-surfaces at all
+                (False = pure translucent cloud)
+        """
+        values = self.data[value_column].tolist()
+        volume = go.Volume(
+            x=self.data[x_column].tolist(),
+            y=self.data[y_column].tolist(),
+            z=self.data[z_column].tolist(),
+            value=values,
+            isomin=isomin if isomin is not None else float(min(values)),
+            isomax=isomax if isomax is not None else float(max(values)),
+            opacity=opacity,
+            colorscale=colorscale,
+            surface={"show": show_surface, "count": surface_count},
+        )
+        fig = go.Figure(data=[volume])
+        if title:
+            fig.update_layout(title={"text": title})
+        fig.update_layout(
+            scene=self._scene_layout(theme),
+            margin={"l": 0, "r": 0, "t": 60, "b": 0},
+        )
+        apply_theme(fig, theme)
+        return fig

@@ -23,6 +23,7 @@ from serbian_data_mcp.tools.charts_3d import (
     create_scatter_3d,
     create_streamtube_3d,
     create_surface_3d,
+    create_volume_3d,
 )
 
 
@@ -89,6 +90,16 @@ class _FakeBuilder:
         CALLS["value"] = value
         CALLS["kwargs"] = kwargs
         return _Sentinel("isosurface_3d")
+
+    def volume_3d(self, x, y, z, value, **kwargs):
+        # volume_3d shares isosurface_3d's 4-positional (x, y, z, value) shape.
+        CALLS["method"] = "volume_3d"
+        CALLS["x"] = x
+        CALLS["y"] = y
+        CALLS["z"] = z
+        CALLS["value"] = value
+        CALLS["kwargs"] = kwargs
+        return _Sentinel("volume_3d")
 
     def cone_3d(self, x, y, z, u, v, w, **kwargs):
         # cone_3d takes 6 positionals (x, y, z, u, v, w), so it needs its own
@@ -590,4 +601,91 @@ async def test_create_streamtube_3d_exception_wrapped(monkeypatch, sandbox_expor
             u_column="u",
             v_column="v",
             w_column="w",
+        )
+
+
+# ---------------------------------------------------------------------------
+# create_volume_3d
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_create_volume_3d_success(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch, "<html>VOL</html>")
+
+    rows = [{"x": 0.0, "y": 0.0, "z": 0.0, "temp": 5.0}, {"x": 1.0, "y": 1.0, "z": 1.0, "temp": 20.0}]
+    result = await create_volume_3d(
+        rows,
+        x_column="x",
+        y_column="y",
+        z_column="z",
+        value_column="temp",
+        title="Cloud",
+        theme="light",
+        isomin=10.0,
+        isomax=15.0,
+        opacity=0.3,
+        colorscale="RdBu",
+        surface_count=3,
+        show_surface=False,
+        filename="vol",
+    )
+
+    calls = CALLS
+    assert calls["method"] == "volume_3d"
+    assert (calls["x"], calls["y"], calls["z"], calls["value"]) == ("x", "y", "z", "temp")
+    assert calls["kwargs"] == {
+        "title": "Cloud",
+        "theme": "light",
+        "isomin": 10.0,
+        "isomax": 15.0,
+        "opacity": 0.3,
+        "colorscale": "RdBu",
+        "surface_count": 3,
+        "show_surface": False,
+    }
+    assert result == {"filepath": str(sandbox_export_dir / "vol.html"), "title": "Cloud", "rows": 2}
+    assert (sandbox_export_dir / "vol.html").read_text(encoding="utf-8") == "<html>VOL</html>"
+
+
+@pytest.mark.asyncio
+async def test_create_volume_3d_defaults(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch)
+
+    await create_volume_3d(
+        [{"x": 0, "y": 0, "z": 0, "temp": 1}],
+        x_column="x",
+        y_column="y",
+        z_column="z",
+        value_column="temp",
+    )
+
+    kw = CALLS["kwargs"]
+    assert kw["theme"] == "dark"
+    assert kw["isomin"] is None
+    assert kw["isomax"] is None
+    assert kw["opacity"] == 0.4
+    assert kw["colorscale"] == "Viridis"
+    assert kw["surface_count"] == 2
+    assert kw["show_surface"] is True
+
+
+@pytest.mark.asyncio
+async def test_create_volume_3d_exception_wrapped(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    monkeypatch.setattr(
+        _FakeBuilder,
+        "volume_3d",
+        lambda self, x, y, z, value, **k: (_ for _ in ()).throw(ValueError("vol-bad")),
+    )
+
+    with pytest.raises(ToolError, match=r"3D volume chart failed: vol-bad"):
+        await create_volume_3d(
+            [{"x": 0, "y": 0, "z": 0, "temp": 1}],
+            x_column="x",
+            y_column="y",
+            z_column="z",
+            value_column="temp",
         )

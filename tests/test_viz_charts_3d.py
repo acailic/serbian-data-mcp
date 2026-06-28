@@ -418,3 +418,70 @@ class TestStreamtube3D:
         # 3D scene honors the FT salmon-paper background + ink-dark axis text
         assert prof.layout.scene.xaxis.backgroundcolor == PROFESSIONAL_PAPER
         assert prof.layout.scene.xaxis.tickfont.color == "#333333"
+
+
+# ---------------------------------------------------------------------------
+# volume_3d
+# ---------------------------------------------------------------------------
+
+
+class TestVolume3D:
+    def test_returns_volume_trace_with_xyz_value(self) -> None:
+        fig = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp", title="Cloud")
+        assert isinstance(fig, go.Figure)
+        assert isinstance(fig.data[0], go.Volume)
+        tr = fig.data[0]
+        assert list(tr.x) == [0.0, 1.0, 0.0, 0.0, 1.0]
+        assert list(tr.z) == [0.0, 0.0, 0.0, 1.0, 1.0]
+        assert list(tr.value) == [5.0, 8.0, 12.0, 15.0, 20.0]
+        assert fig.layout.title.text == "Cloud"
+        # scene styled by the 3D builder
+        assert fig.layout.scene.xaxis.showbackground is True
+
+    def test_default_iso_bounds_from_value_minmax(self) -> None:
+        fig = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp")
+        # isomin/isomax default to the value column's min/max
+        assert fig.data[0].isomin == 5.0
+        assert fig.data[0].isomax == 20.0
+
+    def test_explicit_iso_bounds_passthrough(self) -> None:
+        fig = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp", isomin=10.0, isomax=15.0)
+        assert fig.data[0].isomin == 10.0
+        assert fig.data[0].isomax == 15.0
+
+    def test_opacity_passthrough(self) -> None:
+        fig = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp", opacity=0.25)
+        assert fig.data[0].opacity == 0.25
+
+    def test_default_surface_count_two_and_shown(self) -> None:
+        fig = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp")
+        # builder defaults to 2 internal iso-surfaces, shown
+        assert fig.data[0].surface.count == 2
+        assert fig.data[0].surface.show is True
+
+    def test_show_surface_false_pure_cloud(self) -> None:
+        fig = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp", show_surface=False)
+        assert fig.data[0].surface.show is False
+
+    def test_custom_colorscale_override(self) -> None:
+        # Plotly resolves a named colorscale to its rgb stop list at construction;
+        # verify the override took effect by comparing first-stop colors.
+        viridis = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp")
+        rdbu = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp", colorscale="RdBu")
+        assert viridis.data[0].colorscale[0][1] != rdbu.data[0].colorscale[0][1]
+        # RdBu's low stop is a deep red
+        assert rdbu.data[0].colorscale[0][1] == "rgb(103,0,31)"
+
+    def test_light_theme_switches_scene_bgcolor(self) -> None:
+        dark = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp", theme="dark")
+        light = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp", theme="light")
+        assert dark.layout.scene.xaxis.backgroundcolor == "#16213e"
+        assert light.layout.scene.xaxis.backgroundcolor == "#f8f9fa"
+
+    def test_professional_theme_salmon_scene(self) -> None:
+        from serbian_data_mcp.viz.themes import PROFESSIONAL_PAPER
+
+        prof = Chart3DBuilder(ISOSURFACE_DATA).volume_3d("x", "y", "z", "temp", theme="professional")
+        # 3D scene honors the FT salmon-paper background + ink-dark axis text
+        assert prof.layout.scene.xaxis.backgroundcolor == PROFESSIONAL_PAPER
+        assert prof.layout.scene.xaxis.tickfont.color == "#333333"
