@@ -835,6 +835,51 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def icicle(
+        self,
+        names_column: str,
+        values_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        hierarchy_column: Optional[str] = None,
+    ) -> go.Figure:
+        """Create an icicle chart — rectangular-root hierarchy of stacked layers.
+
+        A rooted hierarchy laid out as stacked horizontal (or vertical) layers
+        descending from the root: the root spans the whole width, each level
+        partitions its parent's rectangle by proportional value. The canonical
+        professional chart for hierarchical part-to-whole where a *linear*
+        traversal of the tree reads better than a radial one — disk-space
+        usage, budget ministry→programme→line, org headcount. Distinct from
+        treemap (nested rectangles where deeper levels live *inside* ancestors'
+        boxes, harder to compare siblings across depths) and sunburst
+        (concentric rings, harder to compare angles than lengths): icicle keeps
+        every level on its own row so cross-level comparison and root→leaf
+        tracing are both immediate.
+
+        Args:
+            names_column: Labels for each segment/layer
+            values_column: Size values for each segment (rectangle width)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional column for color grouping
+            hierarchy_column: Optional parent column for stacked layers
+        """
+        path = [names_column]
+        if hierarchy_column:
+            path = [hierarchy_column, names_column]
+        fig = px.icicle(
+            self.data,
+            path=path,
+            values=values_column,
+            color=color_column,
+            title=title,
+            color_discrete_sequence=SEMANTIC_COLORS,
+        )
+        apply_theme(fig, theme)
+        return fig
+
     def sankey(
         self,
         source_column: str,

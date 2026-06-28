@@ -226,6 +226,53 @@ class TestSunburst:
 
 
 # ---------------------------------------------------------------------------
+# icicle
+# ---------------------------------------------------------------------------
+
+
+class TestIcicle:
+    def test_returns_single_icicle_trace(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).icicle("name", "value", title="T")
+        assert isinstance(fig, go.Figure)
+        # px.icicle -> one Icicle trace (stacked-layer hierarchy, not nested rects/rings)
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Icicle)
+        assert fig.layout.title.text == "T"
+
+    def test_labels_carry_names(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).icicle("name", "value")
+        # segment labels include the name column values
+        labels = list(fig.data[0].labels)
+        assert "A" in labels and "B" in labels and "C" in labels
+
+    def test_hierarchy_adds_parent_layer(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).icicle("name", "value", hierarchy_column="parent")
+        # path with hierarchy -> parent layer labels appear (top/mid roots)
+        labels = list(fig.data[0].labels)
+        assert "top" in labels and "mid" in labels
+
+    def test_values_mapped_to_segment(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).icicle("name", "value")
+        # trace.values carries the per-segment value column (root aggregate appended)
+        assert list(fig.data[0].values) == [100, 200, 50]
+
+    def test_color_column_passes_through(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).icicle("name", "value", color_column="color")
+        # numeric color -> marker populated by px
+        assert fig.data[0].marker is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).icicle("name", "value", theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor
+        assert fig.layout.paper_bgcolor is not None
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).icicle("name", "value", theme="professional")
+        # professional salmon-paper register applied
+        assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
 # gauge
 # ---------------------------------------------------------------------------
 

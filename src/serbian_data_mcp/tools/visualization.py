@@ -90,6 +90,7 @@ async def create_chart(
       - "density_heatmap": x_column + y_column → binned 2D point-count grid
       - "ecdf": x_column → empirical cumulative distribution (share ≤ x)
       - "sunburst": names_column + values_column (+ hierarchy_column) → radial hierarchy rings
+      - "icicle": names_column + values_column (+ hierarchy_column) → stacked-layer rectangular hierarchy
       - "sankey": source_column + target_column + values_column → proportional flow between nodes
       - "strip": y_column (+ optional x_column) → one jittered dot per raw observation
       - "bar_polar": r_column + x_column (angular) → radial bars around a circle (wind rose)
@@ -152,6 +153,7 @@ async def create_chart(
         "density_heatmap",
         "ecdf",
         "sunburst",
+        "icicle",
         "sankey",
         "strip",
         "bar_polar",
@@ -312,6 +314,18 @@ def _build_chart(
         if not names_column or not values_column:
             raise ToolError("sunburst requires names_column and values_column")
         return builder.sunburst(
+            names_column,
+            values_column,
+            title=title,
+            theme=theme,
+            color_column=color_column,
+            hierarchy_column=hierarchy_column,
+        )
+
+    if chart_type == "icicle":
+        if not names_column or not values_column:
+            raise ToolError("icicle requires names_column and values_column")
+        return builder.icicle(
             names_column,
             values_column,
             title=title,
