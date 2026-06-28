@@ -1431,6 +1431,62 @@ class TestChoropleth:
         assert fig.layout.paper_bgcolor == "#ffffff"
 
 
+LINE_GEO_DATA: list[dict[str, Any]] = [
+    {"city": "Belgrade", "lat": 44.8, "lon": 20.4, "rt": "north"},
+    {"city": "Novi Sad", "lat": 45.2, "lon": 19.8, "rt": "north"},
+    {"city": "Subotica", "lat": 46.1, "lon": 19.7, "rt": "north"},
+    {"city": "Nis", "lat": 43.3, "lon": 21.4, "rt": "south"},
+    {"city": "Leskovac", "lat": 42.99, "lon": 21.95, "rt": "south"},
+]
+
+
+class TestLineGeo:
+    def test_returns_single_connected_scattergeo_line(self) -> None:
+        fig = AdvancedChartBuilder(LINE_GEO_DATA[:3]).line_geo("lat", "lon", title="Route")
+        assert isinstance(fig, go.Figure)
+        # px.line_geo emits a SINGLE go.Scattergeo trace in 'lines' mode —
+        # waypoints joined into a connected path on a real-world base map.
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Scattergeo)
+        assert fig.data[0].mode == "lines"
+        assert [round(float(v), 1) for v in fig.data[0].lat] == [44.8, 45.2, 46.1]
+        assert [round(float(v), 1) for v in fig.data[0].lon] == [20.4, 19.8, 19.7]
+        assert fig.layout.title.text == "Route"
+        assert fig.layout.geo is not None
+
+    def test_color_column_one_connected_path_per_group(self) -> None:
+        fig = AdvancedChartBuilder(LINE_GEO_DATA).line_geo("lat", "lon", color_column="rt")
+        # color splits the data into one connected path per group (2 routes),
+        # each a 'lines'-mode Scattergeo named after its group.
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Scattergeo) for t in fig.data)
+        assert all(t.mode == "lines" for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["north", "south"]
+
+    def test_hover_name_column_accepted(self) -> None:
+        # hover_name is wired into the px call without error (trace.text stays None).
+        fig = AdvancedChartBuilder(LINE_GEO_DATA[:3]).line_geo("lat", "lon", hover_name_column="city")
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Scattergeo)
+
+    def test_scope_focuses_base_map(self) -> None:
+        fig = AdvancedChartBuilder(LINE_GEO_DATA[:3]).line_geo("lat", "lon", scope="europe")
+        # scope= sets layout.geo.scope to focus the base map on a continent
+        assert fig.layout.geo.scope == "europe"
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(LINE_GEO_DATA[:3]).line_geo("lat", "lon", theme="professional")
+        # go.Scattergeo has a marker WITH a line sub-prop, so apply_theme's
+        # trace-polish loop runs cleanly; geographic axis lives on layout.geo.
+        assert fig.layout.paper_bgcolor == "#fff1e5"
+        assert fig.layout.geo is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(LINE_GEO_DATA[:3]).line_geo("lat", "lon", theme="light")
+        # light theme = white paper; apply_theme is geo-line-safe
+        assert fig.layout.paper_bgcolor == "#ffffff"
+
+
 TIMELINE_DATA: list[dict[str, Any]] = [
     {"task": "Design", "start": "2024-01-01", "end": "2024-01-10", "grp": "A"},
     {"task": "Build", "start": "2024-01-05", "end": "2024-01-20", "grp": "B"},

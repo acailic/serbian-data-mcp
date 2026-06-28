@@ -105,6 +105,7 @@ async def create_chart(
       - "scatter_polar": r_column + x_column (angular) (+ size_column) → bare points on a cyclic polar grid
       - "scatter_geo": lat_column + lon_column (+ color/size) → points placed on a real-world map (spatial distribution)
       - "choropleth": names_column + values_column (+ locationmode) → geographic regions shaded by a value (spatial comparison)
+      - "line_geo": lat_column + lon_column (+ color_column) → connected path on a real-world map (route/trajectory/flow)
       - "timeline": start_column + end_column (+ names_column) → Gantt interval bars (duration/overlap)
       - "area": x_column + y_column (+ color_column) → stacked composition over an axis (energy/budget mix)
       - "animated_line": x_column + y_column + frame_column → time playback
@@ -173,6 +174,7 @@ async def create_chart(
         "scatter_polar",
         "scatter_geo",
         "choropleth",
+        "line_geo",
         "timeline",
         "area",
         "animated_line",
@@ -537,6 +539,18 @@ def _build_chart(
             title=title,
             theme=theme,
             locationmode=locationmode,
+        )
+
+    if chart_type == "line_geo":
+        if not lat_column or not lon_column:
+            raise ToolError("line_geo requires lat_column and lon_column")
+        return builder.line_geo(
+            lat_column,
+            lon_column,
+            title=title,
+            theme=theme,
+            color_column=color_column,
+            hover_name_column=names_column or None,
         )
 
     if chart_type == "timeline":

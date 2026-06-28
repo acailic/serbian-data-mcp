@@ -761,6 +761,35 @@ async def test_create_chart_choropleth_missing_column_raises(monkeypatch) -> Non
         )
 
 
+async def test_create_chart_line_geo_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"city": "Belgrade", "lat": 44.8, "lon": 20.4, "rt": "north"}],
+        chart_type="line_geo",
+        lat_column="lat",
+        lon_column="lon",
+        color_column="rt",
+        names_column="city",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "line_geo"
+    assert sink["args"] == ("lat", "lon")
+    assert sink["kwargs"]["title"] == ""
+    assert sink["kwargs"]["theme"] == "light"
+    assert sink["kwargs"]["color_column"] == "rt"
+    assert sink["kwargs"]["hover_name_column"] == "city"
+
+
+async def test_create_chart_line_geo_missing_column_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="line_geo requires lat_column and lon_column"):
+        await create_chart(
+            data=[{"city": "Belgrade", "lat": 44.8}], chart_type="line_geo", lat_column="", lon_column="lon"
+        )
+
+
 async def test_create_chart_timeline_passthrough(monkeypatch) -> None:
     sink: dict[str, Any] = {}
     _wire_builders(monkeypatch, sink)

@@ -1033,6 +1033,57 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def line_geo(
+        self,
+        lat_column: str,
+        lon_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        hover_name_column: Optional[str] = None,
+        scope: str = "world",
+    ) -> go.Figure:
+        """Create a geographic line plot — a connected path by lat/lon on a map.
+
+        Each observation is a waypoint; consecutive waypoints are JOINED into a
+        single line drawn on a base geographic map (coastlines + landmass).
+        The canonical professional chart for a *route, trajectory, or flow* —
+        flight/shipping routes, migration corridors, storm tracks, river
+        courses, supply-chain arcs. Distinct register from scatter_geo (which
+        plots DISCRETE points with no connecting line, for raw spatial
+        distribution) and choropleth (which shades whole REGIONS by an
+        aggregate, ignoring individual paths): line_geo answers "what route
+        connects these places, in what order?".
+
+        Pass ``color_column`` to draw one separate path per group (multiple
+        routes), ``hover_name_column`` for richer per-waypoint labels, and
+        ``scope`` ('world'|'europe'|'asia'|...) to focus the base map.
+
+        Args:
+            lat_column: Numeric latitude column (decimal degrees)
+            lon_column: Numeric longitude column (decimal degrees)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional grouping column (one path per group)
+            hover_name_column: Optional column shown bold in the hover tooltip
+            scope: Geographic focus of the base map ('world' by default)
+        """
+        kwargs: dict[str, Any] = {
+            "lat": lat_column,
+            "lon": lon_column,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        if hover_name_column:
+            kwargs["hover_name"] = hover_name_column
+        if scope and scope != "world":
+            kwargs["scope"] = scope
+        fig = px.line_geo(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def sunburst(
         self,
         names_column: str,
