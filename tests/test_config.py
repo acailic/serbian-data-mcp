@@ -256,3 +256,98 @@ def test_load_and_validate_config_directory_hits_generic_error(tmp_path):
     assert is_valid is False
     assert "Error reading configuration" in error_msg
     assert validated is None
+
+
+# --- Config._load_config + property fallback coverage (config.py 58-62, 85-118) ---
+
+
+def test_config_nonexistent_path_validates_defaults(tmp_path):
+    """When config_path points at a missing file, _load_config takes the
+    `else` branch (config_path.exists() is False) and validates the defaults."""
+    missing = tmp_path / "does_not_exist.json"
+    test_config = Config(config_path=str(missing))
+
+    # Defaults validate cleanly -> _validated_config set, properties read from it.
+    assert test_config.is_valid()
+    assert isinstance(test_config.get_validated_config(), ServerConfig)
+    assert test_config.api_base == "https://data.gov.rs"
+    assert test_config.rate_limit == 1.0
+    assert test_config.timeout == 30
+    assert test_config.cache_dir == Path(".cache")
+    assert test_config.export_dir == Path("exports")
+
+
+def test_config_nonexistent_path_invalid_defaults_logs_and_leaves_none(tmp_path, monkeypatch):
+    """When the file is absent AND default validation fails, _load_config logs
+    the error and leaves _validated_config as None (line 60), which forces every
+    property onto its fallback path."""
+
+    def fake_validate(_cfg_dict):
+        # Mirror validate_config's (is_valid, error_msg, ServerConfig|None) shape.
+        return False, "Default configuration validation failed: boom", None
+
+    monkeypatch.setattr("serbian_data_mcp.config.validate_config", fake_validate)
+
+    missing = tmp_path / "still_missing.json"
+    test_config = Config(config_path=str(missing))
+
+    # Invalid defaults -> _validated_config stays None.
+    assert not test_config.is_valid()
+    assert test_config.get_validated_config() is None
+
+    # Property fallbacks read the defaults dict (all valid types) -> returned verbatim.
+    assert test_config.api_base == "https://data.gov.rs"
+    assert test_config.rate_limit == 1.0
+    assert test_config.timeout == 30
+    assert test_config.cache_dir == Path(".cache")
+    assert test_config.export_dir == Path("exports")
+
+
+def _config_with_overrides(config_dict):
+    """Build a Config then force the no-validated-config property-fallback path
+    by clearing _validated_config and seeding the raw _config dict."""
+    cfg = Config()
+    cfg._validated_config = None
+    cfg._config = config_dict
+    return cfg
+
+
+def test_property_fallbacks_typed_values():
+    """Each property's `else` arm returns the raw _config value when it is the
+    correct type (str/numeric/int)."""
+    cfg = _config_with_overrides(
+        {
+            "api_base": "https://fallback.example.com/api/",
+            "rate_limit": 5.5,
+            "timeout": 45,
+            "cache_dir": "alt_cache",
+            "export_dir": "alt_exports",
+        }
+    )
+
+    # api_base fallback returns the value verbatim (no rstrip in the fallback arm).
+    assert cfg.api_base == "https://fallback.example.com/api/"
+    assert cfg.rate_limit == 5.5
+    assert cfg.timeout == 45
+    assert cfg.cache_dir == Path("alt_cache")
+    assert cfg.export_dir == Path("alt_exports")
+
+
+def test_property_fallbacks_wrong_types_use_defaults():
+    """Each property's `else` arm falls back to its hardcoded default when the
+    raw _config value is the wrong type."""
+    cfg = _config_with_overrides(
+        {
+            "api_base": 123,  # not str
+            "rate_limit": "fast",  # not int/float
+            "timeout": 1.5,  # float, not int
+            "cache_dir": 42,  # not str
+            "export_dir": None,  # not str
+        }
+    )
+
+    assert cfg.api_base == "https://data.gov.rs"
+    assert cfg.rate_limit == 1.0
+    assert cfg.timeout == 30
+    assert cfg.cache_dir == Path(".cache")
+    assert cfg.export_dir == Path("exports")
