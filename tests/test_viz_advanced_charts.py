@@ -68,6 +68,13 @@ VIOLIN_DATA: list[dict[str, Any]] = [
     {"g": "b", "v": 30},
 ]
 
+WATERFALL_DATA: list[dict[str, Any]] = [
+    {"step": "Start", "amount": 1000, "measure": "absolute"},
+    {"step": "Revenue", "amount": 400, "measure": "relative"},
+    {"step": "Costs", "amount": -250, "measure": "relative"},
+    {"step": "End", "amount": 1150, "measure": "total"},
+]
+
 
 # ---------------------------------------------------------------------------
 # __init__
@@ -356,5 +363,60 @@ class TestViolin:
         # one Violin trace per color group
         assert len(fig.data) >= 2
         assert all(isinstance(t, go.Violin) for t in fig.data)
+        # apply_theme ran: light theme sets a concrete paper_bgcolor
+        assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
+# waterfall
+# ---------------------------------------------------------------------------
+
+
+class TestWaterfall:
+    def test_returns_waterfall_trace_with_x_y(self) -> None:
+        fig = AdvancedChartBuilder(WATERFALL_DATA).waterfall("step", "amount", title="T")
+        assert isinstance(fig, go.Figure)
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Waterfall)
+        assert list(fig.data[0].x) == ["Start", "Revenue", "Costs", "End"]
+        assert list(fig.data[0].y) == [1000, 400, -250, 1150]
+        assert fig.layout.title.text == "T"
+        # legend hidden — a bridge chart has no categorical series
+        assert fig.layout.showlegend is False
+
+    def test_measure_column_passed_through(self) -> None:
+        fig = AdvancedChartBuilder(WATERFALL_DATA).waterfall("step", "amount", measure_column="measure")
+        assert list(fig.data[0].measure) == ["absolute", "relative", "relative", "total"]
+
+    def test_default_measure_all_relative(self) -> None:
+        # no measure_column -> every step is a relative delta on the running total
+        fig = AdvancedChartBuilder(WATERFALL_DATA).waterfall("step", "amount")
+        assert list(fig.data[0].measure) == ["relative"] * 4
+
+    def test_measure_column_missing_falls_back_to_relative(self) -> None:
+        # named measure_column not in data -> graceful fallback, not an error
+        fig = AdvancedChartBuilder(WATERFALL_DATA).waterfall("step", "amount", measure_column="nope")
+        assert list(fig.data[0].measure) == ["relative"] * 4
+
+    def test_delta_colors_set_on_trace(self) -> None:
+        fig = AdvancedChartBuilder(WATERFALL_DATA).waterfall(
+            "step",
+            "amount",
+            increasing_color="#111111",
+            decreasing_color="#222222",
+            total_color="#333333",
+        )
+        t = fig.data[0]
+        assert t.increasing.marker.color == "#111111"
+        assert t.decreasing.marker.color == "#222222"
+        assert t.totals.marker.color == "#333333"
+
+    def test_connector_wired(self) -> None:
+        # the dashed bridge line connecting bars must be present
+        fig = AdvancedChartBuilder(WATERFALL_DATA).waterfall("step", "amount")
+        assert fig.data[0].connector.line.color is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(WATERFALL_DATA).waterfall("step", "amount", theme="light")
         # apply_theme ran: light theme sets a concrete paper_bgcolor
         assert fig.layout.paper_bgcolor is not None

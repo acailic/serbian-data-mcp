@@ -219,6 +219,62 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def waterfall(
+        self,
+        x_column: str,
+        values_column: str,
+        title: str = "",
+        theme: str = "dark",
+        measure_column: Optional[str] = None,
+        increasing_color: str = "#2e7d32",
+        decreasing_color: str = "#c62828",
+        total_color: str = "#1565c0",
+    ) -> go.Figure:
+        """Create a waterfall chart — a cumulative running-total bridge.
+
+        Each bar starts where the previous one ended, so the chart shows how an
+        opening value is built up or torn down by a sequence of signed
+        contributions. The canonical professional chart for budget/revenue
+        bridges ("start at X, +A, −B, +C → end at Y"), cash-flow walks, and
+        variance analysis — far clearer than a plain bar chart for
+        part-to-whole movement.
+
+        By default every step is 'relative' (a +/− delta on the running total).
+        Pass ``measure_column`` with per-row values of 'relative' | 'absolute' |
+        'total' to mark non-delta steps: an 'absolute' row sets a fixed base,
+        a 'total' row draws a full-height subtotal bar from zero.
+
+        Args:
+            x_column: Step labels (e.g., budget line items)
+            values_column: Signed per-step values (+ increase, − decrease)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            measure_column: Optional per-row measure column ('relative'/'absolute'/'total')
+            increasing_color: Bar color for positive deltas
+            decreasing_color: Bar color for negative deltas
+            total_color: Bar color for 'total' subtotal steps
+        """
+        if measure_column and measure_column in self.data.columns:
+            measure = [str(m).lower() for m in self.data[measure_column]]
+        else:
+            measure = ["relative"] * len(self.data)
+
+        fig = go.Figure(
+            go.Waterfall(
+                x=self.data[x_column],
+                y=self.data[values_column],
+                measure=measure,
+                connector={"line": {"color": "rgba(120,144,156,0.45)", "width": 1}},
+                increasing={"marker": {"color": increasing_color}},
+                decreasing={"marker": {"color": decreasing_color}},
+                totals={"marker": {"color": total_color}},
+                hovertemplate="<b>%{x}</b><br>%{initialValue:,.0f} → %{finalValue:,.0f}<extra></extra>",
+            )
+        )
+        fig.update_layout(title=title, showlegend=False, waterfallgroupgap=0.2)
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,

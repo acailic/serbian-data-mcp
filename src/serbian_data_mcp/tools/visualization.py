@@ -67,6 +67,7 @@ async def create_chart(
       - "gauge": value (float, 0-100) → single metric display
       - "funnel": names_column + values_column → cascading flow
       - "violin": y_column (+ optional x_column) → distribution shape + density
+      - "waterfall": x_column + values_column → cumulative running-total bridge
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -111,6 +112,7 @@ async def create_chart(
         "gauge",
         "funnel",
         "violin",
+        "waterfall",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -249,6 +251,11 @@ def _build_chart(
         if not y_column:
             raise ToolError("violin requires y_column")
         return builder.violin(y_column, x_column=x_column or None, title=title, theme=theme)
+
+    if chart_type == "waterfall":
+        if not x_column or not values_column:
+            raise ToolError("waterfall requires x_column and values_column")
+        return builder.waterfall(x_column, values_column, title=title, theme=theme)
 
     if chart_type == "animated_line":
         if not x_column or not y_column or not frame_column:

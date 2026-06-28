@@ -114,7 +114,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
     except ToolError as e:
         msg = str(e)
         # Every supported type must be listed in the error so clients can self-correct.
-        for t in ("line", "bar", "pie", "heatmap", "gauge", "sparklines", "violin"):
+        for t in ("line", "bar", "pie", "heatmap", "gauge", "sparklines", "violin", "waterfall"):
             assert t in msg
     else:  # pragma: no cover - defensive
         raise AssertionError("expected ToolError")
@@ -292,6 +292,28 @@ async def test_create_chart_violin_missing_y_raises(monkeypatch) -> None:
     _wire_builders(monkeypatch, {})
     with pytest.raises(ToolError, match="violin requires y_column"):
         await create_chart(data=[{"x": 1}], chart_type="violin", y_column="")
+
+
+async def test_create_chart_waterfall_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"step": "A", "amount": 10}],
+        chart_type="waterfall",
+        x_column="step",
+        values_column="amount",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "waterfall"
+    assert sink["args"] == ("step", "amount")
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_waterfall_missing_values_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="waterfall requires x_column and values_column"):
+        await create_chart(data=[{"step": "A"}], chart_type="waterfall", x_column="step", values_column="")
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:
