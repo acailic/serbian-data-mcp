@@ -63,6 +63,8 @@ async def create_chart(
     r_column: str = "",
     start_column: str = "",
     end_column: str = "",
+    markers: bool = False,
+    fill: str = "none",
 ) -> dict[str, Any]:
     """Create interactive charts from data. Supports 20+ chart types.
 
@@ -83,7 +85,8 @@ async def create_chart(
       - "violin": y_column (+ optional x_column) → distribution shape + density
       - "waterfall": x_column + values_column → cumulative running-total bridge
       - "candlestick": open/high/low/close columns → OHLC price candles
-      - "ternary": a/b/c columns → 3-part compositional mixture triangle
+      - "ternary": a/b/c columns → 3-part compositional mixture triangle (discrete points)
+      - "line_ternary": a/b/c columns → connected trajectory through the compositional simplex
       - "splom": columns (list) → pairwise scatter matrix for N variables
       - "parcoords": columns (list) → parallel coordinates for high-dim records
       - "parcats": columns (list) → parallel categories (categorical multivariate flow)
@@ -149,6 +152,7 @@ async def create_chart(
         "waterfall",
         "candlestick",
         "ternary",
+        "line_ternary",
         "splom",
         "parcoords",
         "parcats",
@@ -209,6 +213,8 @@ async def create_chart(
             r_column=r_column,
             start_column=start_column,
             end_column=end_column,
+            markers=markers,
+            fill=fill,
         )
     except ToolError:
         raise
@@ -258,6 +264,8 @@ def _build_chart(
     r_column: str = "",
     start_column: str = "",
     end_column: str = "",
+    markers: bool = False,
+    fill: str = "none",
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -398,6 +406,20 @@ def _build_chart(
             theme=theme,
             color_column=color_column,
             size_column=size_column,
+        )
+
+    if chart_type == "line_ternary":
+        if not a_column or not b_column or not c_column:
+            raise ToolError("line_ternary requires a_column, b_column, and c_column")
+        return builder.line_ternary(
+            a_column,
+            b_column,
+            c_column,
+            title=title,
+            theme=theme,
+            color_column=color_column,
+            markers=markers,
+            fill=fill,
         )
 
     if chart_type == "splom":

@@ -125,6 +125,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "waterfall",
             "candlestick",
             "ternary",
+            "line_ternary",
             "splom",
             "parcoords",
             "parcats",
@@ -406,6 +407,41 @@ async def test_create_chart_ternary_missing_component_raises(monkeypatch) -> Non
             a_column="a",
             b_column="b",
             c_column="",
+        )
+
+
+async def test_create_chart_line_ternary_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"a": 1, "b": 1, "c": 1}],
+        chart_type="line_ternary",
+        a_column="a",
+        b_column="b",
+        c_column="c",
+        color_column="grp",
+        markers=True,
+        fill="toself",
+        theme="professional",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "line_ternary"
+    assert sink["args"] == ("a", "b", "c")
+    assert sink["kwargs"]["color_column"] == "grp"
+    assert sink["kwargs"]["markers"] is True
+    assert sink["kwargs"]["fill"] == "toself"
+    assert sink["kwargs"]["theme"] == "professional"
+
+
+async def test_create_chart_line_ternary_missing_component_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="line_ternary requires a_column, b_column, and c_column"):
+        await create_chart(
+            data=[{"a": 1, "b": 1}],
+            chart_type="line_ternary",
+            a_column="a",
+            b_column="",
+            c_column="c",
         )
 
 

@@ -413,6 +413,54 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def line_ternary(
+        self,
+        a_column: str,
+        b_column: str,
+        c_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        markers: bool = False,
+        fill: str = "none",
+    ) -> go.Figure:
+        """Create a ternary line/area — a connected trajectory through compositional space.
+
+        Each row is a 3-component mix that sums to a constant, and consecutive
+        points are CONNECTED by a line (forming a path through the ternary
+        simplex), unlike ternary which plots discrete points only. The canonical
+        professional chart for a compositional TRAJECTORY — a sample/medium
+        evolving through a mixture over time/depth/distance (soil-pore fluid down
+        a core, alloy composition along a heat-treatment path, spending-share
+        migration across budget cycles). Optional markers place a dot at each
+        vertex; optional fill='toself' shades the polygon the path encloses.
+
+        Args:
+            a_column: First component column (A vertex)
+            b_column: Second component column (B vertex)
+            c_column: Third component column (C vertex)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional grouping column (one trajectory per group)
+            markers: Show a marker at each vertex (default lines only)
+            fill: Area fill for the enclosed polygon ('none' or 'toself')
+        """
+        kwargs: dict[str, Any] = {
+            "a": a_column,
+            "b": b_column,
+            "c": c_column,
+            "title": title,
+            "markers": markers,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        fig = px.line_ternary(self.data, **kwargs)
+        if fill and fill != "none":
+            fig.update_traces(fill=fill)
+        apply_theme(fig, theme)
+        return fig
+
     def splom(
         self,
         columns: list[str],

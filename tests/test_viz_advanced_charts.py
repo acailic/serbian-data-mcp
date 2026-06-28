@@ -672,6 +672,48 @@ class TestTernary:
         assert fig.layout.paper_bgcolor is not None
 
 
+class TestLineTernary:
+    def test_returns_scatterternary_line_with_abc(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).line_ternary("a", "b", "c", title="T")
+        assert isinstance(fig, go.Figure)
+        # one Scatterternary trace carrying all rows, connected as a line
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Scatterternary)
+        # default mode is 'lines' (connected trajectory, no markers)
+        assert fig.data[0].mode == "lines"
+        assert list(fig.data[0].a) == [40, 20, 30]
+        assert list(fig.data[0].b) == [30, 30, 40]
+        assert list(fig.data[0].c) == [30, 50, 30]
+        assert fig.layout.title.text == "T"
+
+    def test_markers_toggle_adds_markers(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).line_ternary("a", "b", "c", markers=True)
+        # markers=True flips the trace mode to lines+markers
+        assert fig.data[0].mode == "lines+markers"
+
+    def test_fill_toself_shades_polygon(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).line_ternary("a", "b", "c", fill="toself")
+        # fill='toself' shades the polygon the trajectory encloses
+        assert fig.data[0].fill == "toself"
+
+    def test_color_column_splits_traces(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).line_ternary("a", "b", "c", color_column="grp")
+        # one Scatterternary trajectory per group (x, y) -> 2 traces
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Scatterternary) for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["x", "y"]
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).line_ternary("a", "b", "c", theme="light")
+        # apply_theme ran; line_ternary uses the separate `ternary` sub-axis
+        assert fig.layout.paper_bgcolor is not None
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).line_ternary("a", "b", "c", theme="professional")
+        # professional salmon-paper theme sets its concrete paper_bgcolor
+        assert fig.layout.paper_bgcolor is not None
+
+
 # ---------------------------------------------------------------------------
 # splom
 # ---------------------------------------------------------------------------
