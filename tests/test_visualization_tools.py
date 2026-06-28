@@ -128,6 +128,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "splom",
             "parcoords",
             "density_contour",
+            "ecdf",
             "sunburst",
             "sankey",
         ):
@@ -474,6 +475,29 @@ async def test_create_chart_density_contour_missing_columns_raises(monkeypatch) 
         await create_chart(data=[{"a": 1}], chart_type="density_contour", x_column="a", y_column="")
     with pytest.raises(ToolError, match="density_contour requires x_column and y_column"):
         await create_chart(data=[{"a": 1}], chart_type="density_contour", x_column="", y_column="b")
+
+
+async def test_create_chart_ecdf_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"a": 1, "c": 9}],
+        chart_type="ecdf",
+        x_column="a",
+        color_column="c",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "ecdf"
+    assert sink["args"] == ("a",)
+    assert sink["kwargs"]["color_column"] == "c"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_ecdf_missing_column_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="ecdf requires x_column"):
+        await create_chart(data=[{"a": 1}], chart_type="ecdf", x_column="")
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:

@@ -83,6 +83,7 @@ async def create_chart(
       - "splom": columns (list) → pairwise scatter matrix for N variables
       - "parcoords": columns (list) → parallel coordinates for high-dim records
       - "density_contour": x_column + y_column → 2D density bands
+      - "ecdf": x_column → empirical cumulative distribution (share ≤ x)
       - "sunburst": names_column + values_column (+ hierarchy_column) → radial hierarchy rings
       - "sankey": source_column + target_column + values_column → proportional flow between nodes
       - "animated_line": x_column + y_column + frame_column → time playback
@@ -135,6 +136,7 @@ async def create_chart(
         "splom",
         "parcoords",
         "density_contour",
+        "ecdf",
         "sunburst",
         "sankey",
         "animated_line",
@@ -375,6 +377,11 @@ def _build_chart(
             theme=theme,
             color_column=color_column,
         )
+
+    if chart_type == "ecdf":
+        if not x_column:
+            raise ToolError("ecdf requires x_column")
+        return builder.ecdf(x_column, title=title, theme=theme, color_column=color_column)
 
     if chart_type == "animated_line":
         if not x_column or not y_column or not frame_column:

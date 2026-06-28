@@ -499,6 +499,56 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def ecdf(
+        self,
+        x_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        ecdfmode: str = "standard",
+        markers: bool = False,
+    ) -> go.Figure:
+        """Create an empirical cumulative distribution (ECDF) — the share ≤ x.
+
+        The running fraction of observations at-or-below each value: the curve
+        steps up 1/N per point, rising monotonically from 0 to 1 across the
+        sorted range. The canonical professional chart for the percentile /
+        exceedance view a histogram (bin counts) and violin (density shape)
+        cannot give directly — "what share of cities fall below this PM2.5",
+        "60% of salaries are under X", test-score percentiles, return-period
+        probabilities. No binning means no bin-width artefacts, so it is also
+        the cleanest way to compare two distributions side by side.
+
+        Pass ``color_column`` to overlay one ECDF curve per group, ``ecdfmode``
+        for a survival / complementary curve ('complementary' = P(X > x), a
+        descending 1→0 exceedance curve), and ``markers`` to draw a marker at
+        each observation as well as the connecting line.
+
+        Args:
+            x_column: Numeric column whose cumulative distribution is plotted
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional grouping column (one ECDF curve per group)
+            ecdfmode: 'standard' (P(X ≤ x), default ascending 0→1),
+                'complementary' (P(X > x), descending 1→0), 'reversed', or
+                'reversed-complementary'
+            markers: Show a marker at each observation (default: line only)
+        """
+        kwargs: dict[str, Any] = {
+            "x": x_column,
+            "title": title,
+            "ecdfmode": ecdfmode,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        fig = px.ecdf(self.data, **kwargs)
+        # px.ecdf defaults to a connecting line; opt into per-point markers.
+        if markers:
+            fig.update_traces(mode="lines+markers")
+        apply_theme(fig, theme)
+        return fig
+
     def sunburst(
         self,
         names_column: str,

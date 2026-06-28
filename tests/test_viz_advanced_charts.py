@@ -716,6 +716,62 @@ class TestDensityContour:
 
 
 # ---------------------------------------------------------------------------
+# ecdf
+# ---------------------------------------------------------------------------
+
+ECDF_DATA: list[dict[str, Any]] = [
+    {"v": 5, "grp": "x"},
+    {"v": 1, "grp": "x"},
+    {"v": 4, "grp": "y"},
+    {"v": 2, "grp": "y"},
+    {"v": 3, "grp": "x"},
+]
+
+
+class TestECDF:
+    def test_returns_single_scatter_trace_ascending(self) -> None:
+        fig = AdvancedChartBuilder(ECDF_DATA).ecdf("v", title="T")
+        assert isinstance(fig, go.Figure)
+        # px.ecdf emits ONE go.Scatter whose x is the sorted observations and
+        # whose y is the running cumulative probability 0→1
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Scatter)
+        assert list(fig.data[0].x) == [1, 2, 3, 4, 5]
+        assert list(fig.data[0].y) == [0.2, 0.4, 0.6, 0.8, 1.0]
+        assert fig.data[0].mode == "lines"
+        assert fig.layout.title.text == "T"
+
+    def test_color_column_splits_one_trace_per_group(self) -> None:
+        fig = AdvancedChartBuilder(ECDF_DATA).ecdf("v", color_column="grp")
+        # one Scatter per group value (grp has 2: x, y)
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Scatter) for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["x", "y"]
+
+    def test_markers_toggles_trace_mode(self) -> None:
+        base = AdvancedChartBuilder(ECDF_DATA).ecdf("v")
+        assert base.data[0].mode == "lines"
+        marked = AdvancedChartBuilder(ECDF_DATA).ecdf("v", markers=True)
+        assert marked.data[0].mode == "lines+markers"
+
+    def test_ecdfmode_complementary_descends(self) -> None:
+        # 'complementary' = P(X > x): a descending exceedance curve. At the
+        # minimum observation P(X > x) = (N-1)/N (the min point itself is
+        # excluded), so it starts at 0.8 for N=5 and falls to 0.0 at the max.
+        fig = AdvancedChartBuilder(ECDF_DATA).ecdf("v", ecdfmode="complementary")
+        y = list(fig.data[0].y)
+        assert y[0] > y[-1]
+        assert abs(y[0] - 0.8) < 1e-9
+        assert abs(y[-1] - 0.0) < 1e-9
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(ECDF_DATA).ecdf("v", theme="professional")
+        # go.Scatter has a marker WITH a line sub-prop, so apply_theme's
+        # trace-polish loop runs cleanly; professional theme = salmon paper.
+        assert fig.layout.paper_bgcolor == "#fff1e5"
+
+
+# ---------------------------------------------------------------------------
 # sankey
 # ---------------------------------------------------------------------------
 
