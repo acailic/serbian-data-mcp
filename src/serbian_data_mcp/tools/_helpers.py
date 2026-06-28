@@ -13,13 +13,30 @@ import pandas as pd
 from .. import mcp
 from ..api.client import UDataClient
 from ..api.models import Dataset, Organization, SearchResult
+from ..catalog import DatasetCatalog
 
 _client: Optional[UDataClient] = None
+_catalog_instance: Optional[DatasetCatalog] = None
 
 
 async def get_client() -> UDataClient:
     """Get a fresh API client (avoids event-loop reuse issues)."""
     return UDataClient()
+
+
+async def get_catalog() -> DatasetCatalog:
+    """Get the shared dataset catalog.
+
+    Loads from local cache when fresh, otherwise builds from the data.gov.rs API.
+    The same instance is reused across calls so the catalog is built at most once
+    per process (unless explicitly refreshed).
+    """
+    global _catalog_instance
+    if _catalog_instance is None:
+        catalog = DatasetCatalog()
+        await catalog.initialize()
+        _catalog_instance = catalog
+    return _catalog_instance
 
 
 def dataset_to_dict(ds: Dataset) -> dict[str, Any]:

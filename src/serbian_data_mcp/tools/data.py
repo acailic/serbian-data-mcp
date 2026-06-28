@@ -190,3 +190,34 @@ async def browse_recent_datasets(days: int = 7, page_size: int = 20) -> dict[str
         "days_back": days,
         "queried_at": now.isoformat(),
     }
+
+
+@mcp.tool()
+async def get_dataset_resources(dataset_id: str) -> dict[str, Any]:
+    """List the data files (resources) available for a specific dataset.
+
+    Use this before get_resource_data() to discover:
+      - Resource IDs (required by get_resource_data)
+      - Available formats (json, csv, xlsx, xls, xml)
+      - File descriptions and sizes
+      - Direct download URLs
+
+    Equivalent to get_dataset(detail_level="resources"), exposed as its own
+    tool for callers that only need the file listing.
+
+    Args:
+        dataset_id: Dataset identifier from search_datasets()
+    """
+    client = await h.get_client()
+    try:
+        dataset = await client.get_dataset(dataset_id)
+    except Exception as e:
+        raise ToolError(f"Dataset '{dataset_id}' not found. Use search_datasets() to find valid IDs.") from e
+    if dataset is None:
+        raise ToolError(f"Dataset '{dataset_id}' not found. Use search_datasets() to find valid IDs.")
+    return {
+        "dataset_id": dataset.id,
+        "dataset_title": dataset.title,
+        "resources": [h.resource_to_dict(r) for r in dataset.resources],
+        "count": len(dataset.resources),
+    }

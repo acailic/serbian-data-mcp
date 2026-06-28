@@ -7,6 +7,7 @@ Utility tools for health checks and configuration.
 from __future__ import annotations
 
 import json
+import time
 from datetime import datetime, UTC
 from typing import Any
 
@@ -177,15 +178,35 @@ def server_info() -> str:
             "api_base": config.api_base,
             "supported_formats": ["json", "csv", "xlsx", "xls", "xml"],
             "chart_types": [
-                "line", "bar", "pie", "scatter", "histogram", "box",
-                "heatmap", "treemap", "gauge", "funnel",
-                "animated_line", "comparison_bar", "sparklines",
-                "choropleth_map", "bubble_map", "multi_layer_map",
-                "arrow", "dumbbell", "lollipop",
-                "slope_chart", "waffle_chart", "population_pyramid",
-                "sankey_diagram", "radar_chart",
-                "animated_bars", "animated_timeline", "animated_comparison",
-                "scrollytelling", "data_table",
+                "line",
+                "bar",
+                "pie",
+                "scatter",
+                "histogram",
+                "box",
+                "heatmap",
+                "treemap",
+                "gauge",
+                "funnel",
+                "animated_line",
+                "comparison_bar",
+                "sparklines",
+                "choropleth_map",
+                "bubble_map",
+                "multi_layer_map",
+                "arrow",
+                "dumbbell",
+                "lollipop",
+                "slope_chart",
+                "waffle_chart",
+                "population_pyramid",
+                "sankey_diagram",
+                "radar_chart",
+                "animated_bars",
+                "animated_timeline",
+                "animated_comparison",
+                "scrollytelling",
+                "data_table",
             ],
             "export_formats": ["html", "json", "csv", "xlsx", "pdf", "embed"],
             "themes": ["dark", "light", "infographic"],
@@ -215,3 +236,87 @@ async def health_check() -> dict[str, Any]:
         "version": __version__,
         "timestamp": datetime.now(UTC).isoformat(),
     }
+
+
+# =========================================================================
+# Configuration & catalog tools
+# =========================================================================
+
+
+@mcp.tool()
+async def get_config_tool() -> dict[str, Any]:
+    """Get the current MCP server configuration settings.
+
+    Returns the resolved runtime configuration: API endpoint, rate limit,
+    request timeout, and the cache/export directories. Useful for debugging
+    connectivity or understanding where exported files are written.
+    """
+    return {
+        "api_base": config.api_base,
+        "rate_limit": config.rate_limit,
+        "timeout": config.timeout,
+        "cache_dir": str(config.cache_dir),
+        "export_dir": str(config.export_dir),
+    }
+
+
+@mcp.tool()
+async def get_catalog_stats() -> dict[str, Any]:
+    """Get statistics about the cached dataset catalog.
+
+    Summarizes the local catalog (used by intelligent_search/preview_dataset)
+    without triggering a refresh: total datasets, distinct organizations and
+    formats, downloadable count, and cache age.
+
+    Returns: {total_datasets, total_organizations, total_formats, downloadable_datasets,
+              formats, organizations, cache_path, cache_age_hours, cache_exists}
+    """
+    catalog = await h.get_catalog()
+
+    organizations: set[str] = set()
+    formats: set[str] = set()
+    downloadable = 0
+
+    for dataset in catalog.get_all():
+        if dataset.organization:
+            organizations.add(dataset.organization)
+        formats.update(dataset.formats)
+        if dataset.has_downloadable:
+            downloadable += 1
+
+    cache_age_hours: float | None = None
+    if catalog.cache_path.exists():
+        cache_age_hours = round((time.time() - catalog.cache_path.stat().st_mtime) / 3600, 2)
+
+    return {
+        "total_datasets": len(catalog),
+        "total_organizations": len(organizations),
+        "total_formats": len(formats),
+        "downloadable_datasets": downloadable,
+        "formats": sorted(formats),
+        "organizations": sorted(organizations)[:20],
+        "cache_path": str(catalog.cache_path),
+        "cache_age_hours": cache_age_hours,
+        "cache_exists": catalog.cache_path.exists(),
+    }
+
+
+@mcp.tool()
+async def refresh_catalog() -> dict[str, Any]:
+    """Refresh the dataset catalog cache from data.gov.rs.
+
+    Re-fetches all datasets from the API and rebuilds the local cache used by
+    intelligent_search() and preview_dataset(). The cache also auto-refreshes
+    every 24h on first use; call this when you need fresh data immediately.
+
+    Returns: {total_datasets, cache_path, built_at, duration_seconds, timestamp}
+    """
+    catalog = await h.get_catalog()
+    start = time.time()
+    try:
+        result = await catalog.refresh()
+        duration = time.time() - start
+        return {**result, "duration_seconds": round(duration, 2), "timestamp": datetime.now(UTC).isoformat()}
+    except Exception as e:
+        duration = time.time() - start
+        raise ToolError(f"Catalog refresh failed: {str(e)[:200]} (the API may be rate-limited or unavailable).") from e
