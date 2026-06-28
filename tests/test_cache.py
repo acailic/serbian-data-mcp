@@ -265,5 +265,6 @@ class TestCacheWithRealisticData:
         }
         cache.set("GET", "/api/1/datasets/5e75b69b/", data=data)
         result = cache.get("GET", "/api/1/datasets/5e75b69b/")
+        assert result is not None
         assert result["title"] == "Census 2022"
         assert len(result["resources"]) == 3

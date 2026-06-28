@@ -301,14 +301,14 @@ def test_sankey_builds_unique_nodes_and_links() -> None:
     sk = fig.data[0]
     assert isinstance(sk, go.Sankey)
     # unique nodes: A, B, C
-    assert list(sk.node.label) == ["A", "B", "C"]
+    assert list(sk.node.label) == ["A", "B", "C"]  # pyright: ignore[reportOptionalMemberAccess]
     # 3 links
-    assert len(sk.link.source) == 3
-    assert len(sk.link.target) == 3
-    assert list(sk.link.value) == [10, 5, 3]
+    assert len(sk.link.source) == 3  # pyright: ignore[reportOptionalMemberAccess]
+    assert len(sk.link.target) == 3  # pyright: ignore[reportOptionalMemberAccess]
+    assert list(sk.link.value) == [10, 5, 3]  # pyright: ignore[reportOptionalMemberAccess]
     # source A == index 0 for both A→B and A→C links
-    assert sk.link.source[0] == 0
-    assert sk.link.source[1] == 0
+    assert sk.link.source[0] == 0  # pyright: ignore[reportOptionalMemberAccess]
+    assert sk.link.source[1] == 0  # pyright: ignore[reportOptionalMemberAccess]
 
 
 def test_sankey_label_column_overrides_node_labels() -> None:

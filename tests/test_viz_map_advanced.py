@@ -281,8 +281,8 @@ def test_ranked_scatter_map_returns_single_trace_colored_by_y(builder: AdvancedM
     assert len(fig.data) == 1
     trace = fig.data[0]
     assert isinstance(trace, go.Scattergeo)
-    assert list(trace.marker.color) == pytest.approx([200.0, 400.0])
-    assert list(trace.marker.colorscale) == list(_SEQUENTIAL_BLUE)
+    assert list(trace.marker.color) == pytest.approx([200.0, 400.0])  # pyright: ignore[reportOptionalMemberAccess]
+    assert list(trace.marker.colorscale) == list(_SEQUENTIAL_BLUE)  # pyright: ignore[reportOptionalMemberAccess]
     assert fig.layout.title.text == "Scatter"
 
 

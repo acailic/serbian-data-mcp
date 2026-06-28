@@ -192,6 +192,14 @@ def test_infographic_unknown_chart_type_falls_back_to_bar(monkeypatch):
     assert result["chart_figure"]["data"][0]["type"] == "bar"
 
 
+def test_infographic_unknown_chart_type_with_missing_column_swallows_to_empty_figure(monkeypatch):
+    # Unknown chart_type -> fig None -> go.Bar fallback; df["missing"] raises KeyError
+    # inside the go.Bar() arg eval -> except -> fig = go.Figure() (defensive branch).
+    _patch_narrative(monkeypatch)
+    result = create_infographic(_data(), x_column="godina", y_column="missing_col", chart_type="nope")
+    assert result["chart_figure"]["data"] == []
+
+
 def test_infographic_no_columns_yields_empty_figure(monkeypatch):
     _patch_narrative(monkeypatch)
     result = create_infographic(_data(), title="Bez grafika")
