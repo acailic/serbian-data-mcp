@@ -15,3 +15,4 @@ from . import resources  # noqa: F401
 from . import prompts  # noqa: F401
 from . import novel_charts  # noqa: F401
 from . import animations  # noqa: F401
+from . import charts_3d  # noqa: F401

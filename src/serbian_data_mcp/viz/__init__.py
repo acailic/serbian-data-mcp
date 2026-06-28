@@ -1,6 +1,7 @@
 """Visualization, theming, insights, infographics, maps, and export functionality."""
 
 from .charts import ChartBuilder
+from .charts_3d import Chart3DBuilder
 from .exporters import export_html, export_png, export_json, export_pdf, generate_embed_code, fig_to_dict
 from .themes import (
     apply_theme,
@@ -27,6 +28,7 @@ from .forecast import forecast_linear, benchmark_comparison, cross_dataset_insig
 
 __all__ = [
     "ChartBuilder",
+    "Chart3DBuilder",
     "AdvancedChartBuilder",
     "export_html",
     "export_png",
