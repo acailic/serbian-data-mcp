@@ -1,7 +1,9 @@
 """Search and discovery tools for data.gov.rs.
 
 Contracts:
-  - search_datasets(query, ...) → SearchResult dict
+  - search_datasets(query, ...) → SearchResult dict (live API, filtered)
+  - intelligent_search(query, ...) → semantically-ranked catalog hits (cached, fast)
+  - preview_dataset(dataset_id) → metadata + first N rows (inspect before download)
   - list_organizations(page_size, page) → organizations list
 """
 
@@ -13,6 +15,8 @@ from fastmcp.exceptions import ToolError
 
 from .. import mcp
 from ..api.models import Dataset
+from ..catalog import AlternativeSuggestions, DatasetPreview, SearchEngine
+from ..catalog.exceptions import DatasetNotFound
 from . import _helpers as h
 
 
@@ -145,3 +149,80 @@ async def get_portal_statistics() -> dict[str, Any]:
         "api_base": client.base_url,
         "portal_url": "https://data.gov.rs",
     }
+
+
+@mcp.tool()
+async def intelligent_search(
+    query: str, suggest_alternatives: bool = True, max_results: int = 10, min_score: float = 0.3
+) -> dict[str, Any]:
+    """Search datasets with semantic understanding and fallback suggestions (RECOMMENDED).
+
+    Uses the cached local catalog for fast results without API rate limits.
+    Expands queries with synonyms and Serbian↔English translations, and offers
+    related-dataset suggestions when no exact match is found.
+
+    Prefer this over search_datasets() unless you need live API results or
+    organization/format filters.
+
+    Example:
+        intelligent_search("population by age")
+        intelligent_search("stanovništvo")
+        intelligent_search("budžet", suggest_alternatives=True)
+
+    Returns: {results: [...], total_found, query, expanded_terms} and, when no
+    match is found and suggest_alternatives=True, {suggestions, note}.
+
+    Args:
+        query: Search query (Serbian or English both work)
+        suggest_alternatives: If True, suggest related datasets when no exact match
+        max_results: Maximum results (1-50, default 10)
+        min_score: Minimum relevance score 0.0-1.0 (default 0.3)
+    """
+    max_results = min(max(max_results, 1), 50)
+    try:
+        catalog = await h.get_catalog()
+        search_engine = SearchEngine(catalog)
+        results = await search_engine.search(query, max_results=max_results, min_score=min_score)
+        response: dict[str, Any] = {
+            "results": [r.to_dict() for r in results],
+            "total_found": len(results),
+            "query": query,
+            "expanded_terms": await search_engine.query_expander.expand(query),
+        }
+        if not results and suggest_alternatives:
+            suggestions = AlternativeSuggestions(catalog, search_engine)
+            suggestion_result = await suggestions.suggest(query, max_alternatives=max_results)
+            response["suggestions"] = suggestion_result.to_dict()
+            response["note"] = "No exact match found. See 'suggestions' for related datasets."
+        return response
+    except Exception as e:
+        raise ToolError(f"Intelligent search failed: {e}") from e
+
+
+@mcp.tool()
+async def preview_dataset(dataset_id: str, nrows: int = 10) -> dict[str, Any]:
+    """Show dataset metadata with a data preview (first N rows) before downloading.
+
+    Use this BEFORE get_resource_data() to understand structure cheaply. Reads
+    metadata and sample rows from the first downloadable resource.
+
+    Workflow:
+      1. intelligent_search() → find dataset_id
+      2. preview_dataset(dataset_id) → understand structure
+      3. get_resource_data(resource_id) → download full data if useful
+
+    Returns: {metadata, sample_data, columns, preview_reason}
+
+    Args:
+        dataset_id: Dataset identifier (from intelligent_search or search_datasets)
+        nrows: Rows to preview (1-100, default 10)
+    """
+    nrows = min(max(nrows, 1), 100)
+    try:
+        catalog = await h.get_catalog()
+        preview = DatasetPreview(catalog)
+        return await preview.preview_dataset(dataset_id, nrows=nrows)
+    except DatasetNotFound as e:
+        raise ToolError(f"Dataset '{dataset_id}' not found in catalog. Try intelligent_search() to find it.") from e
+    except Exception as e:
+        raise ToolError(f"Preview failed: {str(e)[:200]}") from e
