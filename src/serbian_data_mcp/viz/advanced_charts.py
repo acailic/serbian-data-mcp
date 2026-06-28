@@ -833,6 +833,54 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def scatter_polar(
+        self,
+        r_column: str,
+        theta_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        size_column: Optional[str] = None,
+    ) -> go.Figure:
+        """Create a polar scatter plot — bare points on a cyclic polar grid.
+
+        Each observation is a single marker placed at radial distance ``r`` and
+        angular position ``theta`` (compass bearing, clock position, or month),
+        with NO connecting line and NO polygon closure. The canonical
+        professional chart for the *raw distribution* of directional or cyclical
+        observations — pollutant readings scattered by wind direction, wildlife
+        sightings by compass sector, attack/arrival times around a 24-hour clock.
+        Distinct from radar (which CONNECTS the points into a closed entity
+        profile so the *shape* reads) and bar_polar (which draws a filled bar
+        SECTOR per category so magnitude is an area, not a point): scatter_polar
+        shows where individual observations actually fall, exposing clusters,
+        gaps, and outliers that a connecting line would hide.
+
+        Pass ``color_column`` to give each group its own point set and
+        ``size_column`` to size each marker by a third variable.
+
+        Args:
+            r_column: Numeric radial distance column (distance from center)
+            theta_column: Angular category column (compass, clock, month, sector)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional grouping column (one point set per group)
+            size_column: Optional numeric column sizing each marker
+        """
+        kwargs: dict[str, Any] = {
+            "r": r_column,
+            "theta": theta_column,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        if size_column:
+            kwargs["size"] = size_column
+        fig = px.scatter_polar(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def sunburst(
         self,
         names_column: str,

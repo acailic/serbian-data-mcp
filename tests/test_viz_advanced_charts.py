@@ -1220,6 +1220,59 @@ class TestRadar:
         assert fig.layout.paper_bgcolor == "#ffffff"
 
 
+SCATTER_POLAR_DATA: list[dict[str, Any]] = [
+    {"dir": "N", "spd": 3, "grp": "morning", "sz": 4},
+    {"dir": "E", "spd": 5, "grp": "morning", "sz": 8},
+    {"dir": "S", "spd": 2, "grp": "morning", "sz": 2},
+    {"dir": "N", "spd": 6, "grp": "evening", "sz": 10},
+    {"dir": "W", "spd": 4, "grp": "evening", "sz": 6},
+    {"dir": "S", "spd": 7, "grp": "evening", "sz": 12},
+]
+
+
+class TestScatterPolar:
+    def test_returns_single_scatterpolar_trace_points(self) -> None:
+        fig = AdvancedChartBuilder(SCATTER_POLAR_DATA[:3]).scatter_polar("spd", "dir", title="Wind by direction")
+        assert isinstance(fig, go.Figure)
+        # px.scatter_polar emits a SINGLE go.Scatterpolar trace carrying the raw
+        # r/theta arrays; markers only (no connecting line, no polygon closure).
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Scatterpolar)
+        assert [int(v) for v in fig.data[0].r] == [3, 5, 2]
+        assert list(fig.data[0].theta) == ["N", "E", "S"]
+        assert fig.layout.title.text == "Wind by direction"
+        assert "markers" in fig.data[0].mode
+        # scatter_polar never closes the polygon (unlike radar's appended vertex)
+        assert list(fig.data[0].theta)[-1] != fig.data[0].theta[0] or len(fig.data[0].r) == 3
+
+    def test_color_column_splits_one_point_set_per_group(self) -> None:
+        fig = AdvancedChartBuilder(SCATTER_POLAR_DATA).scatter_polar("spd", "dir", color_column="grp")
+        # one Scatterpolar point set per group value, named after each group
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Scatterpolar) for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["evening", "morning"]
+
+    def test_size_column_sizes_markers(self) -> None:
+        fig = AdvancedChartBuilder(SCATTER_POLAR_DATA[:3]).scatter_polar("spd", "dir", size_column="sz")
+        # size= maps onto trace.marker.size as a per-point array
+        assert len(fig.data) == 1
+        assert fig.data[0].marker.size is not None
+        assert len(fig.data[0].marker.size) == 3
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(SCATTER_POLAR_DATA[:3]).scatter_polar("spd", "dir", theme="professional")
+        # go.Scatterpolar has a marker WITH a line sub-prop, so apply_theme's
+        # trace-polish loop runs cleanly. Professional theme = salmon paper; the
+        # polar axis lives on layout.polar (separate from xaxis/yaxis).
+        assert fig.layout.paper_bgcolor == "#fff1e5"
+        assert fig.layout.polar is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(SCATTER_POLAR_DATA[:3]).scatter_polar("spd", "dir", theme="light")
+        # light theme = white paper; apply_theme is polar-scatter-safe with zero changes
+        assert fig.layout.paper_bgcolor == "#ffffff"
+
+
 TIMELINE_DATA: list[dict[str, Any]] = [
     {"task": "Design", "start": "2024-01-01", "end": "2024-01-10", "grp": "A"},
     {"task": "Build", "start": "2024-01-05", "end": "2024-01-20", "grp": "B"},

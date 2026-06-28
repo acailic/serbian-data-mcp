@@ -96,6 +96,7 @@ async def create_chart(
       - "strip": y_column (+ optional x_column) → one jittered dot per raw observation
       - "bar_polar": r_column + x_column (angular) → radial bars around a circle (wind rose)
       - "radar": r_column + x_column (angular) → closed polar profile (spider/radar)
+      - "scatter_polar": r_column + x_column (angular) (+ size_column) → bare points on a cyclic polar grid
       - "timeline": start_column + end_column (+ names_column) → Gantt interval bars (duration/overlap)
       - "area": x_column + y_column (+ color_column) → stacked composition over an axis (energy/budget mix)
       - "animated_line": x_column + y_column + frame_column → time playback
@@ -160,6 +161,7 @@ async def create_chart(
         "strip",
         "bar_polar",
         "radar",
+        "scatter_polar",
         "timeline",
         "area",
         "animated_line",
@@ -470,6 +472,13 @@ def _build_chart(
         if not r_column or not x_column:
             raise ToolError("radar requires r_column and x_column (angular)")
         return builder.radar(r_column, x_column, title=title, theme=theme, color_column=color_column)
+
+    if chart_type == "scatter_polar":
+        if not r_column or not x_column:
+            raise ToolError("scatter_polar requires r_column and x_column (angular)")
+        return builder.scatter_polar(
+            r_column, x_column, title=title, theme=theme, color_column=color_column, size_column=size_column
+        )
 
     if chart_type == "timeline":
         if not start_column or not end_column:

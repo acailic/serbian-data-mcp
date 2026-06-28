@@ -137,6 +137,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "strip",
             "bar_polar",
             "radar",
+            "scatter_polar",
             "timeline",
             "area",
             "funnel_area",
@@ -633,6 +634,33 @@ async def test_create_chart_radar_missing_column_raises(monkeypatch) -> None:
     _wire_builders(monkeypatch, {})
     with pytest.raises(ToolError, match="radar requires r_column and x_column"):
         await create_chart(data=[{"axis": "econ", "score": 7}], chart_type="radar", r_column="", x_column="axis")
+
+
+async def test_create_chart_scatter_polar_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"dir": "N", "spd": 5, "sz": 4, "g": "morning"}],
+        chart_type="scatter_polar",
+        r_column="spd",
+        x_column="dir",
+        size_column="sz",
+        color_column="g",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "scatter_polar"
+    assert sink["args"] == ("spd", "dir")
+    assert sink["kwargs"]["title"] == ""
+    assert sink["kwargs"]["theme"] == "light"
+    assert sink["kwargs"]["color_column"] == "g"
+    assert sink["kwargs"]["size_column"] == "sz"
+
+
+async def test_create_chart_scatter_polar_missing_column_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="scatter_polar requires r_column and x_column"):
+        await create_chart(data=[{"dir": "N", "spd": 5}], chart_type="scatter_polar", r_column="", x_column="dir")
 
 
 async def test_create_chart_timeline_passthrough(monkeypatch) -> None:
