@@ -134,6 +134,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "strip",
             "bar_polar",
             "radar",
+            "timeline",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -576,6 +577,38 @@ async def test_create_chart_radar_missing_column_raises(monkeypatch) -> None:
     _wire_builders(monkeypatch, {})
     with pytest.raises(ToolError, match="radar requires r_column and x_column"):
         await create_chart(data=[{"axis": "econ", "score": 7}], chart_type="radar", r_column="", x_column="axis")
+
+
+async def test_create_chart_timeline_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"task": "Design", "start": "2024-01-01", "end": "2024-01-10", "g": "A"}],
+        chart_type="timeline",
+        start_column="start",
+        end_column="end",
+        names_column="task",
+        color_column="g",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "timeline"
+    assert sink["args"] == ("start", "end")
+    assert sink["kwargs"]["title"] == ""
+    assert sink["kwargs"]["theme"] == "light"
+    assert sink["kwargs"]["name_column"] == "task"
+    assert sink["kwargs"]["color_column"] == "g"
+
+
+async def test_create_chart_timeline_missing_column_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="timeline requires start_column and end_column"):
+        await create_chart(
+            data=[{"start": "2024-01-01", "end": "2024-01-10"}],
+            chart_type="timeline",
+            start_column="",
+            end_column="end",
+        )
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:

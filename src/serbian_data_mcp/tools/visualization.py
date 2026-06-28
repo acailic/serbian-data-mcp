@@ -61,6 +61,8 @@ async def create_chart(
     source_column: str = "",
     target_column: str = "",
     r_column: str = "",
+    start_column: str = "",
+    end_column: str = "",
 ) -> dict[str, Any]:
     """Create interactive charts from data. Supports 20+ chart types.
 
@@ -90,6 +92,7 @@ async def create_chart(
       - "strip": y_column (+ optional x_column) → one jittered dot per raw observation
       - "bar_polar": r_column + x_column (angular) → radial bars around a circle (wind rose)
       - "radar": r_column + x_column (angular) → closed polar profile (spider/radar)
+      - "timeline": start_column + end_column (+ names_column) → Gantt interval bars (duration/overlap)
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -121,6 +124,8 @@ async def create_chart(
         comparison_columns: 2 column names for comparison_bar
         trend_column: Sparkline time column
         top_n: Max entities for sparklines
+        start_column: Interval start (date) for timeline
+        end_column: Interval end (date) for timeline
     """
     all_types = {
         "line",
@@ -146,6 +151,7 @@ async def create_chart(
         "strip",
         "bar_polar",
         "radar",
+        "timeline",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -189,6 +195,8 @@ async def create_chart(
             source_column=source_column,
             target_column=target_column,
             r_column=r_column,
+            start_column=start_column,
+            end_column=end_column,
         )
     except ToolError:
         raise
@@ -236,6 +244,8 @@ def _build_chart(
     source_column: str = "",
     target_column: str = "",
     r_column: str = "",
+    start_column: str = "",
+    end_column: str = "",
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -406,6 +416,18 @@ def _build_chart(
         if not r_column or not x_column:
             raise ToolError("radar requires r_column and x_column (angular)")
         return builder.radar(r_column, x_column, title=title, theme=theme, color_column=color_column)
+
+    if chart_type == "timeline":
+        if not start_column or not end_column:
+            raise ToolError("timeline requires start_column and end_column")
+        return builder.timeline(
+            start_column,
+            end_column,
+            title=title,
+            theme=theme,
+            name_column=names_column or None,
+            color_column=color_column,
+        )
 
     if chart_type == "animated_line":
         if not x_column or not y_column or not frame_column:

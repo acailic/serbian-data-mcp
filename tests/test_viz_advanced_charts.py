@@ -1006,3 +1006,53 @@ class TestRadar:
         fig = AdvancedChartBuilder(RADAR_DATA[:3]).radar("score", "axis", theme="light")
         # light theme = white paper; apply_theme is polar-safe with zero changes
         assert fig.layout.paper_bgcolor == "#ffffff"
+
+
+TIMELINE_DATA: list[dict[str, Any]] = [
+    {"task": "Design", "start": "2024-01-01", "end": "2024-01-10", "grp": "A"},
+    {"task": "Build", "start": "2024-01-05", "end": "2024-01-20", "grp": "B"},
+    {"task": "Test", "start": "2024-01-15", "end": "2024-01-25", "grp": "A"},
+]
+
+
+class TestTimeline:
+    def test_returns_single_horizontal_bar_on_date_axis(self) -> None:
+        fig = AdvancedChartBuilder(TIMELINE_DATA[:2]).timeline("start", "end", title="Schedule")
+        assert isinstance(fig, go.Figure)
+        # px.timeline emits a SINGLE horizontal go.Bar trace; each interval is a
+        # bar whose `base` (start) is a datetime64 array and `x` its duration in ms.
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Bar)
+        assert fig.data[0].orientation == "h"
+        assert fig.layout.xaxis.type == "date"
+        # base carries the per-row start datetimes (None if px failed to cast)
+        assert fig.data[0].base is not None
+        assert len(fig.data[0].base) == 2
+        # durations in milliseconds are all positive (end > start for every row)
+        assert all(int(d) > 0 for d in fig.data[0].x)
+        assert fig.layout.title.text == "Schedule"
+
+    def test_name_column_places_each_row_on_its_own_swimlane(self) -> None:
+        fig = AdvancedChartBuilder(TIMELINE_DATA[:2]).timeline("start", "end", name_column="task")
+        # y carries the per-row task labels parallel to base/x
+        assert list(fig.data[0].y) == ["Design", "Build"]
+
+    def test_color_column_splits_one_trace_per_group(self) -> None:
+        fig = AdvancedChartBuilder(TIMELINE_DATA).timeline("start", "end", color_column="grp")
+        # one horizontal Bar trace per group value, named after each group
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Bar) and t.orientation == "h" for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["A", "B"]
+
+    def test_apply_theme_professional_preserves_date_axis(self) -> None:
+        fig = AdvancedChartBuilder(TIMELINE_DATA[:2]).timeline("start", "end", theme="professional")
+        # go.Bar has a marker WITH a line sub-prop, so apply_theme's trace-polish
+        # loop runs cleanly; professional theme = salmon paper, and the date axis
+        # type survives apply_theme's xaxis mutation.
+        assert fig.layout.paper_bgcolor == "#fff1e5"
+        assert fig.layout.xaxis.type == "date"
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(TIMELINE_DATA[:2]).timeline("start", "end", theme="light")
+        # light theme = white paper; apply_theme is timeline-safe with zero changes
+        assert fig.layout.paper_bgcolor == "#ffffff"

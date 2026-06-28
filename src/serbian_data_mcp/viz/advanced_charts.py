@@ -806,6 +806,54 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def timeline(
+        self,
+        start_column: str,
+        end_column: str,
+        title: str = "",
+        theme: str = "dark",
+        name_column: Optional[str] = None,
+        color_column: Optional[str] = None,
+    ) -> go.Figure:
+        """Create a Gantt timeline — temporal interval bars (one bar per span).
+
+        Each row is a continuous interval running from ``start_column`` to
+        ``end_column`` on a shared date axis; rows are laid out as horizontal
+        bars whose left edge marks the start, right edge the end. The canonical
+        professional chart for *duration and overlap* — project schedules,
+        event/contract spans, policy windows, hospital stays, machine uptimes —
+        that a line or bar chart cannot express because it encodes a *range*
+        per record, not a point. Ideal for Gantt-style task scheduling,
+        construction phases, and any "this thing was active from A to B" data.
+
+        Pass ``name_column`` to give each interval its own swimlane row on the Y
+        axis (task name, resource, person); when omitted all intervals stack on
+        a single row. Pass ``color_column`` to color bars by group (one Bar set
+        per group). px.timeline auto-casts ISO/date strings, so datetime
+        pre-casting is not required.
+
+        Args:
+            start_column: Interval start column (date/datetime/ISO string)
+            end_column: Interval end column (date/datetime/ISO string)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            name_column: Optional task/resource label column (one swimlane per value)
+            color_column: Optional grouping column (one bar color per group)
+        """
+        kwargs: dict[str, Any] = {
+            "x_start": start_column,
+            "x_end": end_column,
+            "title": title,
+        }
+        if name_column:
+            kwargs["y"] = name_column
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        fig = px.timeline(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,
