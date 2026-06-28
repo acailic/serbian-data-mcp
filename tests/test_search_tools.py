@@ -358,3 +358,55 @@ async def test_get_portal_statistics_mixed_success_and_failure(
 
     assert result["total_datasets"] == 99  # datasets call succeeded
     assert result["total_organizations"] == 0  # orgs call suppressed
+
+
+# ===========================================================================
+# intelligent_search + preview_dataset exception paths
+# ===========================================================================
+
+
+def _async_return(value: Any) -> Any:
+    """Build an async factory returning a fixed value (for get_catalog patches)."""
+
+    async def _factory() -> Any:
+        return value
+
+    return _factory
+
+
+class _RaisingSearchEngine:
+    """Stand-in SearchEngine whose search() always raises (exercises the wrap)."""
+
+    def __init__(self, exc: Exception) -> None:
+        self._exc = exc
+
+    async def search(self, query: str, max_results: int = 10, min_score: float = 0.3) -> list[Any]:
+        raise self._exc
+
+
+class _RaisingPreview:
+    """Stand-in DatasetPreview whose preview_dataset() raises a non-NotFound error."""
+
+    def __init__(self, exc: Exception) -> None:
+        self._exc = exc
+
+    async def preview_dataset(self, dataset_id: str, nrows: int = 10) -> dict[str, Any]:
+        raise self._exc
+
+
+@pytest.mark.asyncio
+async def test_intelligent_search_error_wraps_toolerror(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(search_mod.h, "get_catalog", _async_return(object()))
+    monkeypatch.setattr(search_mod, "SearchEngine", lambda catalog: _RaisingSearchEngine(RuntimeError("engine-down")))
+
+    with pytest.raises(ToolError, match="Intelligent search failed: engine-down"):
+        await search_mod.intelligent_search("population")
+
+
+@pytest.mark.asyncio
+async def test_preview_dataset_generic_error_wraps_toolerror(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(search_mod.h, "get_catalog", _async_return(object()))
+    monkeypatch.setattr(search_mod, "DatasetPreview", lambda catalog: _RaisingPreview(ValueError("preview broken")))
+
+    with pytest.raises(ToolError, match="Preview failed: preview broken"):
+        await search_mod.preview_dataset("ds-1")
