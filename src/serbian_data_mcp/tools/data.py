@@ -7,7 +7,7 @@ Contracts:
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 from fastmcp.exceptions import ToolError
@@ -170,7 +170,7 @@ async def browse_recent_datasets(days: int = 7, page_size: int = 20) -> dict[str
         days: Look-back window (1-365, default 7)
         page_size: Results to return (1-100, default 20)
     """
-    from datetime import datetime, timezone, UTC
+    from datetime import datetime, UTC
 
     client = await h.get_client()
     days = min(max(days, 1), 365)

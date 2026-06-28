@@ -14,7 +14,6 @@ from fastmcp.exceptions import ToolError
 
 from .. import mcp
 from ..viz.insights import extract_insights, generate_narrative, compute_derived_metrics
-from . import _helpers as h
 
 
 @mcp.tool()
@@ -36,7 +35,6 @@ async def data_profile(data: list[dict[str, Any]], sample_size: int = 5) -> dict
     if not data:
         raise ToolError("Empty dataset — pass data from get_resource_data()")
 
-    import numpy as np
     import pandas as pd
 
     df = pd.DataFrame(data)

@@ -13,10 +13,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-import plotly.graph_objects as go
 from plotly.io import to_html
-
-from .themes import SERBIAN_PALETTE, apply_theme
 
 
 def _generate_id() -> str:

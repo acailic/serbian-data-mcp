@@ -11,21 +11,17 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-import pandas as pd
 from fastmcp.exceptions import ToolError
 
 from .. import mcp
 from ..config import config
-from ..exceptions import VisualizationError
 from ..viz.charts import ChartBuilder
-from ..viz.exporters import export_html, export_json, fig_to_dict
+from ..viz.exporters import fig_to_dict
 from ..viz.themes import apply_theme, add_annotation, add_highlight_zone
 from ..viz.advanced_charts import AdvancedChartBuilder
-from ..viz.insights import extract_insights, generate_narrative, compute_derived_metrics
 from ..viz.infographics import create_infographic, create_dashboard
 from ..viz.tooltips import add_rich_tooltips, add_annotation_callouts, add_comparison_markers
 from ..viz.data_tables import data_table_html, data_table_css
-from . import _helpers as h
 
 
 @mcp.tool()

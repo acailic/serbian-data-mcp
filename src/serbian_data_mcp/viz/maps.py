@@ -12,9 +12,8 @@ from typing import Any, Optional
 import httpx
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 
-from .themes import apply_theme, SEMANTIC_COLORS
+from .themes import apply_theme
 
 logger = logging.getLogger(__name__)
 

@@ -6,15 +6,14 @@ for more expressive spatial data visualization.
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any, Optional
 
 import pandas as pd
 import plotly.graph_objects as go
 
-from .maps import SerbiaMapBuilder, _load_serbia_geojson, _HEAT_RED, _SEQUENTIAL_BLUE, _RED_BLUE_DIVERGING
-from .themes import apply_theme, SEMANTIC_COLORS
+from .maps import SerbiaMapBuilder, _HEAT_RED, _SEQUENTIAL_BLUE, _RED_BLUE_DIVERGING
+from .themes import apply_theme
 
 logger = logging.getLogger(__name__)
 

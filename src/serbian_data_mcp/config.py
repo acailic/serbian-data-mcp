@@ -6,7 +6,7 @@ import logging
 
 import json
 
-from .config_validation import validate_config, load_and_validate_config, ServerConfig
+from .config_validation import validate_config, ServerConfig
 
 logger = logging.getLogger(__name__)
 

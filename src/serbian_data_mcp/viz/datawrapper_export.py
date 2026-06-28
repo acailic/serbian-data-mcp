@@ -8,7 +8,6 @@ Optional dependency — works without Datawrapper but returns helpful error.
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from typing import Any, Optional

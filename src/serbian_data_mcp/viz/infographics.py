@@ -10,7 +10,6 @@ count-up animations, print stylesheet, and enhanced hover states.
 
 import contextlib
 import json
-from pathlib import Path
 from typing import Any, Optional
 
 import plotly.graph_objects as go
@@ -19,10 +18,7 @@ import pandas as pd
 from .charts import ChartBuilder
 from .themes import (
     apply_theme,
-    SERBIAN_PALETTE,
     add_annotation,
-    add_highlight_zone,
-    infographic_template,
 )
 from .data_tables import data_table_html, data_table_css
 
@@ -465,7 +461,7 @@ def create_infographic(
     Returns:
         Dict with 'html' (full page HTML), 'insights', 'chart_figure', 'metadata'
     """
-    from .insights import generate_narrative, extract_insights
+    from .insights import generate_narrative
 
     if not data:
         return {"error": "No data provided", "html": "", "insights": [], "chart_figure": None, "metadata": {}}

@@ -1,7 +1,7 @@
 """Data transformation utilities."""
 
 import logging
-from typing import Any, Dict, List, Optional, Callable, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 

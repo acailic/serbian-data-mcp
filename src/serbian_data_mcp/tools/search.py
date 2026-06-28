@@ -15,7 +15,6 @@ from typing import Any, Optional
 from fastmcp.exceptions import ToolError
 
 from .. import mcp
-from ..api.models import Dataset
 from ..catalog import AlternativeSuggestions, DatasetPreview, SearchEngine
 from ..catalog.exceptions import DatasetNotFound
 from . import _helpers as h

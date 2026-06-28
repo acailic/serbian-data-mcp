@@ -4,7 +4,7 @@ Adds heatmap, treemap, gauge/donut, funnel, and animated time-series
 using Plotly's full capabilities. All charts support theming via themes.py.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, Any
 
 import pandas as pd
 import plotly.graph_objects as go

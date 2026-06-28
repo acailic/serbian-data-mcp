@@ -1,6 +1,6 @@
 """Parse data from various formats."""
 
-from typing import Any, Union
+from typing import Union
 import json
 import logging
 import io

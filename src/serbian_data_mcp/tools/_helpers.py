@@ -10,7 +10,6 @@ from typing import Any, Optional, Union
 
 import pandas as pd
 
-from .. import mcp
 from ..api.client import UDataClient
 from ..api.models import Dataset, Organization, SearchResult
 from ..catalog import DatasetCatalog

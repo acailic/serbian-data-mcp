@@ -15,9 +15,7 @@ from .. import mcp
 from ..config import config
 from ..viz.maps import SerbiaMapBuilder
 from ..viz.exporters import export_html
-from ..viz.themes import apply_theme
 from ..viz.map_advanced import AdvancedMapBuilder
-from . import _helpers as h
 
 _map_builder: Optional[SerbiaMapBuilder] = None
 _adv_map_builder: Optional[AdvancedMapBuilder] = None
