@@ -81,6 +81,7 @@ async def create_chart(
       - "splom": columns (list) → pairwise scatter matrix for N variables
       - "parcoords": columns (list) → parallel coordinates for high-dim records
       - "density_contour": x_column + y_column → 2D density bands
+      - "sunburst": names_column + values_column (+ hierarchy_column) → radial hierarchy rings
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -131,6 +132,7 @@ async def create_chart(
         "splom",
         "parcoords",
         "density_contour",
+        "sunburst",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -263,6 +265,18 @@ def _build_chart(
         if not names_column or not values_column:
             raise ToolError("treemap requires names_column and values_column")
         return builder.treemap(
+            names_column,
+            values_column,
+            title=title,
+            theme=theme,
+            color_column=color_column,
+            hierarchy_column=hierarchy_column,
+        )
+
+    if chart_type == "sunburst":
+        if not names_column or not values_column:
+            raise ToolError("sunburst requires names_column and values_column")
+        return builder.sunburst(
             names_column,
             values_column,
             title=title,

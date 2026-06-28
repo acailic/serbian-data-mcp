@@ -177,6 +177,48 @@ class TestTreemap:
 
 
 # ---------------------------------------------------------------------------
+# sunburst
+# ---------------------------------------------------------------------------
+
+
+class TestSunburst:
+    def test_returns_single_sunburst_trace(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).sunburst("name", "value", title="T")
+        assert isinstance(fig, go.Figure)
+        # px.sunburst -> one Sunburst trace (a radial hierarchy, not nested rects)
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Sunburst)
+        assert fig.layout.title.text == "T"
+
+    def test_labels_carry_names(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).sunburst("name", "value")
+        # wedge labels are the name column values
+        labels = list(fig.data[0].labels)
+        assert "A" in labels and "B" in labels and "C" in labels
+
+    def test_hierarchy_adds_parent_ring(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).sunburst("name", "value", hierarchy_column="parent")
+        # path with hierarchy -> outer ring parents appear in labels
+        labels = list(fig.data[0].labels)
+        assert "top" in labels and "mid" in labels
+
+    def test_values_mapped_to_wedge(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).sunburst("name", "value")
+        # trace.values carries the value column (wedge angles)
+        assert list(fig.data[0].values) == [100, 200, 50]
+
+    def test_color_column_passes_through(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).sunburst("name", "value", color_column="color")
+        # numeric color -> marker.colors populated by px
+        assert fig.data[0].marker is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(TREEMAP_DATA).sunburst("name", "value", theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor
+        assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
 # gauge
 # ---------------------------------------------------------------------------
 

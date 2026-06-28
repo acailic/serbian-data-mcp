@@ -128,6 +128,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "splom",
             "parcoords",
             "density_contour",
+            "sunburst",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -496,6 +497,33 @@ async def test_create_chart_treemap_missing_columns_raises(monkeypatch) -> None:
     _wire_builders(monkeypatch, {})
     with pytest.raises(ToolError, match="treemap requires names_column and values_column"):
         await create_chart(data=[{"x": 1}], chart_type="treemap", names_column="n", values_column="")
+
+
+async def test_create_chart_sunburst_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"n": "A", "v": 1}],
+        chart_type="sunburst",
+        names_column="n",
+        values_column="v",
+        hierarchy_column="h",
+        color_column="c",
+        theme="dark",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "sunburst"
+    assert sink["args"] == ("n", "v")
+    assert sink["kwargs"]["hierarchy_column"] == "h"
+    assert sink["kwargs"]["color_column"] == "c"
+
+
+async def test_create_chart_sunburst_missing_columns_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="sunburst requires names_column and values_column"):
+        await create_chart(data=[{"x": 1}], chart_type="sunburst", names_column="n", values_column="")
+    with pytest.raises(ToolError, match="sunburst requires names_column and values_column"):
+        await create_chart(data=[{"x": 1}], chart_type="sunburst", names_column="", values_column="v")
 
 
 async def test_create_chart_gauge_passthrough(monkeypatch) -> None:

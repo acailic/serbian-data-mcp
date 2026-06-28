@@ -499,6 +499,48 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def sunburst(
+        self,
+        names_column: str,
+        values_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        hierarchy_column: Optional[str] = None,
+    ) -> go.Figure:
+        """Create a sunburst chart — radial hierarchy of concentric rings.
+
+        A rooted hierarchy laid out as nested rings around a center: each level
+        is one ring, each branch a wedge, wedge angle proportional to its value.
+        The canonical professional chart for part-to-whole hierarchy where the
+        *depth* matters as much as the size — budget by department→team→line,
+        website traffic by source→page→exit, organisational headcount. Distinct
+        from treemap (nested rectangles, easier for flat totals but depth and
+        adjacency are harder to read) and funnel/pie (single level only):
+        sunburst makes multi-level composition legible at a glance.
+
+        Args:
+            names_column: Labels for each segment/wedge
+            values_column: Size values for each wedge (angle)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional column for color grouping
+            hierarchy_column: Optional parent column for nested rings
+        """
+        path = [names_column]
+        if hierarchy_column:
+            path = [hierarchy_column, names_column]
+        fig = px.sunburst(
+            self.data,
+            path=path,
+            values=values_column,
+            color=color_column,
+            title=title,
+            color_discrete_sequence=SEMANTIC_COLORS,
+        )
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,
