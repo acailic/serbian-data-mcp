@@ -79,6 +79,7 @@ async def create_chart(
       - "candlestick": open/high/low/close columns → OHLC price candles
       - "ternary": a/b/c columns → 3-part compositional mixture triangle
       - "splom": columns (list) → pairwise scatter matrix for N variables
+      - "parcoords": columns (list) → parallel coordinates for high-dim records
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -127,6 +128,7 @@ async def create_chart(
         "candlestick",
         "ternary",
         "splom",
+        "parcoords",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -322,6 +324,16 @@ def _build_chart(
             theme=theme,
             color_column=color_column,
             size_column=size_column,
+        )
+
+    if chart_type == "parcoords":
+        if not columns or len(columns) < 2:
+            raise ToolError("parcoords requires columns (list of 2 or more)")
+        return builder.parcoords(
+            columns,
+            title=title,
+            theme=theme,
+            color_column=color_column,
         )
 
     if chart_type == "animated_line":

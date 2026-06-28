@@ -126,6 +126,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "candlestick",
             "ternary",
             "splom",
+            "parcoords",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -419,6 +420,31 @@ async def test_create_chart_splom_too_few_columns_raises(monkeypatch) -> None:
         await create_chart(data=[{"a": 1}], chart_type="splom", columns=["a"])
     with pytest.raises(ToolError, match="splom requires columns"):
         await create_chart(data=[{"a": 1}], chart_type="splom", columns=[])
+
+
+async def test_create_chart_parcoords_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"a": 1, "b": 2, "c": 3}],
+        chart_type="parcoords",
+        columns=["a", "b", "c"],
+        color_column="a",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "parcoords"
+    assert sink["args"] == (["a", "b", "c"],)
+    assert sink["kwargs"]["color_column"] == "a"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_parcoords_too_few_columns_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="parcoords requires columns"):
+        await create_chart(data=[{"a": 1}], chart_type="parcoords", columns=["a"])
+    with pytest.raises(ToolError, match="parcoords requires columns"):
+        await create_chart(data=[{"a": 1}], chart_type="parcoords", columns=[])
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:

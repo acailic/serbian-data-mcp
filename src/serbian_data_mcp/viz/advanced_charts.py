@@ -411,6 +411,45 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def parcoords(
+        self,
+        columns: list[str],
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        color_continuous_scale: str = "RdBu_r",
+    ) -> go.Figure:
+        """Create a parallel coordinates plot — one vertical axis per variable.
+
+        Each numeric column becomes a parallel vertical ribbon; every row is a
+        single polyline threaded across all ribbons. The canonical professional
+        chart for high-dimensional / multivariate comparison — unlike a SPLOM
+        (whose cell count grows as N²) it scales to many variables at once and
+        lets the eye trace how a single record moves through every dimension
+        simultaneously. Ideal for multi-indicator records (a city's pollution +
+        population + income + temperature as one connected line each), outlier
+        detection across many metrics, and spotting which variables separate
+        clusters. Pass ``color_column`` (numeric) to gradient-color each line by
+        a continuous variable.
+
+        Args:
+            columns: Numeric columns to lay out as parallel axes (≥ 2 recommended)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional numeric column gradient-coloring each line
+            color_continuous_scale: Plotly colorscale name when color_column is set
+        """
+        kwargs: dict[str, Any] = {
+            "dimensions": columns,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_continuous_scale"] = color_continuous_scale
+        fig = px.parallel_coordinates(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,

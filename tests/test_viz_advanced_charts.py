@@ -574,3 +574,50 @@ class TestSplom:
         fig = AdvancedChartBuilder(SPLOM_DATA).splom(["a", "b", "c"], theme="light")
         # apply_theme ran: light theme sets a concrete paper_bgcolor
         assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
+# parcoords
+# ---------------------------------------------------------------------------
+
+
+class TestParcoords:
+    def test_returns_single_parcoords_trace_with_dimensions(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).parcoords(["a", "b", "c"], title="T")
+        assert isinstance(fig, go.Figure)
+        # px.parallel_coordinates emits ONE go.Parcoords trace carrying every
+        # column as a vertical ribbon on its nested .dimensions
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Parcoords)
+        assert len(fig.data[0].dimensions) == 3
+        assert fig.data[0].dimensions[0].label == "a"
+        assert fig.data[0].dimensions[1].label == "b"
+        assert fig.data[0].dimensions[2].label == "c"
+        assert list(fig.data[0].dimensions[0].values) == [1, 2, 3]
+        assert fig.layout.title.text == "T"
+
+    def test_two_columns_single_trace(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).parcoords(["a", "b"])
+        assert isinstance(fig.data[0], go.Parcoords)
+        assert len(fig.data[0].dimensions) == 2
+
+    def test_color_column_sets_line_color(self) -> None:
+        # with no color mapping, the trace's line.color is None
+        base = AdvancedChartBuilder(SPLOM_DATA).parcoords(["a", "b", "c"])
+        assert base.data[0].line.color is None
+        # color_column gradient-colors each polyline by a numeric variable
+        fig = AdvancedChartBuilder(SPLOM_DATA).parcoords(["a", "b", "c"], color_column="a")
+        assert fig.data[0].line.color is not None
+
+    def test_colorscale_override_runs(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).parcoords(
+            ["a", "b", "c"], color_column="a", color_continuous_scale="Viridis"
+        )
+        # custom scale accepted; line still gradient-colored
+        assert fig.data[0].line.color is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(SPLOM_DATA).parcoords(["a", "b", "c"], theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor; go.Parcoords
+        # has no marker attr so its trace-polish loop skips it cleanly
+        assert fig.layout.paper_bgcolor is not None
