@@ -16,6 +16,7 @@ from fastmcp.exceptions import ToolError
 
 from serbian_data_mcp.tools import charts_3d as charts3d_mod
 from serbian_data_mcp.tools.charts_3d import (
+    create_cone_3d,
     create_isosurface_3d,
     create_line_3d,
     create_mesh_3d,
@@ -87,6 +88,19 @@ class _FakeBuilder:
         CALLS["value"] = value
         CALLS["kwargs"] = kwargs
         return _Sentinel("isosurface_3d")
+
+    def cone_3d(self, x, y, z, u, v, w, **kwargs):
+        # cone_3d takes 6 positionals (x, y, z, u, v, w), so it needs its own
+        # recorder rather than the (x, y, z, **kw) _make_method shape.
+        CALLS["method"] = "cone_3d"
+        CALLS["x"] = x
+        CALLS["y"] = y
+        CALLS["z"] = z
+        CALLS["u"] = u
+        CALLS["v"] = v
+        CALLS["w"] = w
+        CALLS["kwargs"] = kwargs
+        return _Sentinel("cone_3d")
 
 
 @pytest.fixture(autouse=True)
@@ -375,4 +389,101 @@ async def test_create_isosurface_3d_exception_wrapped(monkeypatch, sandbox_expor
             y_column="y",
             z_column="z",
             value_column="temp",
+        )
+
+
+# ---------------------------------------------------------------------------
+# create_cone_3d
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_create_cone_3d_success(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch, "<html>CONE</html>")
+
+    rows = [
+        {"x": 0.0, "y": 0.0, "z": 0.0, "u": 1.0, "v": 0.0, "w": 0.0},
+        {"x": 1.0, "y": 0.0, "z": 0.0, "u": 0.0, "v": 1.0, "w": 0.0},
+    ]
+    result = await create_cone_3d(
+        rows,
+        x_column="x",
+        y_column="y",
+        z_column="z",
+        u_column="u",
+        v_column="v",
+        w_column="w",
+        title="Field",
+        theme="light",
+        sizemode="absolute",
+        sizeref=2.0,
+        anchor="tip",
+        colorscale="RdBu",
+        filename="cone",
+    )
+
+    calls = CALLS
+    assert calls["method"] == "cone_3d"
+    assert (calls["x"], calls["y"], calls["z"], calls["u"], calls["v"], calls["w"]) == (
+        "x",
+        "y",
+        "z",
+        "u",
+        "v",
+        "w",
+    )
+    assert calls["kwargs"] == {
+        "title": "Field",
+        "theme": "light",
+        "sizemode": "absolute",
+        "sizeref": 2.0,
+        "anchor": "tip",
+        "colorscale": "RdBu",
+    }
+    assert result == {"filepath": str(sandbox_export_dir / "cone.html"), "title": "Field", "rows": 2}
+    assert (sandbox_export_dir / "cone.html").read_text(encoding="utf-8") == "<html>CONE</html>"
+
+
+@pytest.mark.asyncio
+async def test_create_cone_3d_defaults(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch)
+
+    await create_cone_3d(
+        [{"x": 0, "y": 0, "z": 0, "u": 1, "v": 0, "w": 0}],
+        x_column="x",
+        y_column="y",
+        z_column="z",
+        u_column="u",
+        v_column="v",
+        w_column="w",
+    )
+
+    kw = CALLS["kwargs"]
+    assert kw["theme"] == "dark"
+    assert kw["sizemode"] == "scaled"
+    assert kw["sizeref"] == 1.0
+    assert kw["anchor"] == "tail"
+    assert kw["colorscale"] == "Viridis"
+
+
+@pytest.mark.asyncio
+async def test_create_cone_3d_exception_wrapped(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    monkeypatch.setattr(
+        _FakeBuilder,
+        "cone_3d",
+        lambda self, x, y, z, u, v, w, **k: (_ for _ in ()).throw(ValueError("cone-bad")),
+    )
+
+    with pytest.raises(ToolError, match=r"3D cone chart failed: cone-bad"):
+        await create_cone_3d(
+            [{"x": 0, "y": 0, "z": 0, "u": 1, "v": 0, "w": 0}],
+            x_column="x",
+            y_column="y",
+            z_column="z",
+            u_column="u",
+            v_column="v",
+            w_column="w",
         )

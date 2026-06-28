@@ -341,3 +341,68 @@ class Chart3DBuilder:
         )
         apply_theme(fig, theme)
         return fig
+
+    def cone_3d(
+        self,
+        x_column: str,
+        y_column: str,
+        z_column: str,
+        u_column: str,
+        v_column: str,
+        w_column: str,
+        title: str = "",
+        theme: str = "dark",
+        sizemode: str = "scaled",
+        sizeref: float = 1.0,
+        anchor: str = "tail",
+        colorscale: str = "Viridis",
+    ) -> go.Figure:
+        """Create a 3D vector field (quiver plot) of direction + magnitude.
+
+        Renders a cone at each (x, y, z) anchor pointing along the vector
+        (u, v, w) — a 3D arrow field. Distinct from the other five 3D types,
+        which encode scalar position / height / intensity: a cone field encodes
+        a *vector* (direction + magnitude) at each sample, so it reveals flow,
+        gradient, or force structure rather than a surface or locus.
+
+        Cones are colored by vector magnitude (|(u, v, w)|) via the colorscale,
+        sized by ``sizeref``, and anchored tail/center/tip via ``anchor``.
+        Plotly renders client-side over WebGL — no SciPy or regular grid needed.
+
+        Args:
+            x_column: Column for the anchor X position
+            y_column: Column for the anchor Y position
+            z_column: Column for the anchor Z position (depth)
+            u_column: Column for the vector X component
+            v_column: Column for the vector Y component
+            w_column: Column for the vector Z component
+            title: Chart title
+            theme: 'dark', 'light', or 'professional'
+            sizemode: 'scaled' (cones scale with magnitude, default) or
+                'absolute' (uniform length)
+            sizeref: Scale factor controlling cone length (larger = longer)
+            anchor: Where the cone attaches to the point — 'tail' (default),
+                'center', or 'tip'
+            colorscale: Plotly colorscale name for magnitude mapping
+        """
+        cone = go.Cone(
+            x=self.data[x_column].tolist(),
+            y=self.data[y_column].tolist(),
+            z=self.data[z_column].tolist(),
+            u=self.data[u_column].tolist(),
+            v=self.data[v_column].tolist(),
+            w=self.data[w_column].tolist(),
+            sizemode=sizemode,
+            sizeref=sizeref,
+            anchor=anchor,
+            colorscale=colorscale,
+        )
+        fig = go.Figure(data=[cone])
+        if title:
+            fig.update_layout(title={"text": title})
+        fig.update_layout(
+            scene=self._scene_layout(theme),
+            margin={"l": 0, "r": 0, "t": 60, "b": 0},
+        )
+        apply_theme(fig, theme)
+        return fig

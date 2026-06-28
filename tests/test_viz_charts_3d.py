@@ -57,6 +57,14 @@ ISOSURFACE_DATA: list[dict[str, Any]] = [
     {"x": 1.0, "y": 1.0, "z": 1.0, "temp": 20.0},
 ]
 
+# 3D vector field for the cone / quiver plot (anchor x,y,z + vector u,v,w)
+CONE_DATA: list[dict[str, Any]] = [
+    {"x": 0.0, "y": 0.0, "z": 0.0, "u": 1.0, "v": 0.0, "w": 0.0},
+    {"x": 1.0, "y": 0.0, "z": 0.0, "u": 0.0, "v": 1.0, "w": 0.0},
+    {"x": 0.0, "y": 1.0, "z": 0.0, "u": 0.0, "v": 0.0, "w": 1.0},
+    {"x": 1.0, "y": 1.0, "z": 1.0, "u": 1.0, "v": 1.0, "w": 1.0},
+]
+
 
 # ---------------------------------------------------------------------------
 # __init__ + import surface
@@ -299,6 +307,62 @@ class TestIsosurface3D:
         from serbian_data_mcp.viz.themes import PROFESSIONAL_PAPER
 
         prof = Chart3DBuilder(ISOSURFACE_DATA).isosurface_3d("x", "y", "z", "temp", theme="professional")
+        # 3D scene honors the FT salmon-paper background + ink-dark axis text
+        assert prof.layout.scene.xaxis.backgroundcolor == PROFESSIONAL_PAPER
+        assert prof.layout.scene.xaxis.tickfont.color == "#333333"
+
+
+# ---------------------------------------------------------------------------
+# cone_3d
+# ---------------------------------------------------------------------------
+
+
+class TestCone3D:
+    def test_returns_cone_trace_with_xyz_and_uvw(self) -> None:
+        fig = Chart3DBuilder(CONE_DATA).cone_3d("x", "y", "z", "u", "v", "w", title="Field")
+        assert isinstance(fig, go.Figure)
+        assert isinstance(fig.data[0], go.Cone)
+        tr = fig.data[0]
+        assert list(tr.x) == [0.0, 1.0, 0.0, 1.0]
+        assert list(tr.z) == [0.0, 0.0, 0.0, 1.0]
+        assert list(tr.u) == [1.0, 0.0, 0.0, 1.0]
+        assert list(tr.w) == [0.0, 0.0, 1.0, 1.0]
+        assert fig.layout.title.text == "Field"
+        # scene styled by the 3D builder
+        assert fig.layout.scene.xaxis.showbackground is True
+
+    def test_default_sizemode_scaled(self) -> None:
+        fig = Chart3DBuilder(CONE_DATA).cone_3d("x", "y", "z", "u", "v", "w")
+        assert fig.data[0].sizemode == "scaled"
+
+    def test_sizemode_absolute_passthrough(self) -> None:
+        fig = Chart3DBuilder(CONE_DATA).cone_3d("x", "y", "z", "u", "v", "w", sizemode="absolute")
+        assert fig.data[0].sizemode == "absolute"
+
+    def test_anchor_and_sizeref_passthrough(self) -> None:
+        fig = Chart3DBuilder(CONE_DATA).cone_3d("x", "y", "z", "u", "v", "w", anchor="tip", sizeref=2.5)
+        assert fig.data[0].anchor == "tip"
+        assert fig.data[0].sizeref == 2.5
+
+    def test_custom_colorscale_override(self) -> None:
+        # Plotly resolves a named colorscale to its rgb stop list at construction;
+        # verify the override took effect by comparing first-stop colors.
+        viridis = Chart3DBuilder(CONE_DATA).cone_3d("x", "y", "z", "u", "v", "w")
+        rdbu = Chart3DBuilder(CONE_DATA).cone_3d("x", "y", "z", "u", "v", "w", colorscale="RdBu")
+        assert viridis.data[0].colorscale[0][1] != rdbu.data[0].colorscale[0][1]
+        # RdBu's low stop is a deep red
+        assert rdbu.data[0].colorscale[0][1] == "rgb(103,0,31)"
+
+    def test_light_theme_switches_scene_bgcolor(self) -> None:
+        dark = Chart3DBuilder(CONE_DATA).cone_3d("x", "y", "z", "u", "v", "w", theme="dark")
+        light = Chart3DBuilder(CONE_DATA).cone_3d("x", "y", "z", "u", "v", "w", theme="light")
+        assert dark.layout.scene.xaxis.backgroundcolor == "#16213e"
+        assert light.layout.scene.xaxis.backgroundcolor == "#f8f9fa"
+
+    def test_professional_theme_salmon_scene(self) -> None:
+        from serbian_data_mcp.viz.themes import PROFESSIONAL_PAPER
+
+        prof = Chart3DBuilder(CONE_DATA).cone_3d("x", "y", "z", "u", "v", "w", theme="professional")
         # 3D scene honors the FT salmon-paper background + ink-dark axis text
         assert prof.layout.scene.xaxis.backgroundcolor == PROFESSIONAL_PAPER
         assert prof.layout.scene.xaxis.tickfont.color == "#333333"

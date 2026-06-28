@@ -6,6 +6,7 @@ Contracts:
   - create_surface_3d(data, x_column, y_column, z_column) → HTML filepath
   - create_mesh_3d(data, x_column, y_column, z_column) → HTML filepath
   - create_isosurface_3d(data, x_column, y_column, z_column, value_column) → HTML filepath
+  - create_cone_3d(data, x_column, y_column, z_column, u_column, v_column, w_column) → HTML filepath
 
 These expose the WebGL-rendered 3D builders from ``viz.charts_3d.Chart3DBuilder``
 as MCP tools so the server's clients can produce orbit-able, depth-rich charts
@@ -293,3 +294,70 @@ async def create_isosurface_3d(
         return {"filepath": filepath, "title": title, "rows": len(data)}
     except Exception as e:
         raise ToolError(f"3D isosurface chart failed: {e}") from e
+
+
+@mcp.tool()
+async def create_cone_3d(
+    data: list[dict[str, Any]],
+    x_column: str,
+    y_column: str,
+    z_column: str,
+    u_column: str,
+    v_column: str,
+    w_column: str,
+    title: str = "",
+    theme: str = "dark",
+    sizemode: str = "scaled",
+    sizeref: float = 1.0,
+    anchor: str = "tail",
+    colorscale: str = "Viridis",
+    filename: str = "cone_3d",
+) -> dict[str, Any]:
+    """Interactive 3D vector field / quiver plot (WebGL, orbit-able).
+
+    Renders a cone at each (x, y, z) anchor pointing along the vector
+    (u, v, w) — a 3D arrow field of direction + magnitude. Cones are colored
+    by vector magnitude and sized by sizeref. Distinct from the scalar 3D
+    charts: a cone field encodes a *vector* (flow, gradient, force) at each
+    sample point.
+
+    Ideal for: wind / air-flow fields, magnetic or electric fields, fluid-flow
+    simulations, gradient directions across a 3D domain.
+
+    Returns: {filepath, title, rows}
+
+    Args:
+        data: Row dicts (one per vector sample)
+        x_column: Column for the anchor X position
+        y_column: Column for the anchor Y position
+        z_column: Column for the anchor Z position (depth)
+        u_column: Column for the vector X component
+        v_column: Column for the vector Y component
+        w_column: Column for the vector Z component
+        title: Chart title
+        theme: 'dark', 'light', or 'professional'
+        sizemode: 'scaled' (default) or 'absolute'
+        sizeref: Cone length scale factor
+        anchor: 'tail' (default), 'center', or 'tip'
+        colorscale: Plotly colorscale name for magnitude mapping
+        filename: Output filename (without .html)
+    """
+    try:
+        fig = Chart3DBuilder(data).cone_3d(
+            x_column,
+            y_column,
+            z_column,
+            u_column,
+            v_column,
+            w_column,
+            title=title,
+            theme=theme,
+            sizemode=sizemode,
+            sizeref=sizeref,
+            anchor=anchor,
+            colorscale=colorscale,
+        )
+        filepath = _save_html(fig, filename)
+        return {"filepath": filepath, "title": title, "rows": len(data)}
+    except Exception as e:
+        raise ToolError(f"3D cone chart failed: {e}") from e
