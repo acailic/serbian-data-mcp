@@ -16,6 +16,7 @@ from fastmcp.exceptions import ToolError
 
 from serbian_data_mcp.tools import charts_3d as charts3d_mod
 from serbian_data_mcp.tools.charts_3d import (
+    create_isosurface_3d,
     create_line_3d,
     create_mesh_3d,
     create_scatter_3d,
@@ -75,6 +76,17 @@ class _FakeBuilder:
     line_3d = _make_method("line_3d")
     surface_3d = _make_method("surface_3d")
     mesh_3d = _make_method("mesh_3d")
+
+    def isosurface_3d(self, x, y, z, value, **kwargs):
+        # isosurface_3d takes a 4th positional (value_column), so it needs its
+        # own recorder rather than the (x, y, z, **kw) _make_method shape.
+        CALLS["method"] = "isosurface_3d"
+        CALLS["x"] = x
+        CALLS["y"] = y
+        CALLS["z"] = z
+        CALLS["value"] = value
+        CALLS["kwargs"] = kwargs
+        return _Sentinel("isosurface_3d")
 
 
 @pytest.fixture(autouse=True)
@@ -283,3 +295,84 @@ async def test_create_mesh_3d_exception_wrapped(monkeypatch, sandbox_export_dir)
 
     with pytest.raises(ToolError, match=r"3D mesh chart failed: hull-bad"):
         await create_mesh_3d([{"x": 0, "y": 0, "z": 1}], x_column="x", y_column="y", z_column="z")
+
+
+# ---------------------------------------------------------------------------
+# create_isosurface_3d
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_create_isosurface_3d_success(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch, "<html>ISO</html>")
+
+    rows = [{"x": 0.0, "y": 0.0, "z": 0.0, "temp": 5.0}, {"x": 1.0, "y": 1.0, "z": 1.0, "temp": 20.0}]
+    result = await create_isosurface_3d(
+        rows,
+        x_column="x",
+        y_column="y",
+        z_column="z",
+        value_column="temp",
+        title="Iso",
+        theme="light",
+        isomin=10.0,
+        isomax=15.0,
+        colorscale="RdBu",
+        opacity=0.3,
+        filename="iso",
+    )
+
+    calls = CALLS
+    assert calls["method"] == "isosurface_3d"
+    assert (calls["x"], calls["y"], calls["z"], calls["value"]) == ("x", "y", "z", "temp")
+    assert calls["kwargs"] == {
+        "title": "Iso",
+        "theme": "light",
+        "isomin": 10.0,
+        "isomax": 15.0,
+        "colorscale": "RdBu",
+        "opacity": 0.3,
+    }
+    assert result == {"filepath": str(sandbox_export_dir / "iso.html"), "title": "Iso", "rows": 2}
+    assert (sandbox_export_dir / "iso.html").read_text(encoding="utf-8") == "<html>ISO</html>"
+
+
+@pytest.mark.asyncio
+async def test_create_isosurface_3d_defaults(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch)
+
+    await create_isosurface_3d(
+        [{"x": 0, "y": 0, "z": 0, "temp": 1}],
+        x_column="x",
+        y_column="y",
+        z_column="z",
+        value_column="temp",
+    )
+
+    kw = CALLS["kwargs"]
+    assert kw["theme"] == "dark"
+    assert kw["isomin"] is None
+    assert kw["isomax"] is None
+    assert kw["colorscale"] == "Viridis"
+    assert kw["opacity"] == 0.5
+
+
+@pytest.mark.asyncio
+async def test_create_isosurface_3d_exception_wrapped(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    monkeypatch.setattr(
+        _FakeBuilder,
+        "isosurface_3d",
+        lambda self, x, y, z, value, **k: (_ for _ in ()).throw(ValueError("iso-bad")),
+    )
+
+    with pytest.raises(ToolError, match=r"3D isosurface chart failed: iso-bad"):
+        await create_isosurface_3d(
+            [{"x": 0, "y": 0, "z": 0, "temp": 1}],
+            x_column="x",
+            y_column="y",
+            z_column="z",
+            value_column="temp",
+        )

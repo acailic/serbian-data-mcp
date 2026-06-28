@@ -5,6 +5,7 @@ Contracts:
   - create_line_3d(data, x_column, y_column, z_column) → HTML filepath
   - create_surface_3d(data, x_column, y_column, z_column) → HTML filepath
   - create_mesh_3d(data, x_column, y_column, z_column) → HTML filepath
+  - create_isosurface_3d(data, x_column, y_column, z_column, value_column) → HTML filepath
 
 These expose the WebGL-rendered 3D builders from ``viz.charts_3d.Chart3DBuilder``
 as MCP tools so the server's clients can produce orbit-able, depth-rich charts
@@ -232,3 +233,63 @@ async def create_mesh_3d(
         return {"filepath": filepath, "title": title, "rows": len(data)}
     except Exception as e:
         raise ToolError(f"3D mesh chart failed: {e}") from e
+
+
+@mcp.tool()
+async def create_isosurface_3d(
+    data: list[dict[str, Any]],
+    x_column: str,
+    y_column: str,
+    z_column: str,
+    value_column: str,
+    title: str = "",
+    theme: str = "dark",
+    isomin: Optional[float] = None,
+    isomax: Optional[float] = None,
+    colorscale: str = "Viridis",
+    opacity: float = 0.5,
+    filename: str = "isosurface_3d",
+) -> dict[str, Any]:
+    """Interactive 3D iso-surface from a volumetric scalar field (WebGL, orbit-able).
+
+    Renders the 3D boundary where ``value_column`` falls within [isomin, isomax] —
+    a level set of a continuous fourth variable sampled across (x, y, z). The
+    marching-cubes extraction runs client-side at render, so scattered samples
+    are accepted without a regular grid or SciPy.
+
+    Ideal for: pollution/concentration thresholds across a 3D monitoring volume,
+    isotherms, groundwater head surfaces, any "region where value ≥ threshold".
+
+    Returns: {filepath, title, rows}
+
+    Args:
+        data: Row dicts (one per volumetric sample point)
+        x_column: Column for the X axis
+        y_column: Column for the Y axis
+        z_column: Column for the Z axis (depth)
+        value_column: Column whose level sets define the surface
+        title: Chart title
+        theme: 'dark', 'light', or 'professional'
+        isomin: Lower scalar bound (defaults to column min)
+        isomax: Upper scalar bound (defaults to column max)
+        colorscale: Plotly colorscale name for value mapping
+        opacity: Surface opacity (0–1)
+        filename: Output filename (without .html)
+    """
+    try:
+        fig = Chart3DBuilder(data).isosurface_3d(
+            x_column,
+            y_column,
+            z_column,
+            value_column,
+            title=title,
+            theme=theme,
+            isomin=isomin,
+            isomax=isomax,
+            colorscale=colorscale,
+            opacity=opacity,
+        )
+        filepath = _save_html(fig, filename)
+        return {"filepath": filepath, "title": title, "rows": len(data)}
+    except Exception as e:
+        raise ToolError(f"3D isosurface chart failed: {e}") from e

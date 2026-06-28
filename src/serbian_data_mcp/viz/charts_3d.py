@@ -278,3 +278,66 @@ class Chart3DBuilder:
         )
         apply_theme(fig, theme)
         return fig
+
+    def isosurface_3d(
+        self,
+        x_column: str,
+        y_column: str,
+        z_column: str,
+        value_column: str,
+        title: str = "",
+        theme: str = "dark",
+        isomin: Optional[float] = None,
+        isomax: Optional[float] = None,
+        colorscale: str = "Viridis",
+        opacity: float = 0.5,
+    ) -> go.Figure:
+        """Create a 3D iso-surface from a volumetric scalar field.
+
+        An iso-surface is the 3D locus where a scalar ``value_column`` equals a
+        threshold — the boundary of a region (e.g. the surface enclosing every
+        point where PM2.5 concentration ≥ 50 µg/m³, or the 15°C isotherm in a
+        temperature volume). Distinct from :meth:`surface_3d` (a single
+        z=f(x,y) height sheet) and :meth:`mesh_3d` (a hull through scattered
+        points with no scalar field): an iso-surface extracts *level sets* of a
+        fourth continuous variable sampled across (x, y, z).
+
+        Plotly accepts scattered (x, y, z, value) samples and runs the
+        marching-cubes iso-extraction client-side at JS render time, so no
+        SciPy or regular grid is required to build the figure.
+
+        Args:
+            x_column: Column for the X axis
+            y_column: Column for the Y axis
+            z_column: Column for the Z axis (depth)
+            value_column: Column whose level sets define the surface
+            title: Chart title
+            theme: 'dark', 'light', or 'professional'
+            isomin: Lower scalar bound of the iso region; defaults to the
+                column minimum
+            isomax: Upper scalar bound of the iso region; defaults to the
+                column maximum
+            colorscale: Plotly colorscale name for value mapping
+            opacity: Surface opacity (0–1) so nested/overlapping level sets
+                remain legible
+        """
+        values = self.data[value_column].tolist()
+        iso = go.Isosurface(
+            x=self.data[x_column].tolist(),
+            y=self.data[y_column].tolist(),
+            z=self.data[z_column].tolist(),
+            value=values,
+            isomin=isomin if isomin is not None else float(min(values)),
+            isomax=isomax if isomax is not None else float(max(values)),
+            colorscale=colorscale,
+            opacity=opacity,
+        )
+        fig = go.Figure(data=[iso])
+        if title:
+            fig.update_layout(title={"text": title})
+        fig.update_layout(
+            scene=self._scene_layout(theme),
+            margin={"l": 0, "r": 0, "t": 60, "b": 0},
+        )
+        apply_theme(fig, theme)
+        return fig
