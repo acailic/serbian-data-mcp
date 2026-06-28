@@ -60,6 +60,7 @@ async def create_chart(
     columns: list[str] = [],
     source_column: str = "",
     target_column: str = "",
+    r_column: str = "",
 ) -> dict[str, Any]:
     """Create interactive charts from data. Supports 20+ chart types.
 
@@ -87,6 +88,7 @@ async def create_chart(
       - "sunburst": names_column + values_column (+ hierarchy_column) → radial hierarchy rings
       - "sankey": source_column + target_column + values_column → proportional flow between nodes
       - "strip": y_column (+ optional x_column) → one jittered dot per raw observation
+      - "bar_polar": r_column + x_column (angular) → radial bars around a circle (wind rose)
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -141,6 +143,7 @@ async def create_chart(
         "sunburst",
         "sankey",
         "strip",
+        "bar_polar",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -183,6 +186,7 @@ async def create_chart(
             columns=columns,
             source_column=source_column,
             target_column=target_column,
+            r_column=r_column,
         )
     except ToolError:
         raise
@@ -229,6 +233,7 @@ def _build_chart(
     columns: list[str] = [],
     source_column: str = "",
     target_column: str = "",
+    r_column: str = "",
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -389,6 +394,11 @@ def _build_chart(
         if not y_column:
             raise ToolError("strip requires y_column")
         return builder.strip(y_column, x_column=x_column or None, title=title, theme=theme, color_column=color_column)
+
+    if chart_type == "bar_polar":
+        if not r_column or not x_column:
+            raise ToolError("bar_polar requires r_column and x_column (angular)")
+        return builder.bar_polar(r_column, x_column, title=title, theme=theme, color_column=color_column)
 
     if chart_type == "animated_line":
         if not x_column or not y_column or not frame_column:

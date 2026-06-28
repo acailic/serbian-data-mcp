@@ -598,6 +598,45 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def bar_polar(
+        self,
+        r_column: str,
+        theta_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+    ) -> go.Figure:
+        """Create a polar bar / wind-rose chart — radial bars around a circle.
+
+        Each angular position (``theta``) carries a radial bar whose length
+        encodes ``r``. The canonical professional chart for *directional* or
+        *cyclical* data: wind speed by compass direction (wind rose), rainfall
+        by wind direction, sales/traffic by weekday arranged around a clock,
+        resource allocation by compass sector. Distinct from a linear bar chart
+        (whose x axis does not wrap) because the angular axis is cyclic
+        (N→E→S→W→N) and from a radar/scatter_polar because magnitude is shown
+        as a filled bar sector rather than a point/line. Pass
+        ``color_column`` to stack a second grouping as one bar set per group.
+
+        Args:
+            r_column: Numeric radial magnitude column (bar length)
+            theta_column: Angular/directional category column (compass, weekday, sector)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional second grouping column (one bar set per group)
+        """
+        kwargs: dict[str, Any] = {
+            "r": r_column,
+            "theta": theta_column,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        fig = px.bar_polar(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def sunburst(
         self,
         names_column: str,

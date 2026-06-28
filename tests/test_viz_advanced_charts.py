@@ -898,3 +898,55 @@ class TestStrip:
         # go.Box has a marker WITH a line sub-prop, so apply_theme's trace-polish
         # loop runs cleanly; professional theme = salmon paper.
         assert fig.layout.paper_bgcolor == "#fff1e5"
+
+
+# ---------------------------------------------------------------------------
+# bar_polar
+# ---------------------------------------------------------------------------
+
+BAR_POLAR_DATA: list[dict[str, Any]] = [
+    {"dir": "N", "spd": 5, "grp": "x"},
+    {"dir": "E", "spd": 8, "grp": "x"},
+    {"dir": "S", "spd": 3, "grp": "y"},
+    {"dir": "W", "spd": 9, "grp": "y"},
+]
+
+
+class TestBarPolar:
+    def test_returns_single_barpolar_trace(self) -> None:
+        fig = AdvancedChartBuilder(BAR_POLAR_DATA).bar_polar("spd", "dir", title="Wind")
+        assert isinstance(fig, go.Figure)
+        # px.bar_polar emits a SINGLE go.Barpolar trace carrying r/theta arrays
+        # (no per-cell nesting) — one radial bar per angular position.
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Barpolar)
+        assert [int(v) for v in fig.data[0].r] == [5, 8, 3, 9]
+        assert list(fig.data[0].theta) == ["N", "E", "S", "W"]
+        assert fig.layout.title.text == "Wind"
+
+    def test_color_column_splits_one_trace_per_group(self) -> None:
+        fig = AdvancedChartBuilder(BAR_POLAR_DATA).bar_polar("spd", "dir", color_column="grp")
+        # one Barpolar trace per group value (grp has 2: x, y), named after each group
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Barpolar) for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["x", "y"]
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(BAR_POLAR_DATA).bar_polar("spd", "dir", theme="professional")
+        # go.Barpolar has a marker WITH a line sub-prop, so apply_theme's
+        # trace-polish loop runs cleanly. Professional theme = salmon paper;
+        # the polar axis lives on layout.polar (separate from xaxis/yaxis).
+        assert fig.layout.paper_bgcolor == "#fff1e5"
+        assert fig.layout.polar is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(BAR_POLAR_DATA).bar_polar("spd", "dir", theme="light")
+        # light theme = white paper; apply_theme is polar-safe with zero changes
+        assert fig.layout.paper_bgcolor == "#ffffff"
+
+    def test_color_split_preserves_per_group_r(self) -> None:
+        fig = AdvancedChartBuilder(BAR_POLAR_DATA).bar_polar("spd", "dir", color_column="grp")
+        by_name = {t.name: [int(v) for v in t.r] for t in fig.data}
+        # group x owns rows N,E (spd 5,8); group y owns rows S,W (spd 3,9)
+        assert by_name["x"] == [5, 8]
+        assert by_name["y"] == [3, 9]
