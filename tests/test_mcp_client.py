@@ -290,7 +290,7 @@ class TestVisualization:
                 "create_chart",
                 {
                     "data": sample_data,
-                    "chart_type": "radar",
+                    "chart_type": "nope",
                     "x_column": "year",
                     "y_column": "population",
                 },

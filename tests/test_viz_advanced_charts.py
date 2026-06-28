@@ -950,3 +950,59 @@ class TestBarPolar:
         # group x owns rows N,E (spd 5,8); group y owns rows S,W (spd 3,9)
         assert by_name["x"] == [5, 8]
         assert by_name["y"] == [3, 9]
+
+
+RADAR_DATA: list[dict[str, Any]] = [
+    {"axis": "econ", "score": 7, "grp": "Belgrade"},
+    {"axis": "health", "score": 6, "grp": "Belgrade"},
+    {"axis": "edu", "score": 8, "grp": "Belgrade"},
+    {"axis": "econ", "score": 4, "grp": "Novi Sad"},
+    {"axis": "health", "score": 9, "grp": "Novi Sad"},
+    {"axis": "edu", "score": 5, "grp": "Novi Sad"},
+]
+
+
+class TestRadar:
+    def test_returns_single_scatterpolar_trace(self) -> None:
+        fig = AdvancedChartBuilder(RADAR_DATA[:3]).radar("score", "axis", title="City profile")
+        assert isinstance(fig, go.Figure)
+        # px.line_polar emits a SINGLE go.Scatterpolar trace (no color grouping);
+        # r/theta land as parallel arrays on the trace, mode defaults to lines+markers.
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Scatterpolar)
+        # line_close=True (default) appends the first r/theta value to close the
+        # polygon, so r = [7,6,8,7] and theta wraps econ→...→econ.
+        assert [int(v) for v in fig.data[0].r] == [7, 6, 8, 7]
+        assert list(fig.data[0].theta) == ["econ", "health", "edu", "econ"]
+        assert fig.layout.title.text == "City profile"
+        assert "markers" in fig.data[0].mode
+
+    def test_color_column_splits_one_trace_per_group(self) -> None:
+        fig = AdvancedChartBuilder(RADAR_DATA).radar("score", "axis", color_column="grp")
+        # one closed Scatterpolar profile per group (Belgrade, Novi Sad)
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Scatterpolar) for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["Belgrade", "Novi Sad"]
+
+    def test_markers_off_is_lines_only(self) -> None:
+        fig = AdvancedChartBuilder(RADAR_DATA[:3]).radar("score", "axis", markers=False)
+        # markers=False yields a lines-only mode (no 'markers' substring)
+        assert "markers" not in fig.data[0].mode
+
+    def test_fill_shades_profile_interior(self) -> None:
+        fig = AdvancedChartBuilder(RADAR_DATA[:3]).radar("score", "axis", fill=True)
+        # fill='toself' shades each profile's interior
+        assert fig.data[0].fill == "toself"
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(RADAR_DATA[:3]).radar("score", "axis", theme="professional")
+        # go.Scatterpolar has a marker WITH a line sub-prop, so apply_theme's
+        # trace-polish loop runs cleanly. Professional theme = salmon paper;
+        # the polar axis lives on layout.polar (separate from xaxis/yaxis).
+        assert fig.layout.paper_bgcolor == "#fff1e5"
+        assert fig.layout.polar is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(RADAR_DATA[:3]).radar("score", "axis", theme="light")
+        # light theme = white paper; apply_theme is polar-safe with zero changes
+        assert fig.layout.paper_bgcolor == "#ffffff"

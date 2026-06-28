@@ -105,7 +105,7 @@ def sandbox_export_dir(monkeypatch, tmp_path):
 
 async def test_create_chart_unsupported_type_raises() -> None:
     with pytest.raises(ToolError, match="Unsupported chart type"):
-        await create_chart(data=[{"x": 1}], chart_type="radar")
+        await create_chart(data=[{"x": 1}], chart_type="nope")
 
 
 async def test_create_chart_unsupported_message_lists_all_types() -> None:
@@ -133,6 +133,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "sankey",
             "strip",
             "bar_polar",
+            "radar",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -550,6 +551,31 @@ async def test_create_chart_bar_polar_missing_column_raises(monkeypatch) -> None
     _wire_builders(monkeypatch, {})
     with pytest.raises(ToolError, match="bar_polar requires r_column and x_column"):
         await create_chart(data=[{"dir": "N", "spd": 5}], chart_type="bar_polar", r_column="", x_column="dir")
+
+
+async def test_create_chart_radar_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"axis": "econ", "score": 7, "g": "Belgrade"}],
+        chart_type="radar",
+        r_column="score",
+        x_column="axis",
+        color_column="g",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "radar"
+    assert sink["args"] == ("score", "axis")
+    assert sink["kwargs"]["title"] == ""
+    assert sink["kwargs"]["theme"] == "light"
+    assert sink["kwargs"]["color_column"] == "g"
+
+
+async def test_create_chart_radar_missing_column_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="radar requires r_column and x_column"):
+        await create_chart(data=[{"axis": "econ", "score": 7}], chart_type="radar", r_column="", x_column="axis")
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:

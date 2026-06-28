@@ -637,6 +637,63 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def radar(
+        self,
+        r_column: str,
+        theta_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        line_close: bool = True,
+        markers: bool = True,
+        fill: bool = False,
+    ) -> go.Figure:
+        """Create a radar / spider chart — a closed line shape on a polar axis.
+
+        Each angular position (``theta``) carries a radial value (``r``) and the
+        points are connected into a closed polygon spanning the full circle. The
+        canonical professional chart for comparing one or more entities across a
+        fixed set of qualitative axes (a city's performance on economy / health /
+        education / safety, a candidate's ratings across policy areas, sensor
+        readings around the compass) where the *shape* of the profile matters, not
+        the absolute x position. Distinct from bar_polar (whose magnitude is a
+        filled bar sector, not a connected profile) and from a plain line chart
+        (linear x, no cyclic closure): radar overlays multiple entities' profiles
+        on the same polar grid so their strengths/weaknesses read at a glance.
+
+        Pass ``color_column`` to overlay one closed profile per group (the classic
+        multi-entity spider), ``markers`` to draw a marker at each vertex,
+        ``line_close`` to leave the polygon open (False) or closed (True, default),
+        and ``fill`` to shade the interior of each profile (area radar).
+
+        Args:
+            r_column: Numeric radial value column (distance from center)
+            theta_column: Angular category column (the profile's axes, e.g. metric names)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional grouping column (one closed profile per group)
+            line_close: Close the polygon by linking the last vertex back to the first
+            markers: Show a marker at each vertex (default: line + markers)
+            fill: Shade each profile's interior ('toself' area fill)
+        """
+        kwargs: dict[str, Any] = {
+            "r": r_column,
+            "theta": theta_column,
+            "title": title,
+            "line_close": line_close,
+        }
+        if markers:
+            kwargs["markers"] = True
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        fig = px.line_polar(self.data, **kwargs)
+        # px.line_polar emits go.Scatterpolar; opt into a filled area profile.
+        if fill:
+            fig.update_traces(fill="toself")
+        apply_theme(fig, theme)
+        return fig
+
     def sunburst(
         self,
         names_column: str,

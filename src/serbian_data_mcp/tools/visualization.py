@@ -89,6 +89,7 @@ async def create_chart(
       - "sankey": source_column + target_column + values_column → proportional flow between nodes
       - "strip": y_column (+ optional x_column) → one jittered dot per raw observation
       - "bar_polar": r_column + x_column (angular) → radial bars around a circle (wind rose)
+      - "radar": r_column + x_column (angular) → closed polar profile (spider/radar)
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -144,6 +145,7 @@ async def create_chart(
         "sankey",
         "strip",
         "bar_polar",
+        "radar",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -399,6 +401,11 @@ def _build_chart(
         if not r_column or not x_column:
             raise ToolError("bar_polar requires r_column and x_column (angular)")
         return builder.bar_polar(r_column, x_column, title=title, theme=theme, color_column=color_column)
+
+    if chart_type == "radar":
+        if not r_column or not x_column:
+            raise ToolError("radar requires r_column and x_column (angular)")
+        return builder.radar(r_column, x_column, title=title, theme=theme, color_column=color_column)
 
     if chart_type == "animated_line":
         if not x_column or not y_column or not frame_column:
