@@ -9,10 +9,13 @@ No network, no file, no export_dir coupling.
 import plotly.graph_objects as go
 
 from serbian_data_mcp.viz.themes import (
+    PROFESSIONAL_COLORS,
+    PROFESSIONAL_PAPER,
     SEMANTIC_COLORS,
     _dark_layout_dict,
     _infographic_layout_dict,
     _light_layout_dict,
+    _professional_layout_dict,
     add_annotation,
     add_highlight_zone,
     apply_theme,
@@ -20,6 +23,7 @@ from serbian_data_mcp.viz.themes import (
     infographic_template,
     light_template,
     polish_for_export,
+    professional_template,
 )
 
 
@@ -62,6 +66,44 @@ def test_infographic_layout_dict_shape():
     assert layout["margin"] == {"l": 100, "r": 60, "t": 100, "b": 100}
 
 
+def test_professional_layout_dict_shape_and_colorway():
+    layout = _professional_layout_dict()
+    # FT/Economist salmon paper, same tone for plot area (no split bg)
+    assert layout["paper_bgcolor"] == PROFESSIONAL_PAPER
+    assert layout["plot_bgcolor"] == PROFESSIONAL_PAPER
+    assert PROFESSIONAL_PAPER == "#fff1e5"
+    # colorway is the colorblind-safe Okabe-Ito palette, NOT the flag palette
+    assert layout["colorway"] is PROFESSIONAL_COLORS
+    assert layout["colorway"] is not SEMANTIC_COLORS
+    assert layout["colorway"][0] == "#0072b2"
+    # title is left-aligned editorial style with a serif headline font
+    assert layout["title"]["x"] == 0.0
+    assert layout["title"]["xanchor"] == "left"
+    assert "Georgia" in layout["title"]["font"]["family"]
+    # body font stays sans for legibility
+    assert "Inter" in layout["font"]["family"]
+    # Tufte-style: solid x baseline, faint y grid only
+    assert layout["xaxis"]["linecolor"] == "#1c1c1c"
+    assert layout["xaxis"]["showline"] is True
+    assert layout["yaxis"]["gridcolor"] == "#e8dcd0"
+    assert layout["yaxis"]["showline"] is False
+    # legend is borderless (transparent) — minimal chrome
+    assert layout["legend"]["borderwidth"] == 0
+
+
+def test_professional_is_distinct_from_light():
+    prof = _professional_layout_dict()
+    light = _light_layout_dict()
+    # professional salmon paper vs light white/gray — genuinely different register
+    assert prof["paper_bgcolor"] != light["paper_bgcolor"]
+    assert prof["plot_bgcolor"] != light["plot_bgcolor"]
+    # different palette object
+    assert prof["colorway"] is not light["colorway"]
+    # professional title is serif + left, light title is sans + left-ish but
+    # different family
+    assert prof["title"]["font"]["family"] != light["title"]["font"]["family"]
+
+
 def test_three_layouts_are_distinct_deep_copies():
     a = _dark_layout_dict()
     b = _dark_layout_dict()
@@ -95,6 +137,17 @@ def test_infographic_template_returns_deepcopy_of_infographic_layout():
     assert tmpl["title"]["xanchor"] == "center"
     tmpl["title"]["x"] = -1
     assert infographic_template()["title"]["x"] == 0.5
+
+
+def test_professional_template_returns_deepcopy_of_professional_layout():
+    tmpl = professional_template()
+    assert tmpl["paper_bgcolor"] == PROFESSIONAL_PAPER
+    # deepcopy preserves palette values (not identity — deepcopy makes a new list)
+    assert tmpl["colorway"] == PROFESSIONAL_COLORS
+    assert tmpl["colorway"] is not SEMANTIC_COLORS
+    # deepcopy: mutating returned dict does not corrupt future calls
+    tmpl["paper_bgcolor"] = "MUTATED"
+    assert professional_template()["paper_bgcolor"] == PROFESSIONAL_PAPER
 
 
 # ── apply_theme ─────────────────────────────────────────────────────────────
@@ -139,6 +192,20 @@ def test_apply_theme_infographic():
     assert fig.layout.paper_bgcolor == "#1a1a2e"
     # infographic centered title
     assert fig.layout.title.xanchor == "center"
+
+
+def test_apply_theme_professional():
+    fig = _fig_with_traces()
+    out = apply_theme(fig, "professional")
+    assert out is fig
+    assert fig.layout.paper_bgcolor == PROFESSIONAL_PAPER
+    assert fig.layout.plot_bgcolor == PROFESSIONAL_PAPER
+    # Okabe-Ito palette reaches the figure layout
+    assert fig.layout.colorway[0] == "#0072b2"
+    # serif title font propagated
+    assert "Georgia" in fig.layout.title.font.family
+    # marker-polish loop still runs on professional (zero-width marker line)
+    assert fig.data[0].marker.line.width == 0
 
 
 def test_apply_theme_unknown_theme_falls_back_to_dark():

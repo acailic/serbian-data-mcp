@@ -102,6 +102,19 @@ class TestScatter3D:
         assert dark.layout.scene.xaxis.backgroundcolor == "#16213e"
         assert light.layout.scene.xaxis.backgroundcolor == "#f8f9fa"
 
+    def test_professional_theme_salmon_scene_and_palette(self) -> None:
+        from serbian_data_mcp.viz.themes import PROFESSIONAL_COLORS, PROFESSIONAL_PAPER
+
+        prof = Chart3DBuilder(SCATTER3D_DATA).scatter_3d("x", "y", "z", theme="professional", color_column="city")
+        # 3D scene honors the FT salmon-paper background + ink-dark axis text
+        assert prof.layout.scene.xaxis.backgroundcolor == PROFESSIONAL_PAPER
+        assert prof.layout.scene.xaxis.tickfont.color == "#333333"
+        assert prof.layout.scene.xaxis.title.font.color == "#121212"
+        # professional Okabe-Ito palette drives the per-city trace colors,
+        # distinct from the default SEMANTIC_COLORS red-blue
+        first_colors = {t.marker.color for t in prof.data if t.marker.color is not None}
+        assert PROFESSIONAL_COLORS[0] in first_colors
+
 
 # ---------------------------------------------------------------------------
 # line_3d

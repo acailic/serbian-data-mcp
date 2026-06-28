@@ -10,6 +10,7 @@ from .themes import (
     dark_template,
     light_template,
     infographic_template,
+    professional_template,
     polish_for_export,
 )
 from .advanced_charts import AdvancedChartBuilder
@@ -42,6 +43,7 @@ __all__ = [
     "dark_template",
     "light_template",
     "infographic_template",
+    "professional_template",
     "polish_for_export",
     "extract_insights",
     "generate_narrative",

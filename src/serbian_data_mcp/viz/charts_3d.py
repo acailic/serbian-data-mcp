@@ -17,7 +17,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from .themes import SEMANTIC_COLORS, apply_theme
+from .themes import PROFESSIONAL_COLORS, PROFESSIONAL_PAPER, SEMANTIC_COLORS, apply_theme
 
 __all__ = ["Chart3DBuilder"]
 
@@ -47,14 +47,32 @@ class Chart3DBuilder:
         """Build a themed 3D ``scene`` layout dict.
 
         Mirrors the 2D themes' grid/axis treatment so a 3D chart sits next to
-        a 2D one without visual clash.
+        a 2D one without visual clash. The ``professional`` theme gets the FT
+        salmon-paper scene + ink-dark axis text; ``light`` gets soft gray;
+        anything else (``dark``/``infographic``) gets the dark space scene.
         """
-        dark = theme != "light"
-        grid = "rgba(255,255,255,0.08)" if dark else "#e9ecef"
-        zeroline = "rgba(255,255,255,0.18)" if dark else "#adb5bd"
-        tick = "#78909c" if dark else "#6c757d"
-        title_color = "#90a4ae" if dark else "#495057"
-        bgcolor = "#16213e" if dark else "#f8f9fa"
+        if theme == "light":
+            grid, zeroline, tick, title_color, bgcolor = (
+                "#e9ecef",
+                "#adb5bd",
+                "#6c757d",
+                "#495057",
+                "#f8f9fa",
+            )
+        elif theme == "professional":
+            grid, zeroline, tick, title_color, bgcolor = (
+                "#e8dcd0",
+                "#bdb3a7",
+                "#333333",
+                "#121212",
+                PROFESSIONAL_PAPER,
+            )
+        else:  # dark / infographic
+            grid = "rgba(255,255,255,0.08)"
+            zeroline = "rgba(255,255,255,0.18)"
+            tick = "#78909c"
+            title_color = "#90a4ae"
+            bgcolor = "#16213e"
 
         def _axis() -> dict[str, Any]:
             return {
@@ -102,6 +120,7 @@ class Chart3DBuilder:
             size_column: Optional column driving bubble size
             symbol_column: Optional column driving marker shape
         """
+        palette = PROFESSIONAL_COLORS if theme == "professional" else SEMANTIC_COLORS
         fig = px.scatter_3d(
             self.data,
             x=x_column,
@@ -111,7 +130,7 @@ class Chart3DBuilder:
             symbol=symbol_column,
             size=size_column,
             title=title,
-            color_discrete_sequence=SEMANTIC_COLORS,
+            color_discrete_sequence=palette,
         )
         fig.update_traces(marker_line={"width": 0}, selector={"type": "scatter3d"})
         fig.update_layout(
@@ -143,6 +162,7 @@ class Chart3DBuilder:
             theme: 'dark', 'light', or 'infographic'
             color_column: Optional column splitting points into separate lines
         """
+        palette = PROFESSIONAL_COLORS if theme == "professional" else SEMANTIC_COLORS
         fig = px.line_3d(
             self.data,
             x=x_column,
@@ -150,7 +170,7 @@ class Chart3DBuilder:
             z=z_column,
             color=color_column,
             title=title,
-            color_discrete_sequence=SEMANTIC_COLORS,
+            color_discrete_sequence=palette,
         )
         fig.update_traces(mode="lines+markers", selector={"type": "scatter3d"})
         fig.update_layout(

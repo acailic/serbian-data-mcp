@@ -52,6 +52,20 @@ DIVERGING_COLORS = ["#c62828", "#e57373", "#ef9a9a", "#ffebee", "#f5f5f5", "#e3f
 # Sequential palette for ordered data (low → high)
 SEQUENTIAL_COLORS = ["#bbdefb", "#90caf9", "#64b5f6", "#42a5f5", "#1e88e5", "#1565c0", "#0d47a1"]
 
+# Professional editorial palette — Okabe-Ito (colorblind-safe), used by the
+# 'professional' theme for FT/Bloomberg/Economist-style reporting. Muted and
+# perceptually distinct, unlike the saturated Serbian-flag SEMANTIC_COLORS.
+PROFESSIONAL_COLORS = [
+    "#0072b2",  # blue — baseline / neutral
+    "#d55e00",  # vermillion — emphasis / loss
+    "#009e73",  # bluish-green — gain / positive
+    "#cc79a7",  # reddish-purple — special category
+    "#56b4e9",  # sky blue — comparison
+    "#e69f00",  # orange — warning / highlight
+    "#000000",  # black — ink / reference
+    "#f0e442",  # yellow — sparse accent
+]
+
 
 def _dark_layout_dict() -> dict[str, Any]:
     """Raw layout dict for dark theme."""
@@ -201,6 +215,74 @@ def _infographic_layout_dict() -> dict[str, Any]:
     }
 
 
+# Warm off-white used by the professional theme — the FT/Economist editorial
+# salmon paper. Centralizing it so the 3D scene builder can reuse the exact
+# background tone for visual consistency with 2D charts.
+PROFESSIONAL_PAPER = "#fff1e5"
+_PROFESSIONAL_SERIF = "'Georgia', 'Times New Roman', 'PT Serif', serif"
+_PROFESSIONAL_SANS = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
+
+
+def _professional_layout_dict() -> dict[str, Any]:
+    """Raw layout dict for the professional editorial theme.
+
+    Modeled on FT/Bloomberg/Economist report graphics: warm salmon paper,
+    serif headlines over sans body, a solid baseline axis line (Tufte-style),
+    faint gridlines, and the colorblind-safe Okabe-Ito palette. Deliberately
+    distinct from ``light`` (gray plot bg, sans title, flag palette) — use it
+    when the output must read as a published, editorial-grade figure.
+    """
+    return {
+        "paper_bgcolor": PROFESSIONAL_PAPER,
+        "plot_bgcolor": PROFESSIONAL_PAPER,
+        "font": {
+            "family": _PROFESSIONAL_SANS,
+            "color": "#1c1c1c",
+            "size": 14,
+        },
+        "title": {
+            "font": {"size": 22, "color": "#121212", "family": _PROFESSIONAL_SERIF},
+            "x": 0.0,
+            "xanchor": "left",
+        },
+        "xaxis": {
+            "gridcolor": "rgba(0,0,0,0)",
+            "linecolor": "#1c1c1c",
+            "zerolinecolor": "#1c1c1c",
+            "title": {"font": {"size": 13, "color": "#333333", "family": _PROFESSIONAL_SANS}},
+            "tickfont": {"size": 12, "color": "#333333", "family": _PROFESSIONAL_SANS},
+            "tickformat": ",",
+            "showline": True,
+            "mirror": False,
+        },
+        "yaxis": {
+            "gridcolor": "#e8dcd0",
+            "linecolor": "rgba(0,0,0,0)",
+            "zerolinecolor": "#bdb3a7",
+            "title": {"font": {"size": 13, "color": "#333333", "family": _PROFESSIONAL_SANS}},
+            "tickfont": {"size": 12, "color": "#333333", "family": _PROFESSIONAL_SANS},
+            "tickformat": ",",
+            "showline": False,
+        },
+        "legend": {
+            "bgcolor": "rgba(0,0,0,0)",
+            "font": {"color": "#1c1c1c", "size": 12, "family": _PROFESSIONAL_SANS},
+            "bordercolor": "rgba(0,0,0,0)",
+            "borderwidth": 0,
+            "groupclick": "toggleitem",
+        },
+        "colorway": PROFESSIONAL_COLORS,
+        "hoverlabel": {
+            "bgcolor": "#ffffff",
+            "bordercolor": "#0072b2",
+            "font": {"color": "#1c1c1c", "size": 13, "family": _PROFESSIONAL_SANS},
+            "namelength": 0,
+        },
+        "margin": {"l": 70, "r": 30, "t": 70, "b": 60},
+        "modebar": {"bgcolor": "rgba(0,0,0,0)", "color": "#7a6f63", "activecolor": "#0072b2"},
+    }
+
+
 def dark_template() -> dict[str, Any]:
     """Dark theme layout dict for dramatic data-journalism presentations."""
     return copy.deepcopy(_dark_layout_dict())
@@ -216,6 +298,11 @@ def infographic_template() -> dict[str, Any]:
     return copy.deepcopy(_infographic_layout_dict())
 
 
+def professional_template() -> dict[str, Any]:
+    """Professional editorial theme layout dict (FT/Bloomberg/Economist style)."""
+    return copy.deepcopy(_professional_layout_dict())
+
+
 def apply_theme(fig: go.Figure, theme: str = "dark") -> go.Figure:
     """Apply a named theme to a Plotly figure.
 
@@ -224,7 +311,7 @@ def apply_theme(fig: go.Figure, theme: str = "dark") -> go.Figure:
 
     Args:
         fig: Plotly Figure to theme
-        theme: 'dark', 'light', or 'infographic'
+        theme: 'dark', 'light', 'infographic', or 'professional'
 
     Returns:
         Themed Plotly Figure
@@ -233,6 +320,7 @@ def apply_theme(fig: go.Figure, theme: str = "dark") -> go.Figure:
         "dark": _dark_layout_dict,
         "light": _light_layout_dict,
         "infographic": _infographic_layout_dict,
+        "professional": _professional_layout_dict,
     }
     builder = templates.get(theme)
     if not builder:
