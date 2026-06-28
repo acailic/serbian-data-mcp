@@ -270,6 +270,30 @@ class TestExtractInsights:
         out = extract_insights(data, numeric_columns=["v"])
         assert out == []
 
+    def test_temporal_skipped_when_first_value_non_finite(self) -> None:
+        # NaN in the single-row first period → _safe_float None → column skipped
+        data = [
+            {"year": 2020, "v": math.nan},
+            {"year": 2021, "v": 100},
+        ]
+        out = extract_insights(data, time_column="year")
+        assert not any(i["type"] == "temporal_change" for i in out)
+
+    def test_outlier_skipped_when_zero_std(self) -> None:
+        # 5+ identical values → std==0 → outlier section skipped
+        data = [{"v": 5}, {"v": 5}, {"v": 5}, {"v": 5}, {"v": 5}]
+        out = extract_insights(data)
+        assert not any(i["type"] == "outlier" for i in out)
+
+    def test_outlier_detail_includes_entity_name(self) -> None:
+        # outlier row carries its entity label into the detail string
+        data = [{"name": f"e{i}", "v": 1} for i in range(20)]
+        data.append({"name": "out", "v": 100})
+        out = extract_insights(data, entity_column="name")
+        outlier = next(i for i in out if i["type"] == "outlier")
+        assert "out" in outlier["detail"]
+        assert "100.0" in outlier["detail"]
+
 
 # ── generate_narrative ───────────────────────────────────────────────────
 
