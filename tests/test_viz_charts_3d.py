@@ -39,6 +39,15 @@ SURFACE_DATA: list[dict[str, Any]] = [
     {"x": 1, "y": 1, "h": 4.0},
 ]
 
+# scattered 3D point cloud for the mesh (irregular + a 4th intensity metric)
+MESH_DATA: list[dict[str, Any]] = [
+    {"x": 0.0, "y": 0.0, "z": 1.0, "conc": 10.0},
+    {"x": 2.0, "y": 0.0, "z": 2.0, "conc": 20.0},
+    {"x": 0.0, "y": 2.0, "z": 1.5, "conc": 30.0},
+    {"x": 2.0, "y": 2.0, "z": 3.0, "conc": 40.0},
+    {"x": 1.0, "y": 1.0, "z": 2.5, "conc": 50.0},
+]
+
 
 # ---------------------------------------------------------------------------
 # __init__ + import surface
@@ -178,3 +187,52 @@ class TestSurface3D:
         # x = grid columns {0,1}, y = grid rows {0,1}
         assert set(fig.data[0].x) == {0, 1}
         assert set(fig.data[0].y) == {0, 1}
+
+
+# ---------------------------------------------------------------------------
+# mesh_3d
+# ---------------------------------------------------------------------------
+
+
+class TestMesh3D:
+    def test_returns_mesh3d_trace_with_xyz_points(self) -> None:
+        fig = Chart3DBuilder(MESH_DATA).mesh_3d("x", "y", "z", title="Hull")
+        assert isinstance(fig, go.Figure)
+        assert isinstance(fig.data[0], go.Mesh3d)
+        tr = fig.data[0]
+        assert list(tr.x) == [0.0, 2.0, 0.0, 2.0, 1.0]
+        assert list(tr.z) == [1.0, 2.0, 1.5, 3.0, 2.5]
+        assert fig.layout.title.text == "Hull"
+        # scene styled by the 3D builder
+        assert fig.layout.scene.xaxis.showbackground is True
+
+    def test_default_alphahull_one(self) -> None:
+        fig = Chart3DBuilder(MESH_DATA).mesh_3d("x", "y", "z")
+        assert fig.data[0].alphahull == 1.0
+
+    def test_alphahull_passthrough_zero_convex_hull(self) -> None:
+        fig = Chart3DBuilder(MESH_DATA).mesh_3d("x", "y", "z", alphahull=0)
+        assert fig.data[0].alphahull == 0
+
+    def test_intensity_column_colors_vertices(self) -> None:
+        fig = Chart3DBuilder(MESH_DATA).mesh_3d("x", "y", "z", intensity_column="conc", colorscale="RdBu")
+        tr = fig.data[0]
+        assert tr.intensity is not None
+        assert list(tr.intensity) == [10.0, 20.0, 30.0, 40.0, 50.0]
+        # colorscale resolved to [stop, color] pairs, distinct from Viridis
+        rdbu_first = tr.colorscale[0][1]
+        assert rdbu_first == "rgb(103,0,31)"
+
+    def test_face_color_solid_mesh_no_intensity(self) -> None:
+        fig = Chart3DBuilder(MESH_DATA).mesh_3d("x", "y", "z", face_color="#c62828")
+        tr = fig.data[0]
+        assert tr.intensity is None
+        # go.Mesh3d's solid color lives on the trace-level `color` attribute
+        # (facecolor is a per-triangle array); default facecolor stays unset.
+        assert tr.color == "#c62828"
+
+    def test_light_theme_switches_scene_bgcolor(self) -> None:
+        dark = Chart3DBuilder(MESH_DATA).mesh_3d("x", "y", "z", theme="dark")
+        light = Chart3DBuilder(MESH_DATA).mesh_3d("x", "y", "z", theme="light")
+        assert dark.layout.scene.xaxis.backgroundcolor == "#16213e"
+        assert light.layout.scene.xaxis.backgroundcolor == "#f8f9fa"

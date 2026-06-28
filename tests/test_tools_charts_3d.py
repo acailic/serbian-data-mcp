@@ -17,6 +17,7 @@ from fastmcp.exceptions import ToolError
 from serbian_data_mcp.tools import charts_3d as charts3d_mod
 from serbian_data_mcp.tools.charts_3d import (
     create_line_3d,
+    create_mesh_3d,
     create_scatter_3d,
     create_surface_3d,
 )
@@ -73,6 +74,7 @@ class _FakeBuilder:
     scatter_3d = _make_method("scatter_3d")
     line_3d = _make_method("line_3d")
     surface_3d = _make_method("surface_3d")
+    mesh_3d = _make_method("mesh_3d")
 
 
 @pytest.fixture(autouse=True)
@@ -213,3 +215,71 @@ async def test_create_surface_3d_exception_wrapped(monkeypatch, sandbox_export_d
 
     with pytest.raises(ToolError, match=r"3D surface chart failed: bad"):
         await create_surface_3d([{"x": 0, "y": 0, "h": 1}], x_column="x", y_column="y", z_column="h")
+
+
+# ---------------------------------------------------------------------------
+# create_mesh_3d
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_create_mesh_3d_success(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch, "<html>M3D</html>")
+
+    rows = [{"x": 0.0, "y": 0.0, "z": 1.0, "conc": 10.0}]
+    result = await create_mesh_3d(
+        rows,
+        x_column="x",
+        y_column="y",
+        z_column="z",
+        title="Hull",
+        theme="light",
+        intensity_column="conc",
+        colorscale="RdBu",
+        alphahull=0,
+        face_color="#c62828",
+        filename="mh",
+    )
+
+    calls = CALLS
+    assert calls["method"] == "mesh_3d"
+    assert (calls["x"], calls["y"], calls["z"]) == ("x", "y", "z")
+    assert calls["kwargs"] == {
+        "title": "Hull",
+        "theme": "light",
+        "intensity_column": "conc",
+        "colorscale": "RdBu",
+        "alphahull": 0,
+        "face_color": "#c62828",
+    }
+    assert result == {"filepath": str(sandbox_export_dir / "mh.html"), "title": "Hull", "rows": 1}
+    assert (sandbox_export_dir / "mh.html").read_text(encoding="utf-8") == "<html>M3D</html>"
+
+
+@pytest.mark.asyncio
+async def test_create_mesh_3d_defaults(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch)
+
+    await create_mesh_3d([{"x": 0, "y": 0, "z": 1}], x_column="x", y_column="y", z_column="z")
+
+    kw = CALLS["kwargs"]
+    assert kw["theme"] == "dark"
+    assert kw["intensity_column"] is None
+    assert kw["colorscale"] == "Viridis"
+    assert kw["alphahull"] == 1.0
+    assert kw["face_color"] is None
+
+
+@pytest.mark.asyncio
+async def test_create_mesh_3d_exception_wrapped(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    monkeypatch.setattr(
+        _FakeBuilder,
+        "mesh_3d",
+        lambda self, x, y, z, **k: (_ for _ in ()).throw(ValueError("hull-bad")),
+    )
+
+    with pytest.raises(ToolError, match=r"3D mesh chart failed: hull-bad"):
+        await create_mesh_3d([{"x": 0, "y": 0, "z": 1}], x_column="x", y_column="y", z_column="z")

@@ -4,6 +4,7 @@ Contracts:
   - create_scatter_3d(data, x_column, y_column, z_column) → HTML filepath
   - create_line_3d(data, x_column, y_column, z_column) → HTML filepath
   - create_surface_3d(data, x_column, y_column, z_column) → HTML filepath
+  - create_mesh_3d(data, x_column, y_column, z_column) → HTML filepath
 
 These expose the WebGL-rendered 3D builders from ``viz.charts_3d.Chart3DBuilder``
 as MCP tools so the server's clients can produce orbit-able, depth-rich charts
@@ -175,3 +176,59 @@ async def create_surface_3d(
         return {"filepath": filepath, "title": title, "rows": len(data)}
     except Exception as e:
         raise ToolError(f"3D surface chart failed: {e}") from e
+
+
+@mcp.tool()
+async def create_mesh_3d(
+    data: list[dict[str, Any]],
+    x_column: str,
+    y_column: str,
+    z_column: str,
+    title: str = "",
+    theme: str = "dark",
+    intensity_column: Optional[str] = None,
+    colorscale: str = "Viridis",
+    alphahull: float = 1.0,
+    face_color: Optional[str] = None,
+    filename: str = "mesh_3d",
+) -> dict[str, Any]:
+    """Interactive 3D mesh from scattered points (WebGL, orbit-able).
+
+    Triangulates *scattered* (x, y, z) points into a connected surface or
+    enclosing hull — unlike ``create_surface_3d`` which needs a regular grid.
+    An optional ``intensity_column`` colors each vertex by a fourth metric.
+
+    Ideal for: irregular terrain/field point clouds, region bounding shapes,
+    sparse 3D samples (e.g. pollution at uneven monitoring stations).
+
+    Returns: {filepath, title, rows}
+
+    Args:
+        data: Row dicts (one per scattered sample point)
+        x_column: Column for the X axis
+        y_column: Column for the Y axis
+        z_column: Column for the Z axis (depth)
+        title: Chart title
+        theme: 'dark', 'light', or 'infographic'
+        intensity_column: Optional column driving per-vertex color
+        colorscale: Plotly colorscale name for intensity mapping
+        alphahull: 0 = convex hull, >0 = alpha shape, -1 = Delaunay (SciPy)
+        face_color: Solid mesh color when no intensity_column is given
+        filename: Output filename (without .html)
+    """
+    try:
+        fig = Chart3DBuilder(data).mesh_3d(
+            x_column,
+            y_column,
+            z_column,
+            title=title,
+            theme=theme,
+            intensity_column=intensity_column,
+            colorscale=colorscale,
+            alphahull=alphahull,
+            face_color=face_color,
+        )
+        filepath = _save_html(fig, filename)
+        return {"filepath": filepath, "title": title, "rows": len(data)}
+    except Exception as e:
+        raise ToolError(f"3D mesh chart failed: {e}") from e

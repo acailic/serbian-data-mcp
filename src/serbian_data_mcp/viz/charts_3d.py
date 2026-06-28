@@ -219,3 +219,62 @@ class Chart3DBuilder:
         )
         apply_theme(fig, theme)
         return fig
+
+    def mesh_3d(
+        self,
+        x_column: str,
+        y_column: str,
+        z_column: str,
+        title: str = "",
+        theme: str = "dark",
+        intensity_column: Optional[str] = None,
+        colorscale: str = "Viridis",
+        alphahull: float = 1.0,
+        face_color: Optional[str] = None,
+    ) -> go.Figure:
+        """Create a 3D mesh from scattered points (a surface or volume hull).
+
+        Unlike :meth:`surface_3d` (which needs a regular z=f(x,y) grid), a mesh
+        triangulates *scattered* (x, y, z) points into a connected surface or
+        enclosing hull — suited to irregular point clouds: terrain surveyed at
+        uneven stations, a 3D field probed at sparse sample sites, or the
+        bounding shape of a multi-dimensional region.
+
+        An optional ``intensity_column`` colors each vertex by a fourth metric
+        (e.g. pollution concentration at each station) via a Plotly colorscale;
+        otherwise the mesh is a single solid ``face_color``.
+
+        Args:
+            x_column: Column for the X axis
+            y_column: Column for the Y axis
+            z_column: Column for the Z axis (depth)
+            title: Chart title
+            theme: 'dark', 'light', or 'infographic'
+            intensity_column: Optional column driving per-vertex color
+            colorscale: Plotly colorscale name for intensity mapping
+            alphahull: Plotly alpha-shape parameter — 0 = convex hull, >0 =
+                alpha shape (tighter hull), -1 = Delaunay (needs SciPy). The
+                triangulation runs client-side at render, not at build time.
+            face_color: Solid mesh color when no intensity_column is given
+        """
+        intensity = self.data[intensity_column].tolist() if intensity_column else None
+        mesh = go.Mesh3d(
+            x=self.data[x_column].tolist(),
+            y=self.data[y_column].tolist(),
+            z=self.data[z_column].tolist(),
+            intensity=intensity,
+            colorscale=colorscale,
+            alphahull=alphahull,
+            # go.Mesh3d's facecolor expects a per-triangle array; a single solid
+            # color is the trace-level `color` attribute instead.
+            color=face_color,
+        )
+        fig = go.Figure(data=[mesh])
+        if title:
+            fig.update_layout(title={"text": title})
+        fig.update_layout(
+            scene=self._scene_layout(theme),
+            margin={"l": 0, "r": 0, "t": 60, "b": 0},
+        )
+        apply_theme(fig, theme)
+        return fig
