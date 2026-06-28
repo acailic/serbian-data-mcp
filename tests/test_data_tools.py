@@ -401,3 +401,77 @@ async def test_browse_recent_clamps_page_size_search_arg(monkeypatch: pytest.Mon
     assert captured["page_size"] == 100  # clamped
     assert captured["query"] == ""
     assert captured["page"] == 1
+
+
+# ===========================================================================
+# Residual-branch closures (lines 84->93, 143-144, 146, 313)
+# ===========================================================================
+
+
+@pytest.mark.asyncio
+async def test_get_dataset_preview_non_dataframe_resource_skips_preview(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Resource returning a dict (not DataFrame) → preview_data block skipped, no error."""
+    from serbian_data_mcp.tools.data import get_dataset
+
+    ds = _dataset(resources=[Resource(id="r1", title="R1", format="csv")])
+    _patch_client(monkeypatch, _FakeClient(dataset=ds, resource_data={"k": "v"}))
+
+    result = await get_dataset("ds-1", detail_level="preview")
+
+    assert "preview_data" not in result
+    assert "preview_error" not in result
+    assert result["id"] == "ds-1"  # base metadata still present
+
+
+@pytest.mark.asyncio
+async def test_compare_datasets_ds1_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ds1 returned as None → ToolError before ds2 is fetched."""
+    from serbian_data_mcp.tools.data import compare_datasets
+
+    _patch_client(monkeypatch, _FakeClient(dataset=None))
+
+    with pytest.raises(ToolError, match="Dataset 'ds-1' not found"):
+        await compare_datasets("ds-1", "ds-2")
+
+
+class _DS2ErrorClient(_FakeClient):
+    """Fake that serves ds-1 from the map but raises on ds-2."""
+
+    async def get_dataset(self, dataset_id: str) -> Any:
+        if dataset_id == "ds-2":
+            raise RuntimeError("api 500")
+        return await super().get_dataset(dataset_id)
+
+
+@pytest.mark.asyncio
+async def test_compare_datasets_ds2_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ds1 fetched OK, ds2 fetch raises → ToolError names ds-2."""
+    from serbian_data_mcp.tools.data import compare_datasets
+
+    ds1 = _dataset("ds-1")
+    _patch_client(monkeypatch, _DS2ErrorClient(dataset_map={"ds-1": ds1}))
+
+    with pytest.raises(ToolError, match="Dataset 'ds-2' not found"):
+        await compare_datasets("ds-1", "ds-2")
+
+
+@pytest.mark.asyncio
+async def test_get_data_summary_empty_list_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Empty list → no format branch matches → unexpected-type ToolError (line 313)."""
+    from serbian_data_mcp.tools.data import get_data_summary
+
+    _patch_client(monkeypatch, _FakeClient(resource_data=[]))
+
+    with pytest.raises(ToolError, match="Unexpected data type"):
+        await get_data_summary("r1")
+
+
+@pytest.mark.asyncio
+async def test_get_data_summary_scalar_string_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Bare scalar (not DataFrame/dict/list) → unexpected-type ToolError (line 313)."""
+    from serbian_data_mcp.tools.data import get_data_summary
+
+    _patch_client(monkeypatch, _FakeClient(resource_data="just a string"))
+
+    with pytest.raises(ToolError, match="Unexpected data type"):
+        await get_data_summary("r1")
