@@ -17,6 +17,7 @@ from fastmcp.exceptions import ToolError
 from .. import mcp
 from ..config import config
 from ..viz.exporters import export_html, export_json, export_pdf, generate_embed_code
+from ..viz.datawrapper_export import DatawrapperExporter
 
 
 @mcp.tool()
@@ -172,3 +173,54 @@ async def generate_embed(
         }
     except Exception as e:
         raise ToolError(f"Embed generation failed: {e}") from e
+
+
+@mcp.tool()
+async def export_to_datawrapper(
+    data: list[dict[str, Any]],
+    title: str,
+    chart_type: str = "d3-bars-vertical",
+    labels: Optional[dict[str, str]] = None,
+) -> dict[str, Any]:
+    """Export data to Datawrapper for professional cloud-hosted charts.
+
+    Creates a chart on Datawrapper (datawrapper.de) with your data, publishes it,
+    and returns embed URLs and embed code. Requires the DATAWRAPPER_ACCESS_TOKEN
+    environment variable.
+
+    Get a free API token at: https://app.datawrapper.de/account/api-tokens
+
+    Supported chart types:
+    - 'd3-bars-vertical' — vertical bar chart
+    - 'd3-bars-horizontal' — horizontal bar chart
+    - 'd3-lines' — line chart
+    - 'd3-area' — area chart
+    - 'd3-pies' — pie chart
+    - 'd3-pie-donut' — donut chart
+    - 'd3-scatter' — scatter plot
+    - 'd3-table' — data table
+
+    Args:
+        data: List of row dicts (from get_resource_data())
+        title: Chart title
+        chart_type: Datawrapper chart type (default: d3-bars-vertical)
+        labels: Column name → display label mapping
+
+    Returns: {id, url, embed_url, embed_code}
+    """
+    if not data:
+        raise ToolError("No data to export — pass data from get_resource_data()")
+
+    exporter = DatawrapperExporter()
+    if not exporter.available:
+        raise ToolError(
+            "Datawrapper requires an API token. Set the DATAWRAPPER_ACCESS_TOKEN "
+            "environment variable. Get a free token at "
+            "https://app.datawrapper.de/account/api-tokens"
+        )
+    try:
+        return exporter.create_and_publish(data, title, chart_type, labels)
+    except Exception as e:
+        raise ToolError(f"Datawrapper export failed: {e}") from e
+    finally:
+        exporter.close()
