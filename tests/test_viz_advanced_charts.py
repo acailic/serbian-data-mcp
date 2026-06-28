@@ -846,3 +846,55 @@ class TestSankey:
         # go.Sankey has no trace-level marker, so apply_theme's marker-polish loop
         # skips it cleanly; layout paper_bgcolor is still set by the light theme
         assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
+# strip
+# ---------------------------------------------------------------------------
+
+STRIP_DATA: list[dict[str, Any]] = [
+    {"cat": "a", "v": 1, "grp": "x"},
+    {"cat": "a", "v": 2, "grp": "y"},
+    {"cat": "b", "v": 3, "grp": "x"},
+    {"cat": "b", "v": 4, "grp": "y"},
+    {"cat": "a", "v": 5, "grp": "x"},
+]
+
+
+class TestStrip:
+    def test_returns_single_box_trace_with_points(self) -> None:
+        fig = AdvancedChartBuilder(STRIP_DATA).strip("v", x_column="cat", title="T")
+        assert isinstance(fig, go.Figure)
+        # px.strip emits ONE go.Box trace carrying every raw observation as a
+        # point (boxpoints='all'), so the full sample — not a summary — is shown.
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Box)
+        assert fig.data[0].boxpoints == "all"
+        assert list(fig.data[0].x) == ["a", "a", "b", "b", "a"]
+        assert list(fig.data[0].y) == [1, 2, 3, 4, 5]
+        assert fig.layout.title.text == "T"
+
+    def test_jitter_and_pointpos_passthrough(self) -> None:
+        fig = AdvancedChartBuilder(STRIP_DATA).strip("v", jitter=0.4, pointpos=-1.5)
+        assert fig.data[0].jitter == 0.4
+        assert fig.data[0].pointpos == -1.5
+
+    def test_color_column_splits_one_trace_per_group(self) -> None:
+        fig = AdvancedChartBuilder(STRIP_DATA).strip("v", color_column="grp")
+        # one Box trace per group value (grp has 2: x, y), named after each group
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Box) for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["x", "y"]
+
+    def test_y_only_leaves_x_none(self) -> None:
+        fig = AdvancedChartBuilder(STRIP_DATA).strip("v")
+        # no x_column → every point in a single column; px.strip leaves trace.x None
+        assert len(fig.data) == 1
+        assert fig.data[0].x is None
+        assert list(fig.data[0].y) == [1, 2, 3, 4, 5]
+
+    def test_apply_theme_professional_runs(self) -> None:
+        fig = AdvancedChartBuilder(STRIP_DATA).strip("v", theme="professional")
+        # go.Box has a marker WITH a line sub-prop, so apply_theme's trace-polish
+        # loop runs cleanly; professional theme = salmon paper.
+        assert fig.layout.paper_bgcolor == "#fff1e5"

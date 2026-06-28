@@ -131,6 +131,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "ecdf",
             "sunburst",
             "sankey",
+            "strip",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -498,6 +499,31 @@ async def test_create_chart_ecdf_missing_column_raises(monkeypatch) -> None:
     _wire_builders(monkeypatch, {})
     with pytest.raises(ToolError, match="ecdf requires x_column"):
         await create_chart(data=[{"a": 1}], chart_type="ecdf", x_column="")
+
+
+async def test_create_chart_strip_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"v": 1, "cat": "a", "g": "x"}],
+        chart_type="strip",
+        y_column="v",
+        x_column="cat",
+        color_column="g",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "strip"
+    assert sink["args"] == ("v",)
+    assert sink["kwargs"]["x_column"] == "cat"
+    assert sink["kwargs"]["color_column"] == "g"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_strip_missing_column_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="strip requires y_column"):
+        await create_chart(data=[{"v": 1}], chart_type="strip", y_column="")
 
 
 async def test_create_chart_treemap_passthrough(monkeypatch) -> None:

@@ -86,6 +86,7 @@ async def create_chart(
       - "ecdf": x_column → empirical cumulative distribution (share ≤ x)
       - "sunburst": names_column + values_column (+ hierarchy_column) → radial hierarchy rings
       - "sankey": source_column + target_column + values_column → proportional flow between nodes
+      - "strip": y_column (+ optional x_column) → one jittered dot per raw observation
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -139,6 +140,7 @@ async def create_chart(
         "ecdf",
         "sunburst",
         "sankey",
+        "strip",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -382,6 +384,11 @@ def _build_chart(
         if not x_column:
             raise ToolError("ecdf requires x_column")
         return builder.ecdf(x_column, title=title, theme=theme, color_column=color_column)
+
+    if chart_type == "strip":
+        if not y_column:
+            raise ToolError("strip requires y_column")
+        return builder.strip(y_column, x_column=x_column or None, title=title, theme=theme, color_column=color_column)
 
     if chart_type == "animated_line":
         if not x_column or not y_column or not frame_column:

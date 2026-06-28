@@ -549,6 +549,55 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def strip(
+        self,
+        y_column: str,
+        title: str = "",
+        theme: str = "dark",
+        x_column: Optional[str] = None,
+        color_column: Optional[str] = None,
+        jitter: float = 0.2,
+        pointpos: float = 0,
+    ) -> go.Figure:
+        """Create a strip plot — one jittered dot per raw observation.
+
+        Every individual data point is plotted as a marker, nudged horizontally
+        within its category so overlapping points separate. The canonical
+        professional chart for showing the *actual sample* rather than a summary
+        shape: a box plot reduces the data to five quartile numbers and a violin
+        to a density curve, so both hide the sample size, individual outliers,
+        clustering, and gaps that a strip plot lays bare. Ideal for
+        small-to-moderate samples where every observation counts (test scores per
+        class, survey responses per district, sensor readings per site). Pass
+        ``x_column`` to split points into category columns, ``color_column`` for
+        a second grouping (one point set per group), and tune ``jitter`` /
+        ``pointpos`` to spread or stack the points.
+
+        Args:
+            y_column: Column whose values are plotted (one dot per value)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            x_column: Optional category column splitting points into columns
+            color_column: Optional second grouping column (one point set per group)
+            jitter: Horizontal jitter spread (0–1, 0 = stacked in a line)
+            pointpos: Vertical offset of points relative to the box (-2 to 2)
+        """
+        kwargs: dict[str, Any] = {
+            "y": y_column,
+            "title": title,
+        }
+        if x_column:
+            kwargs["x"] = x_column
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        fig = px.strip(self.data, **kwargs)
+        # px.strip emits go.Box traces with boxpoints='all'; jitter/pointpos are
+        # trace-level knobs applied after construction (px has no strip-level arg).
+        fig.update_traces(jitter=jitter, pointpos=pointpos)
+        apply_theme(fig, theme)
+        return fig
+
     def sunburst(
         self,
         names_column: str,
