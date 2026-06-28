@@ -114,7 +114,18 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
     except ToolError as e:
         msg = str(e)
         # Every supported type must be listed in the error so clients can self-correct.
-        for t in ("line", "bar", "pie", "heatmap", "gauge", "sparklines", "violin", "waterfall", "candlestick"):
+        for t in (
+            "line",
+            "bar",
+            "pie",
+            "heatmap",
+            "gauge",
+            "sparklines",
+            "violin",
+            "waterfall",
+            "candlestick",
+            "ternary",
+        ):
             assert t in msg
     else:  # pragma: no cover - defensive
         raise AssertionError("expected ToolError")
@@ -346,6 +357,39 @@ async def test_create_chart_candlestick_missing_close_raises(monkeypatch) -> Non
             high_column="high",
             low_column="low",
             close_column="",
+        )
+
+
+async def test_create_chart_ternary_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"a": 1, "b": 1, "c": 1}],
+        chart_type="ternary",
+        a_column="a",
+        b_column="b",
+        c_column="c",
+        color_column="grp",
+        size_column="sz",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "ternary"
+    assert sink["args"] == ("a", "b", "c")
+    assert sink["kwargs"]["color_column"] == "grp"
+    assert sink["kwargs"]["size_column"] == "sz"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_ternary_missing_component_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="ternary requires a_column, b_column, and c_column"):
+        await create_chart(
+            data=[{"a": 1, "b": 1}],
+            chart_type="ternary",
+            a_column="a",
+            b_column="b",
+            c_column="",
         )
 
 

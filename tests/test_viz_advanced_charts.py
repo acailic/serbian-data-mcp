@@ -81,6 +81,12 @@ CANDLESTICK_DATA: list[dict[str, Any]] = [
     {"date": "2024-01-03", "open": 99, "high": 120, "low": 97, "close": 118},
 ]
 
+TERNARY_DATA: list[dict[str, Any]] = [
+    {"a": 40, "b": 30, "c": 30, "grp": "x", "sz": 10},
+    {"a": 20, "b": 30, "c": 50, "grp": "y", "sz": 20},
+    {"a": 30, "b": 40, "c": 30, "grp": "x", "sz": 15},
+]
+
 
 # ---------------------------------------------------------------------------
 # __init__
@@ -481,4 +487,41 @@ class TestCandlestick:
     def test_apply_theme_light_runs(self) -> None:
         fig = AdvancedChartBuilder(CANDLESTICK_DATA).candlestick("open", "high", "low", "close", theme="light")
         # apply_theme ran: light theme sets a concrete paper_bgcolor
+        assert fig.layout.paper_bgcolor is not None
+
+
+# ---------------------------------------------------------------------------
+# ternary
+# ---------------------------------------------------------------------------
+
+
+class TestTernary:
+    def test_returns_scatterternary_trace_with_abc(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).ternary("a", "b", "c", title="T")
+        assert isinstance(fig, go.Figure)
+        # no color grouping -> one Scatterternary trace carrying all rows
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Scatterternary)
+        assert list(fig.data[0].a) == [40, 20, 30]
+        assert list(fig.data[0].b) == [30, 30, 40]
+        assert list(fig.data[0].c) == [30, 50, 30]
+        assert fig.layout.title.text == "T"
+
+    def test_color_column_splits_traces(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).ternary("a", "b", "c", color_column="grp")
+        # one Scatterternary trace per group (x, y) -> 2 traces, each Scatterternary
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Scatterternary) for t in fig.data)
+
+    def test_size_column_sets_marker_size(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).ternary("a", "b", "c", size_column="sz")
+        t = fig.data[0]
+        # px maps the size column onto the trace's marker.size array
+        assert t.marker.size is not None
+        assert len(t.marker.size) == 3
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(TERNARY_DATA).ternary("a", "b", "c", theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor; ternary
+        # uses the separate `ternary` sub-axis, which apply_theme does not touch
         assert fig.layout.paper_bgcolor is not None

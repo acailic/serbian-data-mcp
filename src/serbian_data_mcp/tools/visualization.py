@@ -54,6 +54,9 @@ async def create_chart(
     high_column: str = "",
     low_column: str = "",
     close_column: str = "",
+    a_column: str = "",
+    b_column: str = "",
+    c_column: str = "",
 ) -> dict[str, Any]:
     """Create interactive charts from data. Supports 20+ chart types.
 
@@ -73,6 +76,7 @@ async def create_chart(
       - "violin": y_column (+ optional x_column) → distribution shape + density
       - "waterfall": x_column + values_column → cumulative running-total bridge
       - "candlestick": open/high/low/close columns → OHLC price candles
+      - "ternary": a/b/c columns → 3-part compositional mixture triangle
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -119,6 +123,7 @@ async def create_chart(
         "violin",
         "waterfall",
         "candlestick",
+        "ternary",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -155,6 +160,9 @@ async def create_chart(
             high_column=high_column,
             low_column=low_column,
             close_column=close_column,
+            a_column=a_column,
+            b_column=b_column,
+            c_column=c_column,
         )
     except ToolError:
         raise
@@ -195,6 +203,9 @@ def _build_chart(
     high_column: str = "",
     low_column: str = "",
     close_column: str = "",
+    a_column: str = "",
+    b_column: str = "",
+    c_column: str = "",
 ):
     """Build the right chart type. Returns Plotly Figure or raises ToolError."""
     if chart_type == "line":
@@ -282,6 +293,19 @@ def _build_chart(
             title=title,
             theme=theme,
             x_column=x_column or None,
+        )
+
+    if chart_type == "ternary":
+        if not a_column or not b_column or not c_column:
+            raise ToolError("ternary requires a_column, b_column, and c_column")
+        return builder.ternary(
+            a_column,
+            b_column,
+            c_column,
+            title=title,
+            theme=theme,
+            color_column=color_column,
+            size_column=size_column,
         )
 
     if chart_type == "animated_line":

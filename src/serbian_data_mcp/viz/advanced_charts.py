@@ -328,6 +328,51 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def ternary(
+        self,
+        a_column: str,
+        b_column: str,
+        c_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        size_column: Optional[str] = None,
+    ) -> go.Figure:
+        """Create a ternary scatter — compositional data on a 3-part whole.
+
+        Each point is a 3-component mix that sums to a constant (clay/silt/sand,
+        spending-share across three sectors, vote-share across three candidates).
+        The canonical professional chart for compositional / mixture data where
+        the three parts are mutually exclusive and exhaustive — a 3-way split a
+        plain scatter cannot represent because the three axes are not
+        independent (every point's coordinates are constrained to sum to a
+        whole). Ideal for geology/soil texture, budget-share decomposition, and
+        election-share triangles.
+
+        Args:
+            a_column: First component column (A vertex)
+            b_column: Second component column (B vertex)
+            c_column: Third component column (C vertex)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional grouping column (one series per group)
+            size_column: Optional per-point marker-size column
+        """
+        kwargs: dict[str, Any] = {
+            "a": a_column,
+            "b": b_column,
+            "c": c_column,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        if size_column:
+            kwargs["size"] = size_column
+        fig = px.scatter_ternary(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def animated_line(
         self,
         x_column: str,
