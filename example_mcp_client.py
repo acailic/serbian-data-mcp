@@ -59,7 +59,7 @@ def show_json(data: Any, max_lines: int = 20) -> None:
     text = json.dumps(data, indent=2, ensure_ascii=False, default=str)
     lines = text.splitlines()
     if len(lines) > max_lines:
-        for line in lines[:max_lines - 1]:
+        for line in lines[: max_lines - 1]:
             print(f"    {line}")
         print(f"    {DIM}... ({len(lines) - max_lines + 1} more lines){RESET}")
     else:
@@ -175,32 +175,50 @@ async def transform_data(client: Client) -> None:
     ]
 
     step(1, "Filtering: year == 2022 …")
-    result = await client.call_tool("filter_data_tool", {
-        "data": sample, "filters": {"year": 2022},
-    })
+    result = await client.call_tool(
+        "filter_data_tool",
+        {
+            "data": sample,
+            "filters": {"year": 2022},
+        },
+    )
     data = parse_result(result)
     ok(f"Filtered to {data['rows']} rows")
     show_json(data)
 
     step(2, "Sorting by GDP descending …")
-    result = await client.call_tool("sort_data_tool", {
-        "data": data["data"], "by": "gdp", "ascending": False,
-    })
+    result = await client.call_tool(
+        "sort_data_tool",
+        {
+            "data": data["data"],
+            "by": "gdp",
+            "ascending": False,
+        },
+    )
     data = parse_result(result)
     ok("Sorted")
     show_json(data)
 
     step(3, "Aggregating: sum of population …")
-    result = await client.call_tool("aggregate_data_tool", {
-        "data": data["data"], "column": "population", "function": "sum",
-    })
+    result = await client.call_tool(
+        "aggregate_data_tool",
+        {
+            "data": data["data"],
+            "column": "population",
+            "function": "sum",
+        },
+    )
     data = parse_result(result)
     ok(f"Total population (in thousands): {data['value']}")
 
     step(4, "Selecting columns: region, gdp …")
-    result = await client.call_tool("select_columns_tool", {
-        "data": sample, "columns": ["region", "gdp"],
-    })
+    result = await client.call_tool(
+        "select_columns_tool",
+        {
+            "data": sample,
+            "columns": ["region", "gdp"],
+        },
+    )
     data = parse_result(result)
     ok(f"Selected {len(data.get('columns', []))} columns")
     show_json(data)
@@ -235,11 +253,14 @@ async def visualize(client: Client) -> None:
 
     if last_figure:
         step(4, "Exporting chart to JSON …")
-        result = await client.call_tool("export_visualization", {
-            "figure": last_figure,
-            "format": "json",
-            "filename": "showcase-chart",
-        })
+        result = await client.call_tool(
+            "export_visualization",
+            {
+                "figure": last_figure,
+                "format": "json",
+                "filename": "showcase-chart",
+            },
+        )
         data = parse_result(result)
         ok(f"Exported to {data['filepath']}")
 

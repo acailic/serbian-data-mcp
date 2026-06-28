@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from serbian_data_mcp.api.client import UDataClient
 
+
 async def main():
     """Search for age population datasets and show sample data."""
     print("🔍 Searching for age population datasets on data.gov.rs")
@@ -16,10 +17,7 @@ async def main():
 
     async with UDataClient() as client:
         # Search for age-related datasets
-        result = await client.search_datasets(
-            query="age population demographics",
-            page_size=20
-        )
+        result = await client.search_datasets(query="age population demographics", page_size=20)
 
         print(f"\nFound {result.total} datasets\n")
 
@@ -38,7 +36,7 @@ async def main():
                     print(f"   Resources ({len(dataset.resources)}):")
                     for r in dataset.resources[:3]:
                         print(f"     - {r.title or r.format or 'N/A'} ({r.format or 'N/A'})")
-                        if r.format == 'csv' or r.format == 'json':
+                        if r.format == "csv" or r.format == "json":
                             print("       ⚡ Downloadable for analysis")
 
                 print()
@@ -50,6 +48,7 @@ async def main():
             for term in ["population", "demographics", "stanovnistvo"]:
                 r = await client.search_datasets(query=term, page_size=1)
                 print(f"  • '{term}': {r.total} datasets")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -24,10 +24,7 @@ async def example_search_datasets():
 
     async with UDataClient() as client:
         # Search for population-related datasets
-        result = await client.search_datasets(
-            query="population",
-            page_size=5
-        )
+        result = await client.search_datasets(query="population", page_size=5)
 
         print(f"Found {result.total} datasets matching 'population'")
         print(f"\nShowing {len(result.datasets)} results:")
@@ -117,10 +114,7 @@ async def example_visualization():
     print("=" * 50)
 
     # Sample data for demonstration
-    data = {
-        "year": [2018, 2019, 2020, 2021, 2022],
-        "population": [7000000, 7050000, 6870000, 6900000, 6920000]
-    }
+    data = {"year": [2018, 2019, 2020, 2021, 2022], "population": [7000000, 7050000, 6870000, 6900000, 6920000]}
 
     print("\nCreating a line chart from sample data...")
     print("Year vs Population")
@@ -128,11 +122,7 @@ async def example_visualization():
     try:
         # Create chart using ChartBuilder
         builder = ChartBuilder(data)
-        chart = builder.line_chart(
-            x_column="year",
-            y_column="population",
-            title="Serbian Population Trend (Sample)"
-        )
+        chart = builder.line_chart(x_column="year", y_column="population", title="Serbian Population Trend (Sample)")
 
         # Export to HTML
         output_path = "sample_chart.html"

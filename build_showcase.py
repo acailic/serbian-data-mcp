@@ -89,10 +89,20 @@ async def category_census(client: Any) -> dict[str, Any]:
 
     # Serbia-level totals
     serbia22 = next(
-        (r["vrednost"] for r in data22 if r["nTer"] == "РЕПУБЛИКА СРБИЈА" and r["IDBrClDom"] == 0 and r["IDTipNaselja"] == "0"), 0
+        (
+            r["vrednost"]
+            for r in data22
+            if r["nTer"] == "РЕПУБЛИКА СРБИЈА" and r["IDBrClDom"] == 0 and r["IDTipNaselja"] == "0"
+        ),
+        0,
     )
     serbia11 = next(
-        (r["vrednost"] for r in data11 if r["nTer"] == "РЕПУБЛИКА СРБИЈА" and r["IDBrClDom"] == 0 and r["IDTipNaselja"] == "0"), 0
+        (
+            r["vrednost"]
+            for r in data11
+            if r["nTer"] == "РЕПУБЛИКА СРБИЈА" and r["IDBrClDom"] == 0 and r["IDTipNaselja"] == "0"
+        ),
+        0,
     )
 
     # Household structure breakdown (Serbia 2022)
@@ -115,8 +125,12 @@ async def category_census(client: Any) -> dict[str, Any]:
         "serbia_households_2011": serbia11,
         "serbia_households_2022": serbia22,
         "serbia_change_pct": round(((serbia22 / serbia11) - 1) * 100, 1) if serbia11 else None,
-        "top_decrease": top_decrease[["municipality", "households_2011", "households_2022", "change_pct"]].to_dict("records"),
-        "top_increase": top_increase[["municipality", "households_2011", "households_2022", "change_pct"]].to_dict("records"),
+        "top_decrease": top_decrease[["municipality", "households_2011", "households_2022", "change_pct"]].to_dict(
+            "records"
+        ),
+        "top_increase": top_increase[["municipality", "households_2011", "households_2022", "change_pct"]].to_dict(
+            "records"
+        ),
         "household_structure": df_structure.to_dict("records"),
         "csv_path": str(csv_path),
         "data_rows": len(comparison_rows),
@@ -147,16 +161,18 @@ async def category_employment(client: Any) -> dict[str, Any]:
     yearly_totals = []
     for r in data_total:
         if r["IDTer"] == "RS" and r["IDModalitetRegZap"] == "0":
-            yearly_totals.append(
-                {"year": int(r["god"]), "total": r["vrednost"], "label": r["nModalitetRegZap"]}
-            )
+            yearly_totals.append({"year": int(r["god"]), "total": r["vrednost"], "label": r["nModalitetRegZap"]})
     df_yearly = pd.DataFrame(yearly_totals).sort_values("year")
 
     # Extract by employment type for latest year
     by_type_rows = []
     for r in data_total:
-        if r["IDTer"] == "RS" and r["god"] == max(r["god"] for r in data_total if r["IDTer"] == "RS" and r["IDModalitetRegZap"] == "0"):
-            by_type_rows.append({"type_code": r["IDModalitetRegZap"], "type_name": r["nModalitetRegZap"], "value": r["vrednost"]})
+        if r["IDTer"] == "RS" and r["god"] == max(
+            r["god"] for r in data_total if r["IDTer"] == "RS" and r["IDModalitetRegZap"] == "0"
+        ):
+            by_type_rows.append(
+                {"type_code": r["IDModalitetRegZap"], "type_name": r["nModalitetRegZap"], "value": r["vrednost"]}
+            )
 
     # Monthly data since 2016
     ds_monthly = await client.get_dataset("607fd7e57de272771a0d397a")
@@ -300,8 +316,12 @@ async def category_air_quality(client: Any) -> dict[str, Any]:
 
     if info["status"] == "success":
         logger.info(f"  Stations: {info['total_stations']}, Data points: {info['data_points']}")
-        logger.info(f"  Exceeding EU limit (40µg/m³): {info['stations_exceeding_eu_limit']} of {info['total_stations']}")
-        logger.info(f"  Worst: {info['worst_5_stations'][0]['station']} ({info['worst_5_stations'][0]['avg_pm10']}µg/m³)")
+        logger.info(
+            f"  Exceeding EU limit (40µg/m³): {info['stations_exceeding_eu_limit']} of {info['total_stations']}"
+        )
+        logger.info(
+            f"  Worst: {info['worst_5_stations'][0]['station']} ({info['worst_5_stations'][0]['avg_pm10']}µg/m³)"
+        )
         logger.info(f"  Best: {info['best_5_stations'][0]['station']} ({info['best_5_stations'][0]['avg_pm10']}µg/m³)")
 
     return info
@@ -405,7 +425,13 @@ async def category_real_estate(client: Any) -> dict[str, Any]:
         org_name = ds.organization.name if ds.organization else "Unknown"
         formats = sorted({r.format for r in ds.resources if r.format})
         datasets_info.append(
-            {"id": ds.id, "title": ds.title, "organization": org_name, "formats": formats, "resource_count": len(ds.resources)}
+            {
+                "id": ds.id,
+                "title": ds.title,
+                "organization": org_name,
+                "formats": formats,
+                "resource_count": len(ds.resources),
+            }
         )
 
     # Try to download the national-level price dataset
@@ -456,7 +482,9 @@ async def category_real_estate(client: Any) -> dict[str, Any]:
 
     logger.info(f"  Real estate datasets: {len(datasets_info)}")
     if national_price_data:
-        logger.info(f"  National data: {national_price_data['total_rows']} rows, cols: {national_price_data['headers']}")
+        logger.info(
+            f"  National data: {national_price_data['total_rows']} rows, cols: {national_price_data['headers']}"
+        )
     return info
 
 
@@ -552,7 +580,9 @@ async def category_cross_analysis(client: Any) -> dict[str, Any]:
         emp = emp_by_muni[muni]
         hh = households_by_muni[muni]
         ratio = emp / hh if hh else 0
-        cross_rows.append({"municipality": muni, "employment": emp, "households": hh, "emp_per_household": round(ratio, 2)})
+        cross_rows.append(
+            {"municipality": muni, "employment": emp, "households": hh, "emp_per_household": round(ratio, 2)}
+        )
 
     df = pd.DataFrame(cross_rows)
     df = df.sort_values("emp_per_household", ascending=False)
@@ -599,7 +629,14 @@ async def category_municipal_data_availability(client: Any) -> dict[str, Any]:
             tags = ds.tags or []
             formats = sorted({r.format for r in ds.resources if r.format})
             all_datasets.append(
-                {"id": ds.id, "title": ds.title, "org": org, "tags": tags, "formats": formats, "modified": str(ds.modified_at)[:10] if ds.modified_at else ""}
+                {
+                    "id": ds.id,
+                    "title": ds.title,
+                    "org": org,
+                    "tags": tags,
+                    "formats": formats,
+                    "modified": str(ds.modified_at)[:10] if ds.modified_at else "",
+                }
             )
         if not result.has_next or page > 35:
             break
@@ -632,7 +669,17 @@ async def category_municipal_data_availability(client: Any) -> dict[str, Any]:
             all_formats[f] += 1
 
     # Government vs non-government classification
-    gov_keywords = ["општина", "град ", "министарство", "завод", "институт", "управа", "агенција", "републички", "покрајински"]
+    gov_keywords = [
+        "општина",
+        "град ",
+        "министарство",
+        "завод",
+        "институт",
+        "управа",
+        "агенција",
+        "републички",
+        "покрајински",
+    ]
     gov_datasets = sum(1 for d in all_datasets if any(kw in d["org"].lower() for kw in gov_keywords))
     non_gov = len(all_datasets) - gov_datasets
 
@@ -798,7 +845,7 @@ td { color: var(--text); }
         <p class="desc">National open data portal data.gov.rs — scope and composition</p>
         <div class="stats">
             <div class="stat-box">
-                <div class="big-num">{availability.get('total_datasets_scanned', 3443):,}</div>
+                <div class="big-num">{availability.get("total_datasets_scanned", 3443):,}</div>
                 <div class="label">Total Datasets</div>
             </div>
             <div class="stat-box">
@@ -806,11 +853,11 @@ td { color: var(--text); }
                 <div class="label">Organizations</div>
             </div>
             <div class="stat-box">
-                <div class="big-num green">{availability.get('government_datasets', '?')}</div>
+                <div class="big-num green">{availability.get("government_datasets", "?")}</div>
                 <div class="label">Government Datasets</div>
             </div>
             <div class="stat-box">
-                <div class="big-num gold">{availability.get('non_government_datasets', '?')}</div>
+                <div class="big-num gold">{availability.get("non_government_datasets", "?")}</div>
                 <div class="label">Non-Government</div>
             </div>
         </div>
@@ -833,18 +880,18 @@ td { color: var(--text); }
         html += f"""
     <div class="section">
         <h2><span class="badge badge-high">HIGH</span> Census — Households by Municipality</h2>
-        <p class="desc">Popis 2022 vs Popis 2011: 2.5M+ households across {census.get('matching_municipalities', 0)} municipalities</p>
+        <p class="desc">Popis 2022 vs Popis 2011: 2.5M+ households across {census.get("matching_municipalities", 0)} municipalities</p>
         <div class="stats">
             <div class="stat-box">
-                <div class="big-num">{census.get('serbia_households_2022', 0):,.0f}</div>
+                <div class="big-num">{census.get("serbia_households_2022", 0):,.0f}</div>
                 <div class="label">Households 2022</div>
             </div>
             <div class="stat-box">
-                <div class="big-num blue">{census.get('serbia_change_pct', '?')}%</div>
+                <div class="big-num blue">{census.get("serbia_change_pct", "?")}%</div>
                 <div class="label">Change Since 2011</div>
             </div>
             <div class="stat-box">
-                <div class="big-num gold">{census.get('matching_municipalities', 0)}</div>
+                <div class="big-num gold">{census.get("matching_municipalities", 0)}</div>
                 <div class="label">Municipalities Compared</div>
             </div>
         </div>
@@ -870,18 +917,18 @@ td { color: var(--text); }
         html += f"""
     <div class="section">
         <h2><span class="badge badge-high">HIGH</span> Employment — Registered Employment Trends</h2>
-        <p class="desc">Monthly and annual registered employment since 2015 — {emp.get('monthly_data_points', 0)} data points</p>
+        <p class="desc">Monthly and annual registered employment since 2015 — {emp.get("monthly_data_points", 0)} data points</p>
         <div class="stats">
             <div class="stat-box">
-                <div class="big-num">{emp.get('last_year_value', 0):,.0f}</div>
-                <div class="label">Employed ({emp.get('years_covered', '?').split('-')[-1]})</div>
+                <div class="big-num">{emp.get("last_year_value", 0):,.0f}</div>
+                <div class="label">Employed ({emp.get("years_covered", "?").split("-")[-1]})</div>
             </div>
             <div class="stat-box">
-                <div class="big-num green">+{emp.get('total_growth_pct', '?')}%</div>
-                <div class="label">Growth Since {emp.get('years_covered', '?').split('-')[0]}</div>
+                <div class="big-num green">+{emp.get("total_growth_pct", "?")}%</div>
+                <div class="label">Growth Since {emp.get("years_covered", "?").split("-")[0]}</div>
             </div>
             <div class="stat-box">
-                <div class="big-num gold">{emp.get('monthly_data_points', 0)}</div>
+                <div class="big-num gold">{emp.get("monthly_data_points", 0)}</div>
                 <div class="label">Monthly Data Points</div>
             </div>
         </div>
@@ -905,7 +952,7 @@ td { color: var(--text); }
                     pct = ((row["total"] / prev) - 1) * 100
                     cls = "positive" if pct >= 0 else "negative"
                     yoy = f'<span class="{cls}">{pct:+.1f}%</span>'
-            html += f'<tr><td>{row["year"]}</td><td>{row["total"]:,.0f}</td><td>{yoy}</td></tr>'
+            html += f"<tr><td>{row['year']}</td><td>{row['total']:,.0f}</td><td>{yoy}</td></tr>"
         html += """</table></div>
     </div>"""
 
@@ -916,22 +963,22 @@ td { color: var(--text); }
         best = air.get("best_5_stations", [])
         html += f"""
     <div class="section">
-        <h2><span class="badge badge-high">HIGH</span> Air Quality — Daily PM₁₀ from {air.get('total_stations', 0)} Stations</h2>
+        <h2><span class="badge badge-high">HIGH</span> Air Quality — Daily PM₁₀ from {air.get("total_stations", 0)} Stations</h2>
         <p class="desc">
-            Verified daily PM₁₀ data, {air.get('data_points', 0):,} measurements, {air.get('year_analyzed', 2024)} annual analysis<br>
+            Verified daily PM₁₀ data, {air.get("data_points", 0):,} measurements, {air.get("year_analyzed", 2024)} annual analysis<br>
             Years available: 2011-2024 (14 years!) — EU limit: 40 µg/m³ annual mean
         </p>
         <div class="stats">
             <div class="stat-box">
-                <div class="big-num">{air.get('total_stations', 0)}</div>
+                <div class="big-num">{air.get("total_stations", 0)}</div>
                 <div class="label">Monitoring Stations</div>
             </div>
             <div class="stat-box">
-                <div class="big-num" style="color: #e63946">{air.get('stations_exceeding_eu_limit', 0)}</div>
+                <div class="big-num" style="color: #e63946">{air.get("stations_exceeding_eu_limit", 0)}</div>
                 <div class="label">Exceed EU Limit</div>
             </div>
             <div class="stat-box">
-                <div class="big-num green">{air.get('stations_below_eu_limit', 0)}</div>
+                <div class="big-num green">{air.get("stations_below_eu_limit", 0)}</div>
                 <div class="label">Below EU Limit</div>
             </div>
         </div>
@@ -964,18 +1011,18 @@ td { color: var(--text); }
         top_muns = budgets.get("top_municipalities_by_count", [])
         html += f"""
     <div class="section">
-        <h2><span class="badge badge-high">HIGH</span> Municipal Budgets — {budgets.get('total_budget_datasets', 0)} Budget Datasets</h2>
+        <h2><span class="badge badge-high">HIGH</span> Municipal Budgets — {budgets.get("total_budget_datasets", 0)} Budget Datasets</h2>
         <p class="desc">
-            Budget execution data from {budgets.get('unique_municipalities', 0)} municipalities.
+            Budget execution data from {budgets.get("unique_municipalities", 0)} municipalities.
             Multi-year data in XLSX/CSV format.
         </p>
         <div class="stats">
             <div class="stat-box">
-                <div class="big-num">{budgets.get('total_budget_datasets', 0)}</div>
+                <div class="big-num">{budgets.get("total_budget_datasets", 0)}</div>
                 <div class="label">Budget Datasets</div>
             </div>
             <div class="stat-box">
-                <div class="big-num blue">{budgets.get('unique_municipalities', 0)}</div>
+                <div class="big-num blue">{budgets.get("unique_municipalities", 0)}</div>
                 <div class="label">Municipalities</div>
             </div>
             <div class="stat-box">
@@ -1006,12 +1053,12 @@ td { color: var(--text); }
         html += f"""
     <div class="section">
         <h2><span class="badge badge-high">HIGH</span> Real Estate — Property Prices</h2>
-        <p class="desc">{re_data.get('total_datasets', 0)} datasets with average square meter prices for property tax assessment</p>
+        <p class="desc">{re_data.get("total_datasets", 0)} datasets with average square meter prices for property tax assessment</p>
         <div class="findings">
             <h3>What's Available</h3>
             <ul>"""
         for ds in re_data.get("datasets", [])[:10]:
-            html += f'<li><strong>{ds["title"]}</strong> — {ds["organization"]} ({", ".join(ds["formats"])})</li>'
+            html += f"<li><strong>{ds['title']}</strong> — {ds['organization']} ({', '.join(ds['formats'])})</li>"
         html += """</ul>
             <h3>What's Possible</h3>
             <ul>
@@ -1022,7 +1069,7 @@ td { color: var(--text); }
             </ul>"""
         if npp:
             html += f"""<h3>Data Structure (National)</h3>
-            <p style="color:var(--text-dim);font-size:0.9rem">{npp.get('total_rows', '?')} rows, columns: {', '.join(npp.get('headers', []))}</p>"""
+            <p style="color:var(--text-dim);font-size:0.9rem">{npp.get("total_rows", "?")} rows, columns: {", ".join(npp.get("headers", []))}</p>"""
         html += """</div>
     </div>"""
 
@@ -1039,7 +1086,7 @@ td { color: var(--text); }
         for name, info in regs.get("registries", {}).items():
             status = "✅" if not info.get("error") else "❌"
             formats = ", ".join(r["format"] for r in info.get("resources", []))
-            html += f'<li>{status} <strong>{name}</strong> — {info.get("organization", "?")} ({formats})</li>'
+            html += f"<li>{status} <strong>{name}</strong> — {info.get('organization', '?')} ({formats})</li>"
         if api:
             if api.get("status_code"):
                 html += f"""
@@ -1065,16 +1112,16 @@ td { color: var(--text); }
     <div class="section">
         <h2><span class="badge badge-med">MEDIUM</span> Cross-Dataset Analysis — Employment × Households</h2>
         <p class="desc">
-            Matching {cross.get('matching_municipalities', 0)} municipalities across census (2022) and employment ({cross.get('employment_year', '?')}) data.
+            Matching {cross.get("matching_municipalities", 0)} municipalities across census (2022) and employment ({cross.get("employment_year", "?")}) data.
             Employment per household ratio reveals economic activity patterns.
         </p>
         <div class="stats">
             <div class="stat-box">
-                <div class="big-num">{cross.get('serbia_avg_emp_per_household', '?')}</div>
+                <div class="big-num">{cross.get("serbia_avg_emp_per_household", "?")}</div>
                 <div class="label">Avg Employment per Household</div>
             </div>
             <div class="stat-box">
-                <div class="big-num blue">{cross.get('matching_municipalities', 0)}</div>
+                <div class="big-num blue">{cross.get("matching_municipalities", 0)}</div>
                 <div class="label">Municipalities Matched</div>
             </div>
         </div>
@@ -1082,7 +1129,7 @@ td { color: var(--text); }
             <h3>Top Employment-per-Household Municipalities</h3>
             <table><tr><th>Municipality</th><th>Employment</th><th>Households</th><th>Emp/HH</th></tr>"""
         for row in cross.get("top_10_emp_per_household", [])[:5]:
-            html += f'<tr><td>{row["municipality"]}</td><td>{row["employment"]:,.0f}</td><td>{row["households"]:,.0f}</td><td>{row["emp_per_household"]}</td></tr>'
+            html += f"<tr><td>{row['municipality']}</td><td>{row['employment']:,.0f}</td><td>{row['households']:,.0f}</td><td>{row['emp_per_household']}</td></tr>"
         html += """
             </table>
             <h3>What's Possible</h3>

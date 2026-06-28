@@ -1,4 +1,5 @@
 """Build demo pages for population pyramid and electricity consumption."""
+
 import asyncio
 import httpx
 import zipfile
@@ -111,12 +112,7 @@ async def build_population_pyramid() -> str:
     data = await fetch_json(url)
 
     # Filter: Serbia total, by sex, all settlement types
-    rs_rows = [
-        r for r in data
-        if r.get("IDTer") == "RS"
-        and r.get("IDPol", 0) != 0
-        and r.get("IDTipNaselja") == "0"
-    ]
+    rs_rows = [r for r in data if r.get("IDTer") == "RS" and r.get("IDPol", 0) != 0 and r.get("IDTipNaselja") == "0"]
 
     # Build pyramid dict
     pyramid = {}
@@ -142,16 +138,26 @@ async def build_population_pyramid() -> str:
 
     # 1. Population Pyramid
     fig1 = go.Figure()
-    fig1.add_trace(go.Bar(
-        y=labels, x=males, orientation="h",
-        name="Мушкарци", marker_color="#42a5f5",
-        hovertemplate="<b>%{y}</b><br>Мушки: %{x:,} општина<br>",
-    ))
-    fig1.add_trace(go.Bar(
-        y=labels, x=females, orientation="h",
-        name="Женско", marker_color="#ef5350",
-        hovertemplate="<b>%{y}</b><br>Женско: %{x:,}<br>",
-    ))
+    fig1.add_trace(
+        go.Bar(
+            y=labels,
+            x=males,
+            orientation="h",
+            name="Мушкарци",
+            marker_color="#42a5f5",
+            hovertemplate="<b>%{y}</b><br>Мушки: %{x:,} општина<br>",
+        )
+    )
+    fig1.add_trace(
+        go.Bar(
+            y=labels,
+            x=females,
+            orientation="h",
+            name="Женско",
+            marker_color="#ef5350",
+            hovertemplate="<b>%{y}</b><br>Женско: %{x:,}<br>",
+        )
+    )
     fig1.update_layout(
         **THEME,
         barmode="overlay",
@@ -176,24 +182,37 @@ async def build_population_pyramid() -> str:
     f_vals = [pyramid[a]["Женско"] for a in ages]
     [abs(m) + abs(f) for m, f in zip(m_vals, f_vals, strict=False)]
 
-    fig2.add_trace(go.Bar(
-        x=labels, y=[pyramid[a]["Мушко"] for a in ages],
-        name="Мушки", marker_color="#42a5f5",
-        hovertemplate="%{x}<br>Мушки: %{y:,}",
-    ))
-    fig2.add_trace(go.Bar(
-        x=labels, y=[pyramid[a]["Женско"] for a in ages],
-        name="Женско", marker_color="#ef5350",
-        hovertemplate="%{x}<br>Женско: %{y:,}",
-    ))
+    fig2.add_trace(
+        go.Bar(
+            x=labels,
+            y=[pyramid[a]["Мушко"] for a in ages],
+            name="Мушки",
+            marker_color="#42a5f5",
+            hovertemplate="%{x}<br>Мушки: %{y:,}",
+        )
+    )
+    fig2.add_trace(
+        go.Bar(
+            x=labels,
+            y=[pyramid[a]["Женско"] for a in ages],
+            name="Женско",
+            marker_color="#ef5350",
+            hovertemplate="%{x}<br>Женско: %{y:,}",
+        )
+    )
     # Ratio line
     ratios = [pyramid[a]["Женско"] / max(pyramid[a]["Мушко"], 1) for a in ages]
-    fig2.add_trace(go.Scatter(
-        x=labels, y=ratios, name="Однос Ж/М",
-        mode="lines+markers", line={"color": "#ffab00", "width": 2},
-        yaxis="y2",
-        hovertemplate="%{x}<br>Ж/М: %{y:.2f}",
-    ))
+    fig2.add_trace(
+        go.Scatter(
+            x=labels,
+            y=ratios,
+            name="Однос Ж/М",
+            mode="lines+markers",
+            line={"color": "#ffab00", "width": 2},
+            yaxis="y2",
+            hovertemplate="%{x}<br>Ж/М: %{y:.2f}",
+        )
+    )
 
     fig2.update_layout(
         **THEME,
@@ -201,8 +220,11 @@ async def build_population_pyramid() -> str:
         title={"text": "Старосна структура — Опажање по групама", "font": {"size": 14}},
         yaxis=dict(**AXIS, title="Број становника", side="left", tickformat=","),
         yaxis2=dict(
-            **AXIS, title="Однос Ж/М", side="right",
-            overlaying="y", range=[0.5, 2.5],
+            **AXIS,
+            title="Однос Ж/М",
+            side="right",
+            overlaying="y",
+            range=[0.5, 2.5],
         ),
         xaxis=dict(**AXIS, tickangle=45, title="Старосна група"),
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "center", "x": 0.5},
@@ -227,15 +249,17 @@ async def build_population_pyramid() -> str:
     pct_vals = [v / total_all * 100 for v in cat_vals]
 
     colors = ["#66bb6a", "#42a5f5", "#ffab00", "#ef5350"]
-    fig3 = go.Figure(go.Pie(
-        labels=[f"{n}<br>{v:,} ({p:.1f}%)" for n, v, p in zip(cat_names, cat_vals, pct_vals, strict=False)],
-        values=pct_vals,
-        marker_colors=colors,
-        textinfo="label",
-        textfont={"size": 12, "color": "#e8e8f0"},
-        hole=0.4,
-        hovertemplate="<b>%{label}</b><extra></extra>",
-    ))
+    fig3 = go.Figure(
+        go.Pie(
+            labels=[f"{n}<br>{v:,} ({p:.1f}%)" for n, v, p in zip(cat_names, cat_vals, pct_vals, strict=False)],
+            values=pct_vals,
+            marker_colors=colors,
+            textinfo="label",
+            textfont={"size": 12, "color": "#e8e8f0"},
+            hole=0.4,
+            hovertemplate="<b>%{label}</b><extra></extra>",
+        )
+    )
     fig3.update_layout(
         **THEME,
         title={"text": "Старосне категорије Србије — Попис 2022", "font": {"size": 14}},
@@ -251,7 +275,8 @@ async def build_population_pyramid() -> str:
     total = total_m + total_f
     youth = sum(pyramid[a]["Мушко"] + pyramid[a]["Женско"] for a in ages if a in ("0–4", "5–9", "10–14", "15–19"))
     working = sum(
-        pyramid[a]["Мушко"] + pyramid[a]["Женско"] for a in ages
+        pyramid[a]["Мушко"] + pyramid[a]["Женско"]
+        for a in ages
         if any(x in a for x in ["20–24", "25–29", "30–34", "35–39", "40–44", "45–49", "50–54", "55–59", "60–64"])
     )
     elderly = total - youth - working
@@ -260,16 +285,16 @@ async def build_population_pyramid() -> str:
     stats_html = f"""
 <div class="stats">
   <div class="stat"><div class="num gold">{total:,}</div><div class="lbl">Укупно становника</div></div>
-  <div class="stat"><div class="num blue">{total_m:,}</div><div class="lbl">Мушкарци ({total_m/total*100:.1f}%)</div></div>
-  <div class="stat"><div class="num red">{total_f:,}</div><div class="lbl">Женско ({total_f/total*100:.1f}%)</div></div>
-  <div class="stat"><div class="num green">{youth/total*100:.1f}%</div><div class="lbl">Омладина (0–19)</div></div>
+  <div class="stat"><div class="num blue">{total_m:,}</div><div class="lbl">Мушкарци ({total_m / total * 100:.1f}%)</div></div>
+  <div class="stat"><div class="num red">{total_f:,}</div><div class="lbl">Женско ({total_f / total * 100:.1f}%)</div></div>
+  <div class="stat"><div class="num green">{youth / total * 100:.1f}%</div><div class="lbl">Омладина (0–19)</div></div>
   <div class="stat"><div class="num">{dep_ratio:.1f}</div><div class="lbl">Однос зависности</div></div>
-  <div class="stat"><div class="num red">{elderly/total*100:.1f}%</div><div class="lbl">Стари (65+)</div></div>
+  <div class="stat"><div class="num red">{elderly / total * 100:.1f}%</div><div class="lbl">Стари (65+)</div></div>
 </div>"""
 
     html = wrap_html(
         [fig1, fig2, fig3],
-        title='Пирамида <span>становништва</span> Србије',
+        title="Пирамида <span>становништва</span> Србије",
         subtitle="Попис 2022 — Становништво према старости и полу · 6,65 miliona stanovnika · 202 opština",
         meta="Population pyramid of Serbia Census 2022 — age and sex distribution with demographic analysis",
     )
@@ -315,10 +340,23 @@ async def build_electricity() -> str:
     prod_colors = ["#ef5350", "#42a5f5", "#ffab00", "#26c6da", "#66bb6a"]
 
     pop_approx = {
-        str(y): p for y, p in [
-            (2010, 7186862), (2011, 7120066), (2012, 7100000), (2013, 7160000), (2014, 7130000),
-            (2015, 7090000), (2016, 7050000), (2017, 7020000), (2018, 6980000), (2019, 6940000),
-            (2020, 6900000), (2021, 6870000), (2022, 6830000), (2023, 6760000), (2024, 6710000),
+        str(y): p
+        for y, p in [
+            (2010, 7186862),
+            (2011, 7120066),
+            (2012, 7100000),
+            (2013, 7160000),
+            (2014, 7130000),
+            (2015, 7090000),
+            (2016, 7050000),
+            (2017, 7020000),
+            (2018, 6980000),
+            (2019, 6940000),
+            (2020, 6900000),
+            (2021, 6870000),
+            (2022, 6830000),
+            (2023, 6760000),
+            (2024, 6710000),
         ]
     }
 
@@ -347,11 +385,17 @@ async def build_electricity() -> str:
     # 1. Stacked area — consumption by sector
     fig1 = go.Figure()
     for s, label, color in zip(sectors, sector_labels, sector_colors, strict=False):
-        fig1.add_trace(go.Scatter(
-            x=years, y=sector_data[s], name=label,
-            stackgroup="one", fillcolor=color, line={"width": 0},
-            hovertemplate=f"{label}<br>%{{x}}: %{{y:,.0f}} TJ",
-        ))
+        fig1.add_trace(
+            go.Scatter(
+                x=years,
+                y=sector_data[s],
+                name=label,
+                stackgroup="one",
+                fillcolor=color,
+                line={"width": 0},
+                hovertemplate=f"{label}<br>%{{x}}: %{{y:,.0f}} TJ",
+            )
+        )
     fig1.update_layout(
         **THEME,
         title={"text": "Fina potrošnja električne energije po sektorima (TJ)", "font": {"size": 14}},
@@ -365,19 +409,24 @@ async def build_electricity() -> str:
 
     # 2. kWh per capita line
     fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(
-        x=years, y=kwh_cap,
-        mode="lines+markers+text",
-        line={"color": "#ffab00", "width": 3},
-        marker={"size": 8, "color": "#ffab00"},
-        text=[f"{v:,.0f}" for v in kwh_cap],
-        textposition="top center",
-        textfont={"size": 10, "color": "#ffab00"},
-        hovertemplate="Godina %{x}<br>%{y:,.0f} kWh/stanovniku",
-    ))
+    fig2.add_trace(
+        go.Scatter(
+            x=years,
+            y=kwh_cap,
+            mode="lines+markers+text",
+            line={"color": "#ffab00", "width": 3},
+            marker={"size": 8, "color": "#ffab00"},
+            text=[f"{v:,.0f}" for v in kwh_cap],
+            textposition="top center",
+            textfont={"size": 10, "color": "#ffab00"},
+            hovertemplate="Godina %{x}<br>%{y:,.0f} kWh/stanovniku",
+        )
+    )
     # EU average reference line
     fig2.add_hline(
-        y=4200, line_dash="dash", line_color="#66bb6a",
+        y=4200,
+        line_dash="dash",
+        line_color="#66bb6a",
         annotation_text="EU prosek ≈ 5,500 kWh",
         annotation_position="top right",
         annotation_font={"color": "#66bb6a", "size": 11},
@@ -395,11 +444,15 @@ async def build_electricity() -> str:
     # 3. Production mix — stacked bar
     fig3 = go.Figure()
     for s, label, color in zip(prod_sources, prod_labels, prod_colors, strict=False):
-        fig3.add_trace(go.Bar(
-            x=years, y=prod_data[s], name=label,
-            marker_color=color,
-            hovertemplate=f"{label}<br>%{{x}}: %{{y:,.0f}} TJ",
-        ))
+        fig3.add_trace(
+            go.Bar(
+                x=years,
+                y=prod_data[s],
+                name=label,
+                marker_color=color,
+                hovertemplate=f"{label}<br>%{{x}}: %{{y:,.0f}} TJ",
+            )
+        )
     fig3.update_layout(
         **THEME,
         barmode="stack",
@@ -414,14 +467,16 @@ async def build_electricity() -> str:
     # 4. 2024 sector pie
     idx_2024 = years.index("2024")
     vals_2024 = [sector_data[s][idx_2024] for s in sectors]
-    fig4 = go.Figure(go.Pie(
-        labels=[f"{label}<br>{v:,.0f} TJ" for label, v in zip(sector_labels, vals_2024, strict=False)],
-        values=vals_2024,
-        marker_colors=sector_colors,
-        textinfo="label",
-        textfont={"size": 11, "color": "#e8e8f0"},
-        hole=0.4,
-    ))
+    fig4 = go.Figure(
+        go.Pie(
+            labels=[f"{label}<br>{v:,.0f} TJ" for label, v in zip(sector_labels, vals_2024, strict=False)],
+            values=vals_2024,
+            marker_colors=sector_colors,
+            textinfo="label",
+            textfont={"size": 11, "color": "#e8e8f0"},
+            hole=0.4,
+        )
+    )
     fig4.update_layout(
         **THEME,
         title={"text": "Struktura potrošnje — 2024", "font": {"size": 14}},
@@ -441,15 +496,15 @@ async def build_electricity() -> str:
 <div class="stats">
   <div class="stat"><div class="num gold">{latest_kwh:,.0f}</div><div class="lbl">kWh/stanovniku (2024)</div></div>
   <div class="stat"><div class="num blue">{latest_tj:,.0f}</div><div class="lbl">TJ ukupno (2024)</div></div>
-  <div class="stat"><div class="num">{hh_tj/latest_tj*100:.0f}%</div><div class="lbl">Domaćinstva</div></div>
-  <div class="stat"><div class="num">{ind_tj/latest_tj*100:.0f}%</div><div class="lbl">Industrija</div></div>
+  <div class="stat"><div class="num">{hh_tj / latest_tj * 100:.0f}%</div><div class="lbl">Domaćinstva</div></div>
+  <div class="stat"><div class="num">{ind_tj / latest_tj * 100:.0f}%</div><div class="lbl">Industrija</div></div>
   <div class="stat"><div class="num green">{growth:+.1f}%</div><div class="lbl">Rast 2010→2024</div></div>
   <div class="stat"><div class="num">{len(years)}</div><div class="lbl">Godina podataka</div></div>
 </div>"""
 
     html = wrap_html(
         [fig1, fig2, fig3, fig4],
-        title='Потрошња <span>електричне енергије</span> Србије',
+        title="Потрошња <span>електричне енергије</span> Србије",
         subtitle="Energetski bilans RZS 2010–2024 — Fina potrošnja po sektorima i proizvodnja po izvorima · Terađuli",
         meta="Serbia electricity consumption per capita and by sector 2010-2024 from RZS energy balance data",
     )

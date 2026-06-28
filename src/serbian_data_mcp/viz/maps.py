@@ -6,10 +6,10 @@ then renders choropleth maps via Plotly with custom theming.
 
 import json
 import logging
-import urllib.request
 from pathlib import Path
 from typing import Any, Optional
 
+import httpx
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
@@ -120,9 +120,8 @@ def _load_serbia_geojson(cache_dir: Path) -> dict[str, Any]:
             return json.load(f)
 
     logger.info("Downloading Serbian district boundaries from Natural Earth...")
-    req = urllib.request.Request(_NATURAL_EARTH_URL, headers={"User-Agent": "serbian-data-mcp/0.1"})
-    resp = urllib.request.urlopen(req, timeout=60)
-    data = json.loads(resp.read().decode("utf-8"))
+    resp = httpx.get(_NATURAL_EARTH_URL, headers={"User-Agent": "serbian-data-mcp/0.1"}, timeout=60)
+    data = resp.json()
 
     serbia_features = [
         f

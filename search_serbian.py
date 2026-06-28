@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from serbian_data_mcp.api.client import UDataClient
 
+
 async def main():
     """Search using Serbian terms."""
     print("🔍 Pretraga podataka o stanovništvu (Search population data)")
@@ -47,6 +48,7 @@ async def main():
             for ds in result.datasets[:8]:
                 print(f"  • {ds.title or 'Untitled'}")
                 print(f"    {ds.organization or 'N/A'}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

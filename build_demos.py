@@ -196,11 +196,35 @@ async def demo_employment(client: UDataClient) -> Path:
 
     hist + fore
     fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=[h["year"] for h in hist], y=[h["total"] for h in hist], mode="lines+markers", name="Actual", line={"color": "#1565c0", "width": 3}))
+    fig2.add_trace(
+        go.Scatter(
+            x=[h["year"] for h in hist],
+            y=[h["total"] for h in hist],
+            mode="lines+markers",
+            name="Actual",
+            line={"color": "#1565c0", "width": 3},
+        )
+    )
     if fore:
-        fig2.add_trace(go.Scatter(x=[f["year"] for f in fore], y=[f["_forecast"] for f in fore], mode="lines+markers", name="Forecast", line={"color": "#ffab00", "width": 3, "dash": "dash"}))
+        fig2.add_trace(
+            go.Scatter(
+                x=[f["year"] for f in fore],
+                y=[f["_forecast"] for f in fore],
+                mode="lines+markers",
+                name="Forecast",
+                line={"color": "#ffab00", "width": 3, "dash": "dash"},
+            )
+        )
     if trend:
-        fig2.add_trace(go.Scatter(x=[t["year"] for t in trend], y=[t["_trend"] for t in trend], mode="lines", name="Trend", line={"color": "rgba(255,255,255,0.2)", "width": 1}))
+        fig2.add_trace(
+            go.Scatter(
+                x=[t["year"] for t in trend],
+                y=[t["_trend"] for t in trend],
+                mode="lines",
+                name="Trend",
+                line={"color": "rgba(255,255,255,0.2)", "width": 1},
+            )
+        )
     fig2.update_layout(title="Employment Forecast to 2030", **ChartBuilder(yearly).data.attrs.get("_layout_base", {}))
     fig2 = apply_theme(fig2, "dark")
     chart2 = fig_to_embed_html(fig2, "emp_forecast")
@@ -218,10 +242,10 @@ async def demo_employment(client: UDataClient) -> Path:
 
     body = f"""
     <div class="stats">
-        <div class="stat"><div class="num green">{last['total']:,.0f}</div><div class="lbl">Employed ({latest_yr})</div></div>
-        <div class="stat"><div class="num gold">+{pct_change:.1f}%</div><div class="lbl">Growth Since {first['year']}</div></div>
+        <div class="stat"><div class="num green">{last["total"]:,.0f}</div><div class="lbl">Employed ({latest_yr})</div></div>
+        <div class="stat"><div class="num gold">+{pct_change:.1f}%</div><div class="lbl">Growth Since {first["year"]}</div></div>
         <div class="stat"><div class="num blue">{r_sq:.3f}</div><div class="lbl">R² (Trend Fit)</div></div>
-        <div class="stat"><div class="num">{growth_rate/1000:.1f}K</div><div class="lbl">Annual Growth</div></div>
+        <div class="stat"><div class="num">{growth_rate / 1000:.1f}K</div><div class="lbl">Annual Growth</div></div>
     </div>
     <div class="card"><h2>📈 Employment Trend</h2>{chart1}</div>
     <div class="card"><h2>🔮 Forecast to 2030</h2>
@@ -280,7 +304,9 @@ async def demo_air_quality(client: UDataClient) -> Path:
     pivot_top = pivot[pivot["station"].isin(top_stations)]
 
     builder = AdvancedChartBuilder(pivot_top.to_dict("records"))
-    fig1 = builder.heatmap("station", "month", "pm10", title="Monthly PM₁₀ by Station (2024) — Top 20 Polluted", theme="dark")
+    fig1 = builder.heatmap(
+        "station", "month", "pm10", title="Monthly PM₁₀ by Station (2024) — Top 20 Polluted", theme="dark"
+    )
     chart1 = fig_to_embed_html(fig1, "heatmap")
 
     # Bar chart ranking — annual averages
@@ -297,8 +323,20 @@ async def demo_air_quality(client: UDataClient) -> Path:
     # Monthly trend (average across all stations)
     monthly = df.groupby("month")["pm10"].mean().reset_index()
     monthly.columns = ["month", "avg_pm10"]
-    month_names = {1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
-                   7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"}
+    month_names = {
+        1: "Jan",
+        2: "Feb",
+        3: "Mar",
+        4: "Apr",
+        5: "May",
+        6: "Jun",
+        7: "Jul",
+        8: "Aug",
+        9: "Sep",
+        10: "Oct",
+        11: "Nov",
+        12: "Dec",
+    }
     monthly["month_name"] = monthly["month"].map(month_names)
 
     builder3 = ChartBuilder(monthly.to_dict("records"))
@@ -314,8 +352,8 @@ async def demo_air_quality(client: UDataClient) -> Path:
     <div class="stats">
         <div class="stat"><div class="num">{len(stations)}</div><div class="lbl">Monitoring Stations</div></div>
         <div class="stat"><div class="num">{len(df):,}</div><div class="lbl">Daily Measurements</div></div>
-        <div class="stat"><div class="num red">{worst_st['avg_pm10']:.1f}</div><div class="lbl">Worst (µg/m³)<br><small>{worst_st['station']}</small></div></div>
-        <div class="stat"><div class="num green">{best_st['avg_pm10']:.1f}</div><div class="lbl">Best (µg/m³)<br><small>{best_st['station']}</small></div></div>
+        <div class="stat"><div class="num red">{worst_st["avg_pm10"]:.1f}</div><div class="lbl">Worst (µg/m³)<br><small>{worst_st["station"]}</small></div></div>
+        <div class="stat"><div class="num green">{best_st["avg_pm10"]:.1f}</div><div class="lbl">Best (µg/m³)<br><small>{best_st["station"]}</small></div></div>
     </div>
     <div class="card"><h2>🌡️ Monthly PM₁₀ Heatmap — Top 20 Stations</h2>{chart1}</div>
     <div class="card"><h2>📊 Station Ranking</h2>{chart2}</div>
@@ -363,8 +401,14 @@ async def demo_census(client: UDataClient) -> Path:
     # Top losers and gainers for slope chart
     top = pd.concat([df_slope.head(8), df_slope.tail(8)])
 
-    fig1 = slope_chart(top.to_dict("records"), "municipality", "hh_2011", "hh_2022",
-                        title="Household Change 2011 → 2022 (Top Gainers & Losers)", theme="dark")
+    fig1 = slope_chart(
+        top.to_dict("records"),
+        "municipality",
+        "hh_2011",
+        "hh_2022",
+        title="Household Change 2011 → 2022 (Top Gainers & Losers)",
+        theme="dark",
+    )
     fig1.update_layout(height=700)
     chart1 = fig_to_embed_html(fig1, "slope")
 
@@ -380,12 +424,28 @@ async def demo_census(client: UDataClient) -> Path:
     # Bar chart of top 10 gainers
     gainers = df_slope.tail(10).iloc[::-1]
     builder = ChartBuilder(gainers.to_dict("records"))
-    fig3 = builder.bar_chart("municipality", "hh_2022", title="Top 10 Growing Municipalities (Households)", orientation="h")
+    fig3 = builder.bar_chart(
+        "municipality", "hh_2022", title="Top 10 Growing Municipalities (Households)", orientation="h"
+    )
     fig3 = apply_theme(fig3, "dark")
     chart3 = fig_to_embed_html(fig3, "gainers")
 
-    serbia22 = next((r["vrednost"] for r in data22 if r["nTer"] == "РЕПУБЛИКА СРБИЈА" and r["IDBrClDom"] == 0 and r["IDTipNaselja"] == "0"), 0)
-    serbia11 = next((r["vrednost"] for r in data11 if r["nTer"] == "РЕПУБЛИКА СРБИЈА" and r["IDBrClDom"] == 0 and r["IDTipNaselja"] == "0"), 0)
+    serbia22 = next(
+        (
+            r["vrednost"]
+            for r in data22
+            if r["nTer"] == "РЕПУБЛИКА СРБИЈА" and r["IDBrClDom"] == 0 and r["IDTipNaselja"] == "0"
+        ),
+        0,
+    )
+    serbia11 = next(
+        (
+            r["vrednost"]
+            for r in data11
+            if r["nTer"] == "РЕПУБЛИКА СРБИЈА" and r["IDBrClDom"] == 0 and r["IDTipNaselja"] == "0"
+        ),
+        0,
+    )
     change_pct = ((serbia22 / serbia11) - 1) * 100 if serbia11 else 0
 
     body = f"""
@@ -438,14 +498,18 @@ async def demo_cross_analysis(client: UDataClient) -> Path:
     cross = []
     for m in sorted(set(emp_by_muni.keys()) & set(hh_by_muni.keys())):
         ratio = emp_by_muni[m] / hh_by_muni[m] if hh_by_muni[m] else 0
-        cross.append({"municipality": m, "employment": emp_by_muni[m], "households": hh_by_muni[m], "ratio": round(ratio, 2)})
+        cross.append(
+            {"municipality": m, "employment": emp_by_muni[m], "households": hh_by_muni[m], "ratio": round(ratio, 2)}
+        )
 
     df = pd.DataFrame(cross).sort_values("ratio", ascending=False)
 
     # Top 20 bar chart
     top20 = df.head(20)
     builder = ChartBuilder(top20.to_dict("records"))
-    fig1 = builder.bar_chart("municipality", "ratio", title=f"Employment per Household — Top 20 Municipalities ({latest})")
+    fig1 = builder.bar_chart(
+        "municipality", "ratio", title=f"Employment per Household — Top 20 Municipalities ({latest})"
+    )
     fig1 = apply_theme(fig1, "dark")
     chart1 = fig_to_embed_html(fig1, "cross_bar")
 
@@ -461,9 +525,9 @@ async def demo_cross_analysis(client: UDataClient) -> Path:
     body = f"""
     <div class="stats">
         <div class="stat"><div class="num blue">{len(df)}</div><div class="lbl">Municipalities Matched</div></div>
-        <div class="stat"><div class="num gold">{df['ratio'].mean():.2f}</div><div class="lbl">Avg Employment/Household</div></div>
-        <div class="stat"><div class="num green">{df.iloc[0]['ratio']}</div><div class="lbl">Highest<br><small>{df.iloc[0]['municipality']}</small></div></div>
-        <div class="stat"><div class="num red">{df.iloc[-1]['ratio']}</div><div class="lbl">Lowest<br><small>{df.iloc[-1]['municipality']}</small></div></div>
+        <div class="stat"><div class="num gold">{df["ratio"].mean():.2f}</div><div class="lbl">Avg Employment/Household</div></div>
+        <div class="stat"><div class="num green">{df.iloc[0]["ratio"]}</div><div class="lbl">Highest<br><small>{df.iloc[0]["municipality"]}</small></div></div>
+        <div class="stat"><div class="num red">{df.iloc[-1]["ratio"]}</div><div class="lbl">Lowest<br><small>{df.iloc[-1]["municipality"]}</small></div></div>
     </div>
     <div class="card"><h2>📊 Employment per Household — Top 20</h2>{chart1}</div>
     <div class="card"><h2>🔍 Employment vs Households (Scatter)</h2>{chart2}
@@ -495,6 +559,7 @@ async def demo_budgets(client: UDataClient) -> Path:
             org = ds.organization.name if ds.organization else "Unknown"
             tags = ds.tags or []
             import re
+
             years = re.findall(r"20\d{2}", ds.title)
             all_budgets.append({"title": ds.title, "org": org, "years": years, "tags": tags})
         if not result.has_next:
@@ -503,6 +568,7 @@ async def demo_budgets(client: UDataClient) -> Path:
 
     # Build treemap by organization
     from collections import Counter
+
     org_counts = Counter(b["org"] for b in all_budgets)
     treemap_data = [{"org": org, "count": count} for org, count in org_counts.most_common(15)]
 
@@ -530,7 +596,10 @@ async def demo_budgets(client: UDataClient) -> Path:
                     resp = await ext2.get(res.url)
                     resp.raise_for_status()
                     lines = resp.text.split("\n")
-                    sample_csv = "<br>".join(f'<span style="color:var(--text-muted);font-size:0.8rem">{line[:120]}</span>' for line in lines[:8])
+                    sample_csv = "<br>".join(
+                        f'<span style="color:var(--text-muted);font-size:0.8rem">{line[:120]}</span>'
+                        for line in lines[:8]
+                    )
                     break
             except Exception:
                 continue
@@ -566,6 +635,7 @@ async def demo_real_estate(client: UDataClient) -> Path:
     for ds in result.datasets:
         org = ds.organization.name if ds.organization else "Unknown"
         import re
+
         years = re.findall(r"20\d{2}", ds.title)
         datasets.append({"title": ds.title, "org": org, "years": years})
 
@@ -581,6 +651,7 @@ async def demo_real_estate(client: UDataClient) -> Path:
                     resp.raise_for_status()
                     import openpyxl
                     from io import BytesIO
+
                     wb = openpyxl.load_workbook(BytesIO(resp.content), read_only=True)
                     ws = wb.active
                     rows = list(ws.iter_rows(values_only=True))
@@ -598,7 +669,7 @@ async def demo_real_estate(client: UDataClient) -> Path:
     table_rows = ""
     for d in datasets[:12]:
         years_str = ", ".join(d["years"]) if d["years"] else "—"
-        table_rows += f'<tr><td>{d["title"][:60]}</td><td>{d["org"][:30]}</td><td>{years_str}</td></tr>'
+        table_rows += f"<tr><td>{d['title'][:60]}</td><td>{d['org'][:30]}</td><td>{years_str}</td></tr>"
 
     # Sample data table
     sample_table = ""
@@ -632,22 +703,58 @@ async def demo_real_estate(client: UDataClient) -> Path:
 async def build_index() -> Path:
     """Build index page linking to all demos."""
     demos = [
-        {"file": "01_employment.html", "title": "Employment Trends", "desc": "10-year registered employment data with forecasting to 2030", "badge": "HIGH", "badge_class": ""},
-        {"file": "02_air_quality.html", "title": "Air Quality Dashboard", "desc": "Daily PM₁₀ from 39 stations — heatmap, ranking, seasonal patterns", "badge": "HIGH", "badge_class": ""},
-        {"file": "03_census.html", "title": "Census Changes", "desc": "Household changes 2011→2022 with slope chart and waffle diagram", "badge": "HIGH", "badge_class": ""},
-        {"file": "04_cross_analysis.html", "title": "Cross-Analysis", "desc": "Employment per household across 200+ municipalities", "badge": "MEDIUM", "badge_class": "badge-blue"},
-        {"file": "05_budgets.html", "title": "Municipal Budgets", "desc": "Budget data availability from 19 municipalities", "badge": "HIGH", "badge_class": ""},
-        {"file": "06_real_estate.html", "title": "Real Estate Prices", "desc": "Property price datasets and tax assessment data", "badge": "HIGH", "badge_class": ""},
+        {
+            "file": "01_employment.html",
+            "title": "Employment Trends",
+            "desc": "10-year registered employment data with forecasting to 2030",
+            "badge": "HIGH",
+            "badge_class": "",
+        },
+        {
+            "file": "02_air_quality.html",
+            "title": "Air Quality Dashboard",
+            "desc": "Daily PM₁₀ from 39 stations — heatmap, ranking, seasonal patterns",
+            "badge": "HIGH",
+            "badge_class": "",
+        },
+        {
+            "file": "03_census.html",
+            "title": "Census Changes",
+            "desc": "Household changes 2011→2022 with slope chart and waffle diagram",
+            "badge": "HIGH",
+            "badge_class": "",
+        },
+        {
+            "file": "04_cross_analysis.html",
+            "title": "Cross-Analysis",
+            "desc": "Employment per household across 200+ municipalities",
+            "badge": "MEDIUM",
+            "badge_class": "badge-blue",
+        },
+        {
+            "file": "05_budgets.html",
+            "title": "Municipal Budgets",
+            "desc": "Budget data availability from 19 municipalities",
+            "badge": "HIGH",
+            "badge_class": "",
+        },
+        {
+            "file": "06_real_estate.html",
+            "title": "Real Estate Prices",
+            "desc": "Property price datasets and tax assessment data",
+            "badge": "HIGH",
+            "badge_class": "",
+        },
     ]
 
     cards = ""
     for d in demos:
         cards += f"""
-        <a href="{d['file']}" style="text-decoration:none;color:inherit;display:block">
+        <a href="{d["file"]}" style="text-decoration:none;color:inherit;display:block">
             <div class="card" style="transition:transform 0.15s,border-color 0.15s;cursor:pointer" onmouseover="this.style.borderColor='var(--accent3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
-                <div class="{'badge badge-blue' if d['badge_class'] else 'badge'}" style="margin-bottom:12px">{d['badge']}</div>
-                <h2 style="margin-bottom:8px">{d['title']}</h2>
-                <p style="color:var(--text-dim);font-size:0.9rem">{d['desc']}</p>
+                <div class="{"badge badge-blue" if d["badge_class"] else "badge"}" style="margin-bottom:12px">{d["badge"]}</div>
+                <h2 style="margin-bottom:8px">{d["title"]}</h2>
+                <p style="color:var(--text-dim);font-size:0.9rem">{d["desc"]}</p>
                 <p style="color:var(--accent3);font-size:0.8rem;margin-top:12px;font-weight:600">Open demo →</p>
             </div>
         </a>"""
@@ -752,6 +859,7 @@ async def main() -> None:
 
     # Also copy to main exports
     import shutil
+
     for f in DEMO_DIR.iterdir():
         if f.suffix == ".html":
             shutil.copy2(f, Path("exports") / f.name)

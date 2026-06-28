@@ -57,7 +57,7 @@ async def _cli():
 
 
 async def cmd_search(q):
-    banner(f"🔍  Searching: \"{q}\"")
+    banner(f'🔍  Searching: "{q}"')
     c = await _cli()
     try:
         r = await c.search_datasets(query=q, page_size=5)
@@ -107,7 +107,9 @@ async def cmd_dataset(did):
         for r in ds.resources:
             fmt = r.format or "?"
             sz = f"{r.size:,}B" if r.size else "—"
-            print(f"    • {bold(r.title or 'Untitled')}  {dim('fmt:')} {fmt}  {dim('size:')} {sz}  {dim('id:')} {r.id[:16]}…")
+            print(
+                f"    • {bold(r.title or 'Untitled')}  {dim('fmt:')} {fmt}  {dim('size:')} {sz}  {dim('id:')} {r.id[:16]}…"
+            )
     print()
     if ds.tags:
         print(f"  {bold('Tags:')} {', '.join('#' + t for t in ds.tags[:8])}")
@@ -192,7 +194,7 @@ async def cmd_filter():
         v = df[c].dropna().iloc[0] if len(df[c].dropna()) > 0 else None
         if v is not None:
             filters[c] = v
-            print(f"  {bold('Filter:')} {c} == \"{v}\"")
+            print(f'  {bold("Filter:")} {c} == "{v}"')
     elif num_cols:
         c = num_cols[0]
         m = df[c].median()

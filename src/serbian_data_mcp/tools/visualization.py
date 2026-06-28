@@ -473,7 +473,9 @@ async def add_chart_annotation(
 
     try:
         fig = Figure(figure.get("data", []), figure.get("layout", {}))
-        fig = add_annotation(fig, text=text, x=x, y=y, arrow_color=arrow_color, font_size=font_size, show_arrow=show_arrow)
+        fig = add_annotation(
+            fig, text=text, x=x, y=y, arrow_color=arrow_color, font_size=font_size, show_arrow=show_arrow
+        )
         return fig_to_dict(fig)
     except Exception as e:
         raise ToolError(f"Annotation failed: {e}") from e
@@ -505,7 +507,9 @@ async def add_chart_highlight_zone(
 
     try:
         fig = Figure(figure.get("data", []), figure.get("layout", {}))
-        fig = add_highlight_zone(fig, x_start=x_start, x_end=x_end, fill_color=fill_color, annotation_text=annotation_text)
+        fig = add_highlight_zone(
+            fig, x_start=x_start, x_end=x_end, fill_color=fill_color, annotation_text=annotation_text
+        )
         return fig_to_dict(fig)
     except Exception as e:
         raise ToolError(f"Highlight zone failed: {e}") from e
@@ -624,7 +628,7 @@ async def create_data_table(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{title or 'Data Table'}</title>
+    <title>{title or "Data Table"}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{

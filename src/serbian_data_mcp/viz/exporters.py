@@ -10,6 +10,7 @@ header, and source attribution for a polished, professional look.
 from __future__ import annotations
 
 import base64
+import io
 import json
 import logging
 from pathlib import Path
@@ -333,15 +334,15 @@ def generate_embed_code(
     Returns:
         Dict with 'iframe_code', 'html_snippet', 'data_url'
     """
-    # Generate the self-contained HTML
+    # Generate the self-contained HTML into an in-memory buffer (no temp file)
+    html_buf = io.StringIO()
     fig.write_html(
-        "/tmp/_embed_chart.html",
+        html_buf,
         include_plotlyjs="cdn",
         full_html=True,
         auto_play=False,
     )
-    with open("/tmp/_embed_chart.html", encoding="utf-8") as f:
-        html_content = f.read()
+    html_content = html_buf.getvalue()
 
     # Build data URL (for inline embedding)
     data_url = f"data:text/html;base64,{base64.b64encode(html_content.encode()).decode()}"

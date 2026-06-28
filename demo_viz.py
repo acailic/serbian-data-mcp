@@ -31,8 +31,9 @@ datasets = {
         {"category": "Industry", "value": 30},
         {"category": "Services", "value": 45},
         {"category": "Technology", "value": 10},
-    ]
+    ],
 }
+
 
 async def demo_all_charts():
     """Create all chart types."""
@@ -88,16 +89,20 @@ async def demo_all_charts():
     print("\n" + "=" * 50)
     print("✅ All visualizations created!")
     print("\nOpen in browser:")
-    for i, name in enumerate([
-        "demo_line.html",
-        "demo_bar.html",
-        "demo_bar_h.html",
-        "demo_pie.html",
-        "demo_scatter.html",
-        "demo_histogram.html",
-        "demo_box.html"
-    ], 1):
+    for i, name in enumerate(
+        [
+            "demo_line.html",
+            "demo_bar.html",
+            "demo_bar_h.html",
+            "demo_pie.html",
+            "demo_scatter.html",
+            "demo_histogram.html",
+            "demo_box.html",
+        ],
+        1,
+    ):
         print(f"  {i}. exports/{name}")
+
 
 if __name__ == "__main__":
     asyncio.run(demo_all_charts())

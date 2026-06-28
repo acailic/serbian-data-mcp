@@ -8,6 +8,7 @@ from pathlib import Path
 from mcp_python import ClientSession
 from mcp_python.client.sse import SseClientTransport
 
+
 async def main():
     """Connect to MCP server and search for age population data."""
     # Connect to SSE server
@@ -35,21 +36,18 @@ async def main():
         print("=" * 60)
 
         # Search for age population datasets
-        result = await session.call_tool("search_datasets", {
-            "query": "age population",
-            "page_size": 10
-        })
+        result = await session.call_tool("search_datasets", {"query": "age population", "page_size": 10})
 
         data = json.loads(result.content[0].text)
 
         print(f"\nFound {data.get('total', 0)} datasets\n")
 
-        if data.get('datasets'):
-            for i, dataset in enumerate(data['datasets'][:5], 1):
+        if data.get("datasets"):
+            for i, dataset in enumerate(data["datasets"][:5], 1):
                 print(f"{i}. {dataset.get('title', 'Untitled')}")
                 print(f"   ID: {dataset.get('id')}")
                 print(f"   Organization: {dataset.get('organization', {}).get('name', 'N/A')}")
-                desc = dataset.get('description', '')
+                desc = dataset.get("description", "")
                 if desc:
                     short_desc = desc[:100] + "..." if len(desc) > 100 else desc
                     print(f"   Description: {short_desc}")
@@ -62,18 +60,16 @@ async def main():
         print("Alternative: 'population' datasets")
         print("-" * 60 + "\n")
 
-        result = await session.call_tool("search_datasets", {
-            "query": "population",
-            "page_size": 5
-        })
+        result = await session.call_tool("search_datasets", {"query": "population", "page_size": 5})
 
         data = json.loads(result.content[0].text)
         print(f"Found {data.get('total', 0)} population datasets\n")
 
-        if data.get('datasets'):
-            for i, dataset in enumerate(data['datasets'][:3], 1):
+        if data.get("datasets"):
+            for i, dataset in enumerate(data["datasets"][:3], 1):
                 print(f"{i}. {dataset.get('title', 'Untitled')}")
                 print(f"   Resources: {len(dataset.get('resources', []))}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

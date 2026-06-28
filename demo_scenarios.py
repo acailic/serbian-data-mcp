@@ -9,9 +9,9 @@ from serbian_data_mcp.intelligence.query_expander import QueryExpander
 
 async def scenario_1_english_query():
     """Scenario 1: User searches in plain English."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("SCENARIO 1: Natural Language Search (English)")
-    print("="*60)
+    print("=" * 60)
     print("User asks: 'I need data about population by age'\n")
 
     # Setup catalog with sample data
@@ -20,13 +20,14 @@ async def scenario_1_english_query():
 
     # Add sample datasets
     from serbian_data_mcp.catalog.models import CachedDataset
+
     catalog.datasets["pop-001"] = CachedDataset(
         id="pop-001",
         title="Population by Age and Gender",
         description="Demographic data showing population distribution by age groups and gender",
         organization="Statistical Office of Republic of Serbia",
         formats=["xlsx", "csv"],
-        tags=["population", "demographics", "age", "gender"]
+        tags=["population", "demographics", "age", "gender"],
     )
     catalog.datasets["budg-001"] = CachedDataset(
         id="budg-001",
@@ -34,7 +35,7 @@ async def scenario_1_english_query():
         description="Annual budget execution report for Republic of Serbia",
         organization="Ministry of Finance",
         formats=["pdf", "xlsx"],
-        tags=["budget", "finance", "economy"]
+        tags=["budget", "finance", "economy"],
     )
 
     # Search
@@ -54,9 +55,9 @@ async def scenario_1_english_query():
 
 async def scenario_2_serbian_query():
     """Scenario 2: User searches in Serbian."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("SCENARIO 2: Natural Language Search (Serbian)")
-    print("="*60)
+    print("=" * 60)
     print("User asks: 'Podaci o stanovništvu'\n")
 
     catalog = DatasetCatalog()
@@ -68,7 +69,7 @@ async def scenario_2_serbian_query():
         description="Demographic data showing population distribution by age groups",
         organization="Statistical Office",
         formats=["xlsx"],
-        tags=["population", "demographics", "age"]
+        tags=["population", "demographics", "age"],
     )
 
     # Search with Serbian term
@@ -85,9 +86,9 @@ async def scenario_2_serbian_query():
 
 async def scenario_3_typo_handling():
     """Scenario 3: User makes a typo."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("SCENARIO 3: Fuzzy Matching (Typo Handling)")
-    print("="*60)
+    print("=" * 60)
     print("User types: 'populaton data' (typo: populaton)\n")
 
     catalog = DatasetCatalog()
@@ -99,7 +100,7 @@ async def scenario_3_typo_handling():
         description="Comprehensive population data for Serbia",
         organization="Statistical Office",
         formats=["xlsx"],
-        tags=["population", "demographics"]
+        tags=["population", "demographics"],
     )
 
     # Query expander handles typos
@@ -125,9 +126,9 @@ async def scenario_3_typo_handling():
 
 async def scenario_4_alternative_suggestions():
     """Scenario 4: No exact match, suggest alternatives."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("SCENARIO 4: Alternative Suggestions")
-    print("="*60)
+    print("=" * 60)
     print("User asks: 'xyz123 nonexistent topic'\n")
 
     catalog = DatasetCatalog()
@@ -140,7 +141,7 @@ async def scenario_4_alternative_suggestions():
         description="Annual budget execution report",
         organization="Ministry of Finance",
         formats=["xlsx"],
-        tags=["budget", "finance"]
+        tags=["budget", "finance"],
     )
     catalog.datasets["health-001"] = CachedDataset(
         id="health-001",
@@ -148,7 +149,7 @@ async def scenario_4_alternative_suggestions():
         description="Public health indicators",
         organization="Ministry of Health",
         formats=["json"],
-        tags=["health", "medical"]
+        tags=["health", "medical"],
     )
     catalog.datasets["edu-001"] = CachedDataset(
         id="edu-001",
@@ -156,7 +157,7 @@ async def scenario_4_alternative_suggestions():
         description="School enrollment data",
         organization="Ministry of Education",
         formats=["csv"],
-        tags=["education", "schools"]
+        tags=["education", "schools"],
     )
 
     # Search returns no results
@@ -181,9 +182,9 @@ async def scenario_4_alternative_suggestions():
 
 async def scenario_5_dataset_preview():
     """Scenario 5: User previews dataset before downloading."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("SCENARIO 5: Dataset Preview")
-    print("="*60)
+    print("=" * 60)
     print("User asks: 'Show me preview of dataset pop-001'\n")
 
     from serbian_data_mcp.catalog.preview import DatasetPreview
@@ -198,7 +199,7 @@ async def scenario_5_dataset_preview():
         organization="Statistical Office",
         formats=["csv"],
         tags=["population", "demographics"],
-        has_downloadable=True
+        has_downloadable=True,
     )
     catalog.datasets["pop-001"] = dataset
 
@@ -213,7 +214,7 @@ async def scenario_5_dataset_preview():
     print(f"Has Downloadable: {preview['metadata']['has_downloadable']}")
     print(f"\nPreview Status: {preview['preview_reason']}")
 
-    if preview['sample_data']:
+    if preview["sample_data"]:
         print(f"\nSample Data (first {len(preview['sample_data'])} rows):")
         print(f"Columns: {', '.join(preview['columns'] or [])}")
     print()
@@ -221,9 +222,9 @@ async def scenario_5_dataset_preview():
 
 async def scenario_6_bilingual_expansion():
     """Scenario 6: Query expansion demonstration."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("SCENARIO 6: Bilingual Query Expansion")
-    print("="*60)
+    print("=" * 60)
 
     expander = QueryExpander()
 
@@ -242,9 +243,9 @@ async def scenario_6_bilingual_expansion():
 
 async def main():
     """Run all scenarios."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("INTELLIGENT MCP SERVER - REAL USER SCENARIOS")
-    print("="*60)
+    print("=" * 60)
 
     await scenario_1_english_query()
     await scenario_2_serbian_query()
@@ -253,9 +254,9 @@ async def main():
     await scenario_5_dataset_preview()
     await scenario_6_bilingual_expansion()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("All scenarios completed!")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":

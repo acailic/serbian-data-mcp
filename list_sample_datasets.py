@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from serbian_data_mcp.api.client import UDataClient
 
+
 async def main():
     """Fetch first 500 datasets and categorize them."""
     print("📊 Serbian Data Portal - Sample Datasets")
@@ -68,6 +69,7 @@ async def main():
             print(f"  • {fmt}: {count} resources")
 
         print(f"\nTotal datasets on portal: {len(all_datasets)} shown (of ~3,430 total)")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

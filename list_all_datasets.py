@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from serbian_data_mcp.api.client import UDataClient
 
+
 async def main():
     """Fetch and categorize all datasets."""
     print("📊 Serbian Data Portal - All Datasets")
@@ -30,10 +31,7 @@ async def main():
         page_size = 100
 
         while len(all_datasets) < total:
-            result = await client.search_datasets(
-                page_size=page_size,
-                page=page
-            )
+            result = await client.search_datasets(page_size=page_size, page=page)
 
             if not result.datasets:
                 break
@@ -84,6 +82,7 @@ async def main():
         for fmt in sorted(formats):
             count = sum(1 for ds in all_datasets for r in ds.resources if r.format == fmt)
             print(f"  • {fmt}: {count} resources")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

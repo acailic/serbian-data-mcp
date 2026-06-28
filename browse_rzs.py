@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from serbian_data_mcp.api.client import UDataClient
 
+
 async def main():
     """Browse Statistical Office datasets by organization name."""
     print("🏢 Browsing Републички завод за статистику (РЗС) datasets")
@@ -33,10 +34,7 @@ async def main():
 
         # Search datasets by this organization
         print(f"\n📊 Searching datasets from {rzs_org.name}...\n")
-        result = await client.search_datasets(
-            organization=rzs_org.id,
-            page_size=50
-        )
+        result = await client.search_datasets(organization=rzs_org.id, page_size=50)
 
         print(f"Found {result.total} datasets\n")
 
@@ -62,6 +60,7 @@ async def main():
                     print()
         else:
             print("No datasets found")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
