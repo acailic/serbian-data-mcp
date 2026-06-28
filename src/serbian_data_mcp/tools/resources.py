@@ -6,6 +6,7 @@ Utility tools for health checks and configuration.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from datetime import datetime, UTC
@@ -224,12 +225,10 @@ def server_info() -> str:
 async def health_check() -> dict[str, Any]:
     """Check server health and API connectivity."""
     api_reachable = False
-    try:
+    with contextlib.suppress(Exception):
         client = await h.get_client()
         await client.list_organizations(page_size=1)
         api_reachable = True
-    except Exception:
-        pass
     return {
         "status": "healthy",
         "api_reachable": api_reachable,

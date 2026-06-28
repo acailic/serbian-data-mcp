@@ -9,6 +9,7 @@ Contracts:
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any, Optional
 
 from fastmcp.exceptions import ToolError
@@ -133,16 +134,12 @@ async def get_portal_statistics() -> dict[str, Any]:
     client = await h.get_client()
     total = 0
     total_orgs = 0
-    try:
+    with contextlib.suppress(Exception):
         data = await client._request("GET", "/api/1/datasets/", params={"rows": 1})
         total = data.get("total", 0)
-    except Exception:
-        pass
-    try:
+    with contextlib.suppress(Exception):
         org_data = await client._request("GET", "/api/1/organizations/", params={"rows": 1})
         total_orgs = org_data.get("total", 0)
-    except Exception:
-        pass
     return {
         "total_datasets": total,
         "total_organizations": total_orgs,

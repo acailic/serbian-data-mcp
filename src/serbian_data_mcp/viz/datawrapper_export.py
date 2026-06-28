@@ -18,7 +18,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 _DATAWRAPPER_API = "https://api.datawrapper.de/v3"
-_DATAWRAPPER_TOKEN_ENV = "DATAWRAPPER_ACCESS_TOKEN"
+_DATAWRAPPER_TOKEN_ENV = "DATAWRAPPER_ACCESS_TOKEN"  # nosec B105 - env var name, not a credential
 
 
 class DatawrapperExporter:
