@@ -183,14 +183,19 @@ def add_comparison_markers(
     Returns:
         Figure with threshold line
     """
-    fig.add_hline(
-        y=threshold,
-        line_dash="dash",
-        line_color=color,
-        line_width=1.5,
-        annotation_text=label,
-        annotation_position=f"top {'left' if direction == 'above' else 'right'}" if label else "",
-        annotation_font_color=color,
-        annotation_font_size=12,
-    )
+    # Only pass annotation_* when there is a label — plotly rejects the empty
+    # annotation_position "" with ValueError even though the docstring promises
+    # "empty for no label", so omit the kwargs entirely in that case.
+    hline_kwargs: dict[str, Any] = {
+        "y": threshold,
+        "line_dash": "dash",
+        "line_color": color,
+        "line_width": 1.5,
+    }
+    if label:
+        hline_kwargs["annotation_text"] = label
+        hline_kwargs["annotation_position"] = f"top {'left' if direction == 'above' else 'right'}"
+        hline_kwargs["annotation_font_color"] = color
+        hline_kwargs["annotation_font_size"] = 12
+    fig.add_hline(**hline_kwargs)
     return fig
