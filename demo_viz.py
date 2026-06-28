@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from serbian_data_mcp.viz.charts import ChartBuilder
-from serbian_data_mcp.viz.exporters import export_html, export_png
+from serbian_data_mcp.viz.exporters import export_html
 
 # Sample data for demonstrations
 datasets = {

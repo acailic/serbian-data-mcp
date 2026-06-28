@@ -158,7 +158,6 @@ ignore = [
     "UP007",  # Use X | Y for type annotations (Union is clearer for complex types)
     "UP024",  # Replace aliased errors (IOError is more readable than OSError)
     "E722",   # bare except (needed for generic error handling)
-    "F401",   # unused imports (some needed for type exports)
     "UP035",  # typing module deprecations (Optional/List clearer than builtins)
     "UP006",  # Dict/List -> dict/list (style preference)
 ]
@@ -170,6 +169,9 @@ ignore = [
 ]
 "src/serbian_data_mcp/tools/**/*.py" = [
     "B006",    # mutable defaults OK — Pydantic handles instance isolation per MCP call
+]
+"**/__init__.py" = [
+    "F401",   # re-exports: package __init__ legitimately imports names it does not reference locally
 ]
 
 [tool.ruff.format]

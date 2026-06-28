@@ -3,7 +3,6 @@
 
 import asyncio
 import json
-from pathlib import Path
 
 from mcp_python import ClientSession
 from mcp_python.client.sse import SseClientTransport

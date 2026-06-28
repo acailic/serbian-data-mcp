@@ -5,11 +5,9 @@ import httpx
 import zipfile
 import io
 import json
-import os
 from pathlib import Path
 
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 OUT = Path("exports/demo")
 

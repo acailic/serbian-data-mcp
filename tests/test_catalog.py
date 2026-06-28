@@ -1,7 +1,6 @@
 """Unit tests for catalog module."""
 
 import pytest
-from pathlib import Path
 from serbian_data_mcp.catalog.cache import DatasetCatalog
 from serbian_data_mcp.catalog.models import CachedDataset
 

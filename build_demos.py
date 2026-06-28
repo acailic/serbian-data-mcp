@@ -20,18 +20,14 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
 from serbian_data_mcp.api.client import UDataClient
 from serbian_data_mcp.viz.charts import ChartBuilder
-from serbian_data_mcp.viz.exporters import export_html
 from serbian_data_mcp.viz.themes import apply_theme
 from serbian_data_mcp.viz.novel_charts import slope_chart, waffle_chart
-from serbian_data_mcp.viz.insights import extract_insights, generate_narrative
-from serbian_data_mcp.viz.infographics import create_infographic
-from serbian_data_mcp.viz.maps import SerbiaMapBuilder
+from serbian_data_mcp.viz.insights import extract_insights
 from serbian_data_mcp.viz.forecast import forecast_linear
 from serbian_data_mcp.viz.advanced_charts import AdvancedChartBuilder
 import contextlib

@@ -26,7 +26,6 @@ from serbian_data_mcp.viz.infographics import create_dashboard, create_infograph
 from serbian_data_mcp.viz.themes import add_highlight_zone, polish_for_export  # noqa: E402
 from serbian_data_mcp.viz.exporters import export_html, fig_to_dict  # noqa: E402
 from serbian_data_mcp.viz.forecast import forecast_linear  # noqa: E402
-from serbian_data_mcp.viz.data_tables import data_table_html  # noqa: E402
 
 OUT = Path(__file__).parent / "exports"
 

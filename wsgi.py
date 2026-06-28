@@ -9,4 +9,4 @@ from pathlib import Path
 # Ensure src/ is importable before importing the Flask app
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from web_demo.app import app  # noqa: E402
+from web_demo.app import app  # noqa: E402, F401  # WSGI entrypoint: gunicorn binds `wsgi:app`
