@@ -87,6 +87,7 @@ async def create_chart(
       - "parcoords": columns (list) → parallel coordinates for high-dim records
       - "parcats": columns (list) → parallel categories (categorical multivariate flow)
       - "density_contour": x_column + y_column → 2D density bands
+      - "density_heatmap": x_column + y_column → binned 2D point-count grid
       - "ecdf": x_column → empirical cumulative distribution (share ≤ x)
       - "sunburst": names_column + values_column (+ hierarchy_column) → radial hierarchy rings
       - "sankey": source_column + target_column + values_column → proportional flow between nodes
@@ -148,6 +149,7 @@ async def create_chart(
         "parcoords",
         "parcats",
         "density_contour",
+        "density_heatmap",
         "ecdf",
         "sunburst",
         "sankey",
@@ -409,6 +411,17 @@ def _build_chart(
             title=title,
             theme=theme,
             color_column=color_column,
+        )
+
+    if chart_type == "density_heatmap":
+        if not x_column or not y_column:
+            raise ToolError("density_heatmap requires x_column and y_column")
+        return builder.density_heatmap(
+            x_column,
+            y_column,
+            title=title,
+            theme=theme,
+            z_column=z_column or None,
         )
 
     if chart_type == "ecdf":

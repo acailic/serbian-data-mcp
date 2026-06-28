@@ -541,6 +541,63 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def density_heatmap(
+        self,
+        x_column: str,
+        y_column: str,
+        title: str = "",
+        theme: str = "dark",
+        z_column: Optional[str] = None,
+        histfunc: str = "count",
+        nbinsx: Optional[int] = None,
+        nbinsy: Optional[int] = None,
+        colorscale: str = "RdBu_r",
+    ) -> go.Figure:
+        """Create a 2D density heatmap — a binned point-count grid.
+
+        The plane is tiled into a grid of cells (``nbinsx`` × ``nbinsy``); each
+        cell is colored by how many of the raw (x, y) observations fall inside
+        it. The canonical professional chart for *how two continuous variables
+        jointly distribute as counts* — a genuine register distinct from
+        ``heatmap`` (which pivots a pre-aggregated z value onto a categorical
+        grid and emits a go.Heatmap) and from ``density_contour`` (which draws
+        smooth isoline bands, not a solid binned grid). Ideal for very large
+        point-clouds where overplotting would bury the structure a scatter
+        shows, and where a smooth contour would over-smooth sharp clusters:
+        sensor readings by hour × temperature, income × age microdata.
+
+        Pass ``z_column`` with a matching ``histfunc`` ('sum' / 'avg' / 'min' /
+        'max') to color each cell by an aggregated third variable instead of a
+        raw count. Pass ``nbinsx`` / ``nbinsy`` to control grid resolution.
+
+        Args:
+            x_column: First continuous variable (X axis), binned into columns
+            y_column: Second continuous variable (Y axis), binned into rows
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            z_column: Optional third variable aggregated per cell (else counts)
+            histfunc: Cell aggregation — 'count' (default), 'sum', 'avg', 'min', 'max'
+            nbinsx: Number of X bins (default auto)
+            nbinsy: Number of Y bins (default auto)
+            colorscale: Plotly colorscale name for the cell colors
+        """
+        kwargs: dict[str, Any] = {
+            "x": x_column,
+            "y": y_column,
+            "title": title,
+            "histfunc": histfunc,
+            "color_continuous_scale": colorscale,
+        }
+        if z_column:
+            kwargs["z"] = z_column
+        if nbinsx is not None:
+            kwargs["nbinsx"] = nbinsx
+        if nbinsy is not None:
+            kwargs["nbinsy"] = nbinsy
+        fig = px.density_heatmap(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def ecdf(
         self,
         x_column: str,

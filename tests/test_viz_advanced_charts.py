@@ -779,6 +779,65 @@ class TestDensityContour:
 
 
 # ---------------------------------------------------------------------------
+# density_heatmap
+# ---------------------------------------------------------------------------
+
+DENSITY_HEATMAP_DATA: list[dict[str, Any]] = [
+    {"a": 1, "b": 2, "w": 1},
+    {"a": 2, "b": 3, "w": 1},
+    {"a": 3, "b": 1, "w": 1},
+    {"a": 1, "b": 2, "w": 2},
+    {"a": 2, "b": 3, "w": 2},
+    {"a": 3, "b": 1, "w": 2},
+]
+
+
+class TestDensityHeatmap:
+    def test_returns_single_histogram2d_trace(self) -> None:
+        fig = AdvancedChartBuilder(DENSITY_HEATMAP_DATA).density_heatmap("a", "b", title="T")
+        assert isinstance(fig, go.Figure)
+        # px.density_heatmap emits ONE go.Histogram2d carrying the raw x/y samples
+        # (distinct from heatmap's go.Heatmap pivot and density_contour's isolines)
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Histogram2d)
+        assert list(fig.data[0].x) == [1, 2, 3, 1, 2, 3]
+        assert list(fig.data[0].y) == [2, 3, 1, 2, 3, 1]
+        assert fig.data[0].histfunc == "count"
+        assert fig.layout.title.text == "T"
+
+    def test_nbins_passthrough(self) -> None:
+        fig = AdvancedChartBuilder(DENSITY_HEATMAP_DATA).density_heatmap("a", "b", nbinsx=5, nbinsy=7)
+        assert fig.data[0].nbinsx == 5
+        assert fig.data[0].nbinsy == 7
+
+    def test_z_column_and_histfunc_aggregation(self) -> None:
+        # z_column + histfunc='sum' colors each cell by an aggregated third var
+        fig = AdvancedChartBuilder(DENSITY_HEATMAP_DATA).density_heatmap("a", "b", z_column="w", histfunc="sum")
+        t = fig.data[0]
+        assert t.histfunc == "sum"
+        # each (a,b) pair appears twice with w=1 then w=2 → summed z grid cells
+        # hold the aggregated values; raw x/y samples still carry all rows
+        assert list(t.x) == [1, 2, 3, 1, 2, 3]
+
+    def test_colorscale_runs(self) -> None:
+        # custom colorscale accepted (lands on layout.coloraxis, not the trace)
+        fig = AdvancedChartBuilder(DENSITY_HEATMAP_DATA).density_heatmap("a", "b", colorscale="Viridis")
+        assert fig.layout.coloraxis is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(DENSITY_HEATMAP_DATA).density_heatmap("a", "b", theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor; go.Histogram2d
+        # has a marker attr but it has NO .line sub-prop so the deeper guard
+        # (added in iter 15 for Histogram2dContour) skips it cleanly
+        assert fig.layout.paper_bgcolor is not None
+
+    def test_professional_theme_runs(self) -> None:
+        fig = AdvancedChartBuilder(DENSITY_HEATMAP_DATA).density_heatmap("a", "b", theme="professional")
+        # professional register sets the salmon-paper background
+        assert fig.layout.paper_bgcolor == "#fff1e5"
+
+
+# ---------------------------------------------------------------------------
 # ecdf
 # ---------------------------------------------------------------------------
 

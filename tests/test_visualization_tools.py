@@ -129,6 +129,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "parcoords",
             "parcats",
             "density_contour",
+            "density_heatmap",
             "ecdf",
             "sunburst",
             "sankey",
@@ -506,6 +507,32 @@ async def test_create_chart_density_contour_missing_columns_raises(monkeypatch) 
         await create_chart(data=[{"a": 1}], chart_type="density_contour", x_column="a", y_column="")
     with pytest.raises(ToolError, match="density_contour requires x_column and y_column"):
         await create_chart(data=[{"a": 1}], chart_type="density_contour", x_column="", y_column="b")
+
+
+async def test_create_chart_density_heatmap_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"a": 1, "b": 2, "w": 3}],
+        chart_type="density_heatmap",
+        x_column="a",
+        y_column="b",
+        z_column="w",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "density_heatmap"
+    assert sink["args"] == ("a", "b")
+    assert sink["kwargs"]["z_column"] == "w"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_density_heatmap_missing_columns_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="density_heatmap requires x_column and y_column"):
+        await create_chart(data=[{"a": 1}], chart_type="density_heatmap", x_column="a", y_column="")
+    with pytest.raises(ToolError, match="density_heatmap requires x_column and y_column"):
+        await create_chart(data=[{"a": 1}], chart_type="density_heatmap", x_column="", y_column="b")
 
 
 async def test_create_chart_ecdf_passthrough(monkeypatch) -> None:
