@@ -21,6 +21,7 @@ from serbian_data_mcp.tools.charts_3d import (
     create_line_3d,
     create_mesh_3d,
     create_scatter_3d,
+    create_streamtube_3d,
     create_surface_3d,
 )
 
@@ -101,6 +102,18 @@ class _FakeBuilder:
         CALLS["w"] = w
         CALLS["kwargs"] = kwargs
         return _Sentinel("cone_3d")
+
+    def streamtube_3d(self, x, y, z, u, v, w, **kwargs):
+        # streamtube_3d shares cone_3d's 6-positional (x, y, z, u, v, w) shape.
+        CALLS["method"] = "streamtube_3d"
+        CALLS["x"] = x
+        CALLS["y"] = y
+        CALLS["z"] = z
+        CALLS["u"] = u
+        CALLS["v"] = v
+        CALLS["w"] = w
+        CALLS["kwargs"] = kwargs
+        return _Sentinel("streamtube_3d")
 
 
 @pytest.fixture(autouse=True)
@@ -479,6 +492,97 @@ async def test_create_cone_3d_exception_wrapped(monkeypatch, sandbox_export_dir)
 
     with pytest.raises(ToolError, match=r"3D cone chart failed: cone-bad"):
         await create_cone_3d(
+            [{"x": 0, "y": 0, "z": 0, "u": 1, "v": 0, "w": 0}],
+            x_column="x",
+            y_column="y",
+            z_column="z",
+            u_column="u",
+            v_column="v",
+            w_column="w",
+        )
+
+
+# ---------------------------------------------------------------------------
+# create_streamtube_3d
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_create_streamtube_3d_success(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch, "<html>TUBE</html>")
+
+    rows = [
+        {"x": 0.0, "y": 0.0, "z": 0.0, "u": 1.0, "v": 0.0, "w": 0.0},
+        {"x": 1.0, "y": 0.0, "z": 0.0, "u": 0.0, "v": 1.0, "w": 0.0},
+    ]
+    result = await create_streamtube_3d(
+        rows,
+        x_column="x",
+        y_column="y",
+        z_column="z",
+        u_column="u",
+        v_column="v",
+        w_column="w",
+        title="Flow",
+        theme="light",
+        sizeref=2.0,
+        colorscale="RdBu",
+        filename="tube",
+    )
+
+    calls = CALLS
+    assert calls["method"] == "streamtube_3d"
+    assert (calls["x"], calls["y"], calls["z"], calls["u"], calls["v"], calls["w"]) == (
+        "x",
+        "y",
+        "z",
+        "u",
+        "v",
+        "w",
+    )
+    assert calls["kwargs"] == {
+        "title": "Flow",
+        "theme": "light",
+        "sizeref": 2.0,
+        "colorscale": "RdBu",
+    }
+    assert result == {"filepath": str(sandbox_export_dir / "tube.html"), "title": "Flow", "rows": 2}
+    assert (sandbox_export_dir / "tube.html").read_text(encoding="utf-8") == "<html>TUBE</html>"
+
+
+@pytest.mark.asyncio
+async def test_create_streamtube_3d_defaults(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    _wire_export_html(monkeypatch)
+
+    await create_streamtube_3d(
+        [{"x": 0, "y": 0, "z": 0, "u": 1, "v": 0, "w": 0}],
+        x_column="x",
+        y_column="y",
+        z_column="z",
+        u_column="u",
+        v_column="v",
+        w_column="w",
+    )
+
+    kw = CALLS["kwargs"]
+    assert kw["theme"] == "dark"
+    assert kw["sizeref"] == 1.0
+    assert kw["colorscale"] == "Viridis"
+
+
+@pytest.mark.asyncio
+async def test_create_streamtube_3d_exception_wrapped(monkeypatch, sandbox_export_dir) -> None:
+    monkeypatch.setattr(charts3d_mod, "Chart3DBuilder", _FakeBuilder)
+    monkeypatch.setattr(
+        _FakeBuilder,
+        "streamtube_3d",
+        lambda self, x, y, z, u, v, w, **k: (_ for _ in ()).throw(ValueError("tube-bad")),
+    )
+
+    with pytest.raises(ToolError, match=r"3D streamtube chart failed: tube-bad"):
+        await create_streamtube_3d(
             [{"x": 0, "y": 0, "z": 0, "u": 1, "v": 0, "w": 0}],
             x_column="x",
             y_column="y",

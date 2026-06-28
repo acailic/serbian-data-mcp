@@ -366,3 +366,55 @@ class TestCone3D:
         # 3D scene honors the FT salmon-paper background + ink-dark axis text
         assert prof.layout.scene.xaxis.backgroundcolor == PROFESSIONAL_PAPER
         assert prof.layout.scene.xaxis.tickfont.color == "#333333"
+
+
+# ---------------------------------------------------------------------------
+# streamtube_3d
+# ---------------------------------------------------------------------------
+
+
+class TestStreamtube3D:
+    def test_returns_streamtube_trace_with_xyz_and_uvw(self) -> None:
+        fig = Chart3DBuilder(CONE_DATA).streamtube_3d("x", "y", "z", "u", "v", "w", title="Flow")
+        assert isinstance(fig, go.Figure)
+        assert isinstance(fig.data[0], go.Streamtube)
+        tr = fig.data[0]
+        assert list(tr.x) == [0.0, 1.0, 0.0, 1.0]
+        assert list(tr.z) == [0.0, 0.0, 0.0, 1.0]
+        assert list(tr.u) == [1.0, 0.0, 0.0, 1.0]
+        assert list(tr.w) == [0.0, 0.0, 1.0, 1.0]
+        assert fig.layout.title.text == "Flow"
+        # scene styled by the 3D builder
+        assert fig.layout.scene.xaxis.showbackground is True
+
+    def test_default_sizeref_one(self) -> None:
+        fig = Chart3DBuilder(CONE_DATA).streamtube_3d("x", "y", "z", "u", "v", "w")
+        # builder pins sizeref=1.0 (go.Streamtube's own default is None)
+        assert fig.data[0].sizeref == 1.0
+
+    def test_sizeref_passthrough(self) -> None:
+        fig = Chart3DBuilder(CONE_DATA).streamtube_3d("x", "y", "z", "u", "v", "w", sizeref=2.5)
+        assert fig.data[0].sizeref == 2.5
+
+    def test_custom_colorscale_override(self) -> None:
+        # Plotly resolves a named colorscale to its rgb stop list at construction;
+        # verify the override took effect by comparing first-stop colors.
+        viridis = Chart3DBuilder(CONE_DATA).streamtube_3d("x", "y", "z", "u", "v", "w")
+        rdbu = Chart3DBuilder(CONE_DATA).streamtube_3d("x", "y", "z", "u", "v", "w", colorscale="RdBu")
+        assert viridis.data[0].colorscale[0][1] != rdbu.data[0].colorscale[0][1]
+        # RdBu's low stop is a deep red
+        assert rdbu.data[0].colorscale[0][1] == "rgb(103,0,31)"
+
+    def test_light_theme_switches_scene_bgcolor(self) -> None:
+        dark = Chart3DBuilder(CONE_DATA).streamtube_3d("x", "y", "z", "u", "v", "w", theme="dark")
+        light = Chart3DBuilder(CONE_DATA).streamtube_3d("x", "y", "z", "u", "v", "w", theme="light")
+        assert dark.layout.scene.xaxis.backgroundcolor == "#16213e"
+        assert light.layout.scene.xaxis.backgroundcolor == "#f8f9fa"
+
+    def test_professional_theme_salmon_scene(self) -> None:
+        from serbian_data_mcp.viz.themes import PROFESSIONAL_PAPER
+
+        prof = Chart3DBuilder(CONE_DATA).streamtube_3d("x", "y", "z", "u", "v", "w", theme="professional")
+        # 3D scene honors the FT salmon-paper background + ink-dark axis text
+        assert prof.layout.scene.xaxis.backgroundcolor == PROFESSIONAL_PAPER
+        assert prof.layout.scene.xaxis.tickfont.color == "#333333"

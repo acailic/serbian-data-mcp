@@ -7,6 +7,7 @@ Contracts:
   - create_mesh_3d(data, x_column, y_column, z_column) → HTML filepath
   - create_isosurface_3d(data, x_column, y_column, z_column, value_column) → HTML filepath
   - create_cone_3d(data, x_column, y_column, z_column, u_column, v_column, w_column) → HTML filepath
+  - create_streamtube_3d(data, x_column, y_column, z_column, u_column, v_column, w_column) → HTML filepath
 
 These expose the WebGL-rendered 3D builders from ``viz.charts_3d.Chart3DBuilder``
 as MCP tools so the server's clients can produce orbit-able, depth-rich charts
@@ -361,3 +362,67 @@ async def create_cone_3d(
         return {"filepath": filepath, "title": title, "rows": len(data)}
     except Exception as e:
         raise ToolError(f"3D cone chart failed: {e}") from e
+
+
+@mcp.tool()
+async def create_streamtube_3d(
+    data: list[dict[str, Any]],
+    x_column: str,
+    y_column: str,
+    z_column: str,
+    u_column: str,
+    v_column: str,
+    w_column: str,
+    title: str = "",
+    theme: str = "dark",
+    sizeref: float = 1.0,
+    colorscale: str = "Viridis",
+    filename: str = "streamtube_3d",
+) -> dict[str, Any]:
+    """Interactive 3D streamtube plot of a vector field's flow (WebGL, orbit-able).
+
+    Integrates the (u, v, w) vector field into streamlines rendered as tubes
+    whose diameter encodes local flow magnitude. Distinct from
+    ``create_cone_3d`` (one discrete arrow per sample): a streamtube shows the
+    *integrated trajectories* — wind corridors, ocean currents, magnetic field
+    lines — rather than the instantaneous direction at each point. The
+    streamline integration runs client-side at render, so a sampled grid needs
+    no SciPy or iterative solver.
+
+    Ideal for: wind / ocean circulation, ventilation or HVAC airflow, magnetic
+    / electric field lines, any continuous flow domain where the *path* of the
+    flow matters more than the per-point arrow.
+
+    Returns: {filepath, title, rows}
+
+    Args:
+        data: Row dicts (one per field-sample point, ideally on a (x, y, z) grid)
+        x_column: Column for the field-sample X position
+        y_column: Column for the field-sample Y position
+        z_column: Column for the field-sample Z position (depth)
+        u_column: Column for the vector X component
+        v_column: Column for the vector Y component
+        w_column: Column for the vector Z component
+        title: Chart title
+        theme: 'dark', 'light', or 'professional'
+        sizeref: Tube radius scale factor (larger = thicker tubes)
+        colorscale: Plotly colorscale name for flow-magnitude mapping
+        filename: Output filename (without .html)
+    """
+    try:
+        fig = Chart3DBuilder(data).streamtube_3d(
+            x_column,
+            y_column,
+            z_column,
+            u_column,
+            v_column,
+            w_column,
+            title=title,
+            theme=theme,
+            sizeref=sizeref,
+            colorscale=colorscale,
+        )
+        filepath = _save_html(fig, filename)
+        return {"filepath": filepath, "title": title, "rows": len(data)}
+    except Exception as e:
+        raise ToolError(f"3D streamtube chart failed: {e}") from e

@@ -406,3 +406,63 @@ class Chart3DBuilder:
         )
         apply_theme(fig, theme)
         return fig
+
+    def streamtube_3d(
+        self,
+        x_column: str,
+        y_column: str,
+        z_column: str,
+        u_column: str,
+        v_column: str,
+        w_column: str,
+        title: str = "",
+        theme: str = "dark",
+        sizeref: float = 1.0,
+        colorscale: str = "Viridis",
+    ) -> go.Figure:
+        """Create a 3D streamtube plot of a vector field's flow lines.
+
+        Integrates the (u, v, w) vector field into *streamlines* and renders
+        each as a tube whose diameter encodes the local flow magnitude — a
+        continuous depiction of where the field moves, not a discrete arrow at
+        each sample. Distinct from :meth:`cone_3d`, which draws one arrow per
+        anchor point: a streamtube reveals the integrated trajectories (wind
+        corridors, ocean currents, magnetic field lines), while a cone field
+        shows the instantaneous direction + magnitude at each sample.
+
+        Plotly accepts a vector field sampled on a (x, y, z) grid and runs the
+        streamline integration client-side at JS render time, so no SciPy or
+        iterative solver is required to build the figure.
+
+        Args:
+            x_column: Column for the field-sample X position
+            y_column: Column for the field-sample Y position
+            z_column: Column for the field-sample Z position (depth)
+            u_column: Column for the vector X component
+            v_column: Column for the vector Y component
+            w_column: Column for the vector Z component
+            title: Chart title
+            theme: 'dark', 'light', or 'professional'
+            sizeref: Scale factor controlling tube radius (larger = thicker
+                tubes); the tube radius is also modulated by local |(u, v, w)|
+            colorscale: Plotly colorscale name for flow-magnitude mapping
+        """
+        tube = go.Streamtube(
+            x=self.data[x_column].tolist(),
+            y=self.data[y_column].tolist(),
+            z=self.data[z_column].tolist(),
+            u=self.data[u_column].tolist(),
+            v=self.data[v_column].tolist(),
+            w=self.data[w_column].tolist(),
+            sizeref=sizeref,
+            colorscale=colorscale,
+        )
+        fig = go.Figure(data=[tube])
+        if title:
+            fig.update_layout(title={"text": title})
+        fig.update_layout(
+            scene=self._scene_layout(theme),
+            margin={"l": 0, "r": 0, "t": 60, "b": 0},
+        )
+        apply_theme(fig, theme)
+        return fig
