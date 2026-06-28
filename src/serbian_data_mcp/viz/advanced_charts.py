@@ -450,6 +450,48 @@ class AdvancedChartBuilder:
         apply_theme(fig, theme)
         return fig
 
+    def parallel_categories(
+        self,
+        columns: list[str],
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        color_continuous_scale: str = "RdBu_r",
+    ) -> go.Figure:
+        """Create a parallel-categories (parcats) plot — categorical multivariate flow.
+
+        Each categorical column becomes a vertical stack of ribbons (one band per
+        category level); every row is a single colored ribbon threaded across all
+        stacks, so the eye can trace how a record flows through every dimension and
+        where the flows bundle or split. The canonical professional chart for
+        *how categorical groups move through a sequence of stages* — region →
+        sector → stage, demographic → channel → outcome, diagnosis → treatment →
+        result. A genuine register distinct from ``parcoords`` (which threads
+        NUMERIC ribbons on continuous axes; parcats threads CATEGORICAL bands),
+        from ``sankey`` (a 2-level source→target flow, not an N-column traversal),
+        and from ``splom`` (pairwise numeric scatter, no categorical sequence).
+        Pass a numeric ``color_column`` to gradient-color each ribbon by a
+        continuous magnitude (it must be numeric — a string column is rejected by
+        parcats because ribbon color is a per-row numeric array).
+
+        Args:
+            columns: Categorical columns to lay out as parallel stacks (≥ 2 recommended)
+            title: Chart title
+            theme: 'dark', 'light', 'professional', or 'infographic'
+            color_column: Optional NUMERIC column gradient-coloring each ribbon
+            color_continuous_scale: Plotly colorscale name when color_column is set
+        """
+        kwargs: dict[str, Any] = {
+            "dimensions": columns,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_continuous_scale"] = color_continuous_scale
+        fig = px.parallel_categories(self.data, **kwargs)
+        apply_theme(fig, theme)
+        return fig
+
     def density_contour(
         self,
         x_column: str,

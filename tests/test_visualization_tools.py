@@ -127,6 +127,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "ternary",
             "splom",
             "parcoords",
+            "parcats",
             "density_contour",
             "ecdf",
             "sunburst",
@@ -454,6 +455,31 @@ async def test_create_chart_parcoords_too_few_columns_raises(monkeypatch) -> Non
         await create_chart(data=[{"a": 1}], chart_type="parcoords", columns=["a"])
     with pytest.raises(ToolError, match="parcoords requires columns"):
         await create_chart(data=[{"a": 1}], chart_type="parcoords", columns=[])
+
+
+async def test_create_chart_parcats_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"a": 1, "b": 2, "c": 3}],
+        chart_type="parcats",
+        columns=["a", "b", "c"],
+        color_column="a",
+        theme="light",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "parallel_categories"
+    assert sink["args"] == (["a", "b", "c"],)
+    assert sink["kwargs"]["color_column"] == "a"
+    assert sink["kwargs"]["theme"] == "light"
+
+
+async def test_create_chart_parcats_too_few_columns_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="parcats requires columns"):
+        await create_chart(data=[{"a": 1}], chart_type="parcats", columns=["a"])
+    with pytest.raises(ToolError, match="parcats requires columns"):
+        await create_chart(data=[{"a": 1}], chart_type="parcats", columns=[])
 
 
 async def test_create_chart_density_contour_passthrough(monkeypatch) -> None:

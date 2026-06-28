@@ -85,6 +85,7 @@ async def create_chart(
       - "ternary": a/b/c columns → 3-part compositional mixture triangle
       - "splom": columns (list) → pairwise scatter matrix for N variables
       - "parcoords": columns (list) → parallel coordinates for high-dim records
+      - "parcats": columns (list) → parallel categories (categorical multivariate flow)
       - "density_contour": x_column + y_column → 2D density bands
       - "ecdf": x_column → empirical cumulative distribution (share ≤ x)
       - "sunburst": names_column + values_column (+ hierarchy_column) → radial hierarchy rings
@@ -145,6 +146,7 @@ async def create_chart(
         "ternary",
         "splom",
         "parcoords",
+        "parcats",
         "density_contour",
         "ecdf",
         "sunburst",
@@ -382,6 +384,16 @@ def _build_chart(
         if not columns or len(columns) < 2:
             raise ToolError("parcoords requires columns (list of 2 or more)")
         return builder.parcoords(
+            columns,
+            title=title,
+            theme=theme,
+            color_column=color_column,
+        )
+
+    if chart_type == "parcats":
+        if not columns or len(columns) < 2:
+            raise ToolError("parcats requires columns (list of 2 or more)")
+        return builder.parallel_categories(
             columns,
             title=title,
             theme=theme,

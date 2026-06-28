@@ -93,6 +93,13 @@ SPLOM_DATA: list[dict[str, Any]] = [
     {"a": 3, "b": 1, "c": 2, "grp": "x"},
 ]
 
+PARCATS_DATA: list[dict[str, Any]] = [
+    {"region": "N", "sector": "A", "stage": "x", "amt": 10},
+    {"region": "S", "sector": "B", "stage": "y", "amt": 40},
+    {"region": "N", "sector": "B", "stage": "x", "amt": 20},
+    {"region": "S", "sector": "A", "stage": "y", "amt": 30},
+]
+
 
 # ---------------------------------------------------------------------------
 # __init__
@@ -663,6 +670,62 @@ class TestParcoords:
         # apply_theme ran: light theme sets a concrete paper_bgcolor; go.Parcoords
         # has no marker attr so its trace-polish loop skips it cleanly
         assert fig.layout.paper_bgcolor is not None
+
+
+class TestParallelCategories:
+    def test_returns_single_parcats_trace_with_dimensions(self) -> None:
+        fig = AdvancedChartBuilder(PARCATS_DATA).parallel_categories(["region", "sector", "stage"], title="T")
+        assert isinstance(fig, go.Figure)
+        # px.parallel_categories emits ONE go.Parcats trace carrying every
+        # categorical column as a vertical stack on its nested .dimensions
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Parcats)
+        assert len(fig.data[0].dimensions) == 3
+        assert fig.data[0].dimensions[0].label == "region"
+        assert fig.data[0].dimensions[1].label == "sector"
+        assert fig.data[0].dimensions[2].label == "stage"
+        # categorical values are preserved verbatim on each dimension
+        assert list(fig.data[0].dimensions[0].values) == ["N", "S", "N", "S"]
+        assert fig.layout.title.text == "T"
+
+    def test_two_columns_single_trace(self) -> None:
+        fig = AdvancedChartBuilder(PARCATS_DATA).parallel_categories(["region", "sector"])
+        assert isinstance(fig.data[0], go.Parcats)
+        assert len(fig.data[0].dimensions) == 2
+
+    def test_no_color_leaves_line_color_none(self) -> None:
+        # with no color mapping, the trace's line.color is None
+        fig = AdvancedChartBuilder(PARCATS_DATA).parallel_categories(["region", "sector"])
+        assert fig.data[0].line.color is None
+
+    def test_numeric_color_column_sets_line_color(self) -> None:
+        # a NUMERIC color_column gradient-colors each ribbon (string cols are
+        # rejected by parcats — ribbon color is a per-row numeric array)
+        fig = AdvancedChartBuilder(PARCATS_DATA).parallel_categories(["region", "sector"], color_column="amt")
+        assert fig.data[0].line.color is not None
+        # line.color carries the raw per-row magnitudes (NOT normalized)
+        assert list(fig.data[0].line.color) == [10, 40, 20, 30]
+
+    def test_colorscale_override_runs(self) -> None:
+        fig = AdvancedChartBuilder(PARCATS_DATA).parallel_categories(
+            ["region", "sector"], color_column="amt", color_continuous_scale="Viridis"
+        )
+        # custom scale accepted; line still gradient-colored (colorscale stays
+        # None on the trace — resolved at render via layout.coloraxis)
+        assert fig.data[0].line.color is not None
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(PARCATS_DATA).parallel_categories(["region", "sector", "stage"], theme="light")
+        # apply_theme ran: light theme sets a concrete paper_bgcolor; go.Parcats
+        # has no marker attr so its trace-polish loop skips it cleanly
+        assert fig.layout.paper_bgcolor is not None
+
+    def test_professional_theme_runs(self) -> None:
+        fig = AdvancedChartBuilder(PARCATS_DATA).parallel_categories(
+            ["region", "sector", "stage"], theme="professional"
+        )
+        # professional register sets the salmon-paper background
+        assert fig.layout.paper_bgcolor == "#fff1e5"
 
 
 # ---------------------------------------------------------------------------
