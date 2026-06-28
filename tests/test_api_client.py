@@ -566,3 +566,116 @@ async def test_aexit_closes_clients() -> None:
     await client.__aexit__(None, None, None)
     assert client._client is None
     assert client._external_client is None
+
+
+# -- residual coverage: retry-exhaustion, cache-hit, error-propagation --------
+
+
+@pytest.mark.asyncio
+async def test_request_timeout_exhausted_raises_connection_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cover the timeout retry-exhausted arm (client.py:207-208) without real sleeps."""
+
+    async def handler(method: str, url: str, **kw: Any) -> httpx.Response:
+        raise httpx.TimeoutException("slow")
+
+    async def _sleep_noop(_delay: float) -> None:
+        return None
+
+    client = UDataClient()
+    _wire_request(client, handler)
+    monkeypatch.setattr("asyncio.sleep", _sleep_noop)
+    with pytest.raises(SDConnectionError) as ei:
+        await client._request("GET", "/api/1/datasets/", cache_ttl=300, max_retries=3)
+    assert "timed out" in str(ei.value).lower()
+
+
+@pytest.mark.asyncio
+async def test_get_resource_data_returns_cached_non_dataframe(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cover the cached non-DataFrame (json) return arm (client.py:360)."""
+
+    async def _find(_rid: str) -> Resource:
+        return _make_resource(format="json", url="https://data.gov.rs/d.json")
+
+    client = UDataClient()
+    _no_cache(client)
+    monkeypatch.setattr(client, "_find_resource", _find)
+    client._cache.set("GET", "resource:res-1:json", data={"k": "v"})  # type: ignore[union-attr]
+    out = await client.get_resource_data("res-1")
+    assert out == {"k": "v"}  # served from cache, no download attempted
+
+
+@pytest.mark.asyncio
+async def test_get_dataset_resources_propagates_non_404() -> None:
+    """Cover the non-404 HTTPStatusError re-raise (client.py:470)."""
+
+    async def handler(method: str, url: str, **kw: Any) -> httpx.Response:
+        return _resp(500)
+
+    client = UDataClient()
+    _wire_request(client, handler)
+    with pytest.raises(httpx.HTTPStatusError):
+        await client.get_dataset_resources("boom")
+
+
+@pytest.mark.asyncio
+async def test_get_reuses_propagates_non_404() -> None:
+    """Cover the non-404 HTTPStatusError re-raise (client.py:495)."""
+
+    async def handler(method: str, url: str, **kw: Any) -> httpx.Response:
+        return _resp(500)
+
+    client = UDataClient()
+    _wire_request(client, handler)
+    with pytest.raises(httpx.HTTPStatusError):
+        await client.get_reuses("boom")
+
+
+@pytest.mark.asyncio
+async def test_search_with_facets_no_optional_filters() -> None:
+    """Cover the False (skip) arms of all 7 facet if-filters (search_with_facets branch partials)."""
+
+    captured: dict[str, Any] = {}
+
+    async def handler(method: str, url: str, **kw: Any) -> httpx.Response:
+        captured.update(kw["params"])
+        return _resp(200, {"data": [], "total": 0})
+
+    client = UDataClient()
+    _wire_request(client, handler)
+    result = await client.search_with_facets(query="x")
+    assert captured == {"q": "x", "rows": 10, "start": 0}
+    assert result.total == 0 and result.datasets == []
+
+
+@pytest.mark.asyncio
+async def test_find_resource_scan_completes_all_pages_without_match() -> None:
+    """Cover the paginated-scan loop completing all 3 pages (branch 303->316)."""
+
+    async def handler(method: str, url: str, **kw: Any) -> httpx.Response:
+        params = kw.get("params") or {}
+        if params.get("rows") == 20:  # strategy-1 search
+            return _resp(200, {"data": [{"id": "ds-x", "resources": []}]})
+        # strategy-2: every page non-empty but none carrying the target id
+        start = params.get("start", 0)
+        return _resp(200, {"data": [{"id": f"ds-{start}", "resources": [{"id": "other", "format": "csv"}]}]})
+
+    client = UDataClient()
+    _wire_request(client, handler)
+    res = await client._find_resource("ghost")
+    assert res is None
+
+
+# -- _validate_url_safe ----------------------------------------------------
+
+
+def test_validate_url_safe_generic_exception_wraps_connection_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cover the generic-Exception wrap arm (client.py:131) when urlparse itself raises."""
+
+    def _boom(_url: str) -> Any:
+        raise ValueError("malformed url")
+
+    client = UDataClient()
+    monkeypatch.setattr("serbian_data_mcp.api.client.urlparse", _boom)
+    with pytest.raises(SDConnectionError) as ei:
+        client._validate_url_safe("https://data.gov.rs/x")
+    assert "Invalid URL" in str(ei.value)
