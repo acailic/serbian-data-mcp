@@ -207,3 +207,85 @@ async def test_parse_resource_unknown_format_fallback() -> None:
     mock_resp = type("obj", (), {"content": content})()
     result = await parse_resource(mock_resp, "txt")
     assert isinstance(result, str)
+
+
+# -- parse_resource typed-format dispatch (json/csv/xlsx) -----------------------
+
+
+def _mock_resp(content: bytes) -> object:
+    return type("obj", (), {"content": content})()
+
+
+@pytest.mark.asyncio
+async def test_parse_resource_dispatches_json() -> None:
+    """parse_resource should dispatch format='json' to parse_json (line 28)."""
+    from serbian_data_mcp.data.parsers import parse_resource
+
+    result = await parse_resource(_mock_resp(b'{"k": "v"}'), "json")
+    assert result == {"k": "v"}
+
+
+@pytest.mark.asyncio
+async def test_parse_resource_dispatches_csv() -> None:
+    """parse_resource should dispatch format='csv' to parse_csv (line 30)."""
+    from serbian_data_mcp.data.parsers import parse_resource
+
+    df = await parse_resource(_mock_resp(b"name,value\nTest,123\n"), "csv")
+    assert isinstance(df, pd.DataFrame)
+    assert df.iloc[0]["name"] == "Test"
+
+
+@pytest.mark.asyncio
+async def test_parse_resource_dispatches_excel() -> None:
+    """parse_resource should dispatch format='xlsx' (and aliases) to parse_excel (line 32)."""
+    from serbian_data_mcp.data import parsers
+
+    sentinel = pd.DataFrame([{"x": 1}])
+
+    async def _fake_excel(_content: bytes) -> pd.DataFrame:
+        return sentinel
+
+    monkeypatch_target = parsers
+    original = parsers.parse_excel
+    monkeypatch_target.parse_excel = _fake_excel
+    try:
+        for fmt in ("xlsx", "xls", "excel"):
+            result = await parsers.parse_resource(_mock_resp(b"placeholder"), fmt)
+            assert result is sentinel
+    finally:
+        monkeypatch_target.parse_excel = original
+
+
+# -- parse_csv double-failure fallback (latin1 also fails -> utf-8 replace) -----
+
+
+@pytest.mark.asyncio
+async def test_parse_csv_latin1_failure_falls_back_to_utf8_replace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When both utf-8-sig and latin1 reads raise, fall back to utf-8 errors=replace (lines 62-64)."""
+    from serbian_data_mcp.data import parsers
+
+    sentinel = pd.DataFrame([{"name": "recovered"}])
+    calls: list[dict[str, object]] = []
+
+    def _fake_read_csv(_buf: object, **kwargs: object) -> pd.DataFrame:
+        calls.append(kwargs)
+        encoding = kwargs.get("encoding")
+        # First call (utf-8-sig) and second call (latin1) both raise; third returns sentinel.
+        if encoding == "utf-8-sig":
+            raise UnicodeDecodeError("utf-8", b"", 0, 1, "boom")
+        if encoding == "latin1":
+            raise ValueError("simulated latin1 parse failure")
+        return sentinel
+
+    monkeypatch.setattr(parsers.pd, "read_csv", _fake_read_csv)
+
+    df = await parsers.parse_csv(b"anything")
+
+    assert df is sentinel
+    # Three attempts in order: utf-8-sig -> latin1 -> utf-8 with errors=replace.
+    assert calls[0]["encoding"] == "utf-8-sig"
+    assert calls[1]["encoding"] == "latin1"
+    assert calls[2]["encoding"] == "utf-8"
+    assert calls[2]["errors"] == "replace"
