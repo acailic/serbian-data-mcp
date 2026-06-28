@@ -231,9 +231,43 @@ Find salary data by sector and create a box plot
 
 **Use for:** Comparative analysis, outlier detection
 
+### Example 15: Create Choropleth Map (Regions Shaded by Value)
+
+**Prompt:**
+```
+Find GDP per country data for the Balkans and create a choropleth map shading each country by GDP, focused on Europe
+```
+
+**What happens:**
+- Downloads country-level GDP data
+- Maps country names to geographic regions (`locationmode` defaults to "country names")
+- Shades each region by its GDP value on a base map (coastlines + landmass)
+- Color ramp (Viridis) encodes magnitude; colorbar on the side
+
+**Result:** Interactive choropleth — whole countries filled by metric, answering "which regions rank highest/lowest?"
+
+**Use for:** Spatial comparison of an aggregate statistic (GDP, population density, turnout, pollution by region). Distinct from `scatter_geo` (individual points) and `line_geo` (routes).
+
+### Example 16: Create Geographic Line Chart (Routes/Trajectories)
+
+**Prompt:**
+```
+Find transport corridor data with lat/lon waypoints and create a line_geo chart showing connected routes through Serbia, one color per corridor
+```
+
+**What happens:**
+- Downloads waypoint data (latitude/longitude per row)
+- Joins consecutive waypoints into connected line paths on a base map
+- `color_column` splits the data into one separate path per group (multiple routes)
+- `scope` focuses the base map (e.g. "europe")
+
+**Result:** Interactive map with connected route lines — flight/shipping routes, migration corridors, storm tracks, supply-chain arcs
+
+**Use for:** Routes, trajectories, flows on a map. Distinct from `scatter_geo` (discrete points, no connecting line) and `choropleth` (whole regions shaded).
+
 ## Advanced Analysis Examples
 
-### Example 15: Filter and Aggregate Data
+### Example 17: Filter and Aggregate Data
 
 **Prompt:**
 ```
@@ -249,7 +283,7 @@ Download trade data, filter for exports in 2023, and calculate total by country
 
 **Use for:** Trade analysis, export statistics
 
-### Example 16: Time Series Analysis
+### Example 18: Time Series Analysis
 
 **Prompt:**
 ```
@@ -264,7 +298,7 @@ Find monthly unemployment data, filter for last 5 years, and create a line chart
 
 **Use for:** Economic monitoring, trend analysis
 
-### Example 17: Multi-Dataset Comparison
+### Example 19: Multi-Dataset Comparison
 
 **Prompt:**
 ```
@@ -279,7 +313,7 @@ Find population datasets for Belgrade, Novi Sad, and Niš and compare their grow
 
 **Use for:** Urban studies, city comparisons
 
-### Example 18: Custom Aggregation
+### Example 20: Custom Aggregation
 
 **Prompt:**
 ```
@@ -296,7 +330,7 @@ Download budget data, group by ministry, and calculate average spending over 5 y
 
 ## Integration Examples
 
-### Example 19: Export Visualization
+### Example 21: Export Visualization
 
 **Prompt:**
 ```
@@ -311,7 +345,7 @@ Create a population trend chart and export it as HTML
 
 **Use for:** Reports, presentations, web publishing
 
-### Example 20: Export as PNG
+### Example 22: Export as PNG
 
 **Prompt:**
 ```
@@ -328,7 +362,7 @@ Create a regional GDP chart and export as high-resolution PNG
 
 **Note:** Requires kaleido package (`pip install kaleido`)
 
-### Example 21: Export Chart Data
+### Example 23: Export Chart Data
 
 **Prompt:**
 ```
@@ -343,7 +377,7 @@ Create a visualization and export the chart data as JSON
 
 **Use for:** Custom processing, API integration
 
-### Example 22: Chained Analysis
+### Example 24: Chained Analysis
 
 **Prompt:**
 ```
@@ -359,7 +393,7 @@ Search for inflation data, download the latest CSV, create a line chart, and exp
 
 **Use for:** Automated workflows, reporting
 
-### Example 23: Data Transformation
+### Example 25: Data Transformation
 
 **Prompt:**
 ```
@@ -375,7 +409,7 @@ Download economic data, filter for years 2020-2023, sort by GDP, and select top 
 
 **Use for:** Data cleaning, ranking reports
 
-### Example 24: Statistical Analysis
+### Example 26: Statistical Analysis
 
 **Prompt:**
 ```
@@ -392,7 +426,7 @@ Download temperature data, calculate mean, median, and standard deviation by mon
 
 ## Smithery Installation Examples
 
-### Example 25: Install via Smithery CLI (Claude Desktop)
+### Example 27: Install via Smithery CLI (Claude Desktop)
 
 [Smithery](https://smithery.ai) is a registry and CLI for managing MCP server connections. It automatically configures your AI client — no manual config file editing needed.
 
@@ -414,7 +448,7 @@ smithery mcp add acailic/serbian-data-mcp --client claude
 
 **Use for:** One-command setup for Claude Desktop users
 
-### Example 26: Install via Smithery (Cursor)
+### Example 28: Install via Smithery (Cursor)
 
 ```bash
 # Add to Cursor
@@ -425,7 +459,7 @@ smithery mcp add acailic/serbian-data-mcp --client cursor
 
 **Use for:** One-command setup for Cursor users
 
-### Example 27: Install via Smithery (Remote Connection)
+### Example 29: Install via Smithery (Remote Connection)
 
 If you prefer a fully managed remote connection instead of running the server locally:
 
@@ -447,7 +481,7 @@ smithery tool list serbian-data
 
 **Use for:** Users who want zero local dependencies
 
-### Example 28: Use Smithery CLI to Call Tools Directly
+### Example 30: Use Smithery CLI to Call Tools Directly
 
 You can also call MCP tools directly from the command line via Smithery:
 
@@ -464,7 +498,7 @@ smithery tool call serbian-data create_visualization '{"chart_type": "line", "ti
 
 **Use for:** Scripting, automation, testing without an AI client
 
-### Example 29: Remove Smithery Connection
+### Example 31: Remove Smithery Connection
 
 ```bash
 # Remove from Claude Desktop

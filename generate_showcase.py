@@ -14,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))  # noqa: E402
 
 from serbian_data_mcp.viz.charts import ChartBuilder  # noqa: E402
+from serbian_data_mcp.viz.advanced_charts import AdvancedChartBuilder  # noqa: E402
 from serbian_data_mcp.viz.novel_charts import (  # noqa: E402
     population_pyramid,
     radar_chart,
@@ -106,33 +107,61 @@ GDP_YEARS = [
     {"year": 2024, "gdp": 53.8},
 ]
 
+# Balkan GDP by country (USD bn) — choropleth shading
+BALKAN_GDP = [
+    {"country": "Serbia", "gdp": 75.0},
+    {"country": "Croatia", "gdp": 80.5},
+    {"country": "Hungary", "gdp": 212.4},
+    {"country": "Romania", "gdp": 350.0},
+    {"country": "Bulgaria", "gdp": 101.5},
+    {"country": "Greece", "gdp": 239.5},
+    {"country": "Slovenia", "gdp": 68.0},
+    {"country": "Bosnia and Herzegovina", "gdp": 27.0},
+    {"country": "Albania", "gdp": 23.0},
+    {"country": "North Macedonia", "gdp": 15.8},
+    {"country": "Montenegro", "gdp": 7.3},
+]
+
+# Transport corridors through Serbia — connected geo paths (one line per route)
+BALKAN_ROUTES = [
+    {"route": "Koridor X (Beograd→Novi Sad→Subotica)", "lat": 44.80, "lon": 20.40},
+    {"route": "Koridor X (Beograd→Novi Sad→Subotica)", "lat": 45.25, "lon": 19.83},
+    {"route": "Koridor X (Beograd→Novi Sad→Subotica)", "lat": 46.10, "lon": 19.67},
+    {"route": "Koridor X (Beograd→Niš→Leskovac)", "lat": 44.80, "lon": 20.40},
+    {"route": "Koridor X (Beograd→Niš→Leskovac)", "lat": 43.32, "lon": 21.90},
+    {"route": "Koridor X (Beograd→Niš→Leskovac)", "lat": 42.99, "lon": 21.95},
+    {"route": "Jadranski pravac (Zagreb→Beograd→Niš)", "lat": 45.81, "lon": 15.97},
+    {"route": "Jadranski pravac (Zagreb→Beograd→Niš)", "lat": 44.80, "lon": 20.40},
+    {"route": "Jadranski pravac (Zagreb→Beograd→Niš)", "lat": 43.32, "lon": 21.90},
+]
+
 
 async def generate_all():
     OUT.mkdir(parents=True, exist_ok=True)
 
     # 1. Line chart — Serbia GDP trend
-    print("1/12 Generating GDP trend line chart...")
+    print("1/14 Generating GDP trend line chart...")
     builder = ChartBuilder(GDP_YEARS)
     fig = builder.line_chart("year", "gdp", "GDP Srbije (milijarde evra, 2015–2024)")
     polish_for_export(fig, source="Zavod za statistiku RZS")
     await export_html(fig, "showcase_line_gdp.html", title="GDP Srbije (2015–2024)")
 
     # 2. Bar chart — District populations
-    print("2/12 Generating district population bar chart...")
+    print("2/14 Generating district population bar chart...")
     builder = ChartBuilder(DISTRICTS_POP)
     fig = builder.bar_chart("district", "pop_2022", "Stanovništvo po okruzima (2022)", orientation="h")
     polish_for_export(fig, source="Popis stanovništva 2022, RZS")
     await export_html(fig, "showcase_bar_population.html", title="Stanovništvo po okruzima (2022)")
 
     # 3. Donut chart — Employment sectors
-    print("3/12 Generating employment sector donut chart...")
+    print("3/14 Generating employment sector donut chart...")
     builder = ChartBuilder(EMPLOYMENT_SECTORS)
     fig = builder.pie_chart("workers", "sector", "Zaposleni po sektorima")
     polish_for_export(fig, source="Republički zavod za statistiku")
     await export_html(fig, "showcase_donut_sectors.html", title="Zaposleni po sektorima")
 
     # 4. Slope chart — Census ranking changes
-    print("4/12 Generating census slope chart...")
+    print("4/14 Generating census slope chart...")
     fig = slope_chart(
         DISTRICTS_POP,
         "district",
@@ -146,7 +175,7 @@ async def generate_all():
     await export_html(fig, "showcase_slope_census.html", title="Promene u poretku okruga (2002→2022)")
 
     # 5. Waffle chart — Population distribution
-    print("5/12 Generating waffle chart...")
+    print("5/14 Generating waffle chart...")
     top5 = sorted(DISTRICTS_POP, key=lambda x: x["pop_2022"], reverse=True)[:5]
     other_pop = sum(d["pop_2022"] for d in DISTRICTS_POP) - sum(d["pop_2022"] for d in top5)
     waffle_data = [{"district": d["district"], "pop": d["pop_2022"]} for d in top5]
@@ -163,7 +192,7 @@ async def generate_all():
     await export_html(fig, "showcase_waffle.html", title="Raspored stanovništva po okruzima")
 
     # 6. Population pyramid
-    print("6/12 Generating population pyramid...")
+    print("6/14 Generating population pyramid...")
     fig = population_pyramid(
         AGE_PYRAMID,
         "age",
@@ -176,7 +205,7 @@ async def generate_all():
     await export_html(fig, "showcase_pyramid.html", title="Demografska piramida Srbije")
 
     # 7. Sankey diagram — Budget flow
-    print("7/12 Generating budget sankey diagram...")
+    print("7/14 Generating budget sankey diagram...")
     fig = sankey_diagram(
         BUDGET_FLOW,
         "source",
@@ -189,7 +218,7 @@ async def generate_all():
     await export_html(fig, "showcase_sankey_budget.html", title="Tok budžetskih sredstava")
 
     # 8. Radar chart — City comparison
-    print("8/12 Generating city radar chart...")
+    print("8/14 Generating city radar chart...")
     # Normalize to 0-100 scale for radar
     max_vals = {
         "population": max(c["population"] for c in CITY_COMPARISON),
@@ -222,7 +251,7 @@ async def generate_all():
     await export_html(fig, "showcase_radar_cities.html", title="Poređenje gradova")
 
     # 9. Choropleth map — District population
-    print("9/12 Generating choropleth map...")
+    print("9/14 Generating choropleth map...")
     map_builder = AdvancedMapBuilder()
     fig = map_builder.bubble_map(
         DISTRICTS_POP,
@@ -235,7 +264,7 @@ async def generate_all():
     await export_html(fig, "showcase_map_population.html", title="Stanovništvo po okruzima")
 
     # 10. Full infographic — Serbia data story
-    print("10/12 Generating full infographic...")
+    print("10/14 Generating full infographic...")
     result = create_infographic(
         DISTRICTS_POP,
         title="Srbija po Popisu 2022",
@@ -266,7 +295,7 @@ async def generate_all():
     out_path.write_text(result["html"], encoding="utf-8")
 
     # 11. Dashboard — Multi-panel overview
-    print("11/12 Generating dashboard...")
+    print("11/14 Generating dashboard...")
     builder_pop = ChartBuilder(DISTRICTS_POP)
     fig_pop = builder_pop.bar_chart("district", "pop_2022", orientation="h", title="")
 
@@ -293,7 +322,7 @@ async def generate_all():
     out_path.write_text(dashboard_html, encoding="utf-8")
 
     # 12. Forecast — GDP projection
-    print("12/12 Generating GDP forecast...")
+    print("12/14 Generating GDP forecast...")
     forecast_result = forecast_linear(GDP_YEARS, "year", "gdp", periods_ahead=5, method="linear")
 
     builder_fc = ChartBuilder(GDP_YEARS + forecast_result["forecast_data"])
@@ -302,6 +331,32 @@ async def generate_all():
     fig_fc = add_highlight_zone(fig_fc, 2024.5, 2029.5, fill_color="rgba(255,171,0,0.08)", annotation_text="Prognoza")
     polish_for_export(fig_fc, source="RZS + linearna prognoza")
     await export_html(fig_fc, "showcase_forecast_gdp.html", title="Projekcija GDP Srbije")
+
+    # 13. Choropleth — Balkan GDP shaded by country
+    print("13/14 Generating Balkan GDP choropleth...")
+    fig = AdvancedChartBuilder(BALKAN_GDP).choropleth(
+        "country",
+        "gdp",
+        title="GDP Balkana po državama (milijarde $, 2023)",
+        theme="dark",
+        scope="europe",
+        color_continuous_scale="Viridis",
+    )
+    polish_for_export(fig, source="Svjetska banka / IMF procena")
+    await export_html(fig, "showcase_choropleth_balkan.html", title="GDP Balkana (choropleth)")
+
+    # 14. Geo line — transport corridors through Serbia (connected paths)
+    print("14/14 Generating Balkan transport corridors geo-line...")
+    fig = AdvancedChartBuilder(BALKAN_ROUTES).line_geo(
+        "lat",
+        "lon",
+        title="Transportni koridori kroz Srbiju",
+        theme="dark",
+        scope="europe",
+        color_column="route",
+    )
+    polish_for_export(fig, source="Pan-evropski koridori")
+    await export_html(fig, "showcase_line_geo_routes.html", title="Transportni koridori (line_geo)")
 
     # Clean up old demo files
     for old in [
