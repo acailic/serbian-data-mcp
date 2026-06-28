@@ -124,3 +124,47 @@ async def test_search_organization(sample_catalog):
 
     assert len(results) == 1
     assert results[0].dataset.id == "pop-1"
+
+
+@pytest.mark.asyncio
+async def test_search_empty_catalog_returns_empty(tmp_path):
+    """Empty catalog logs a warning and returns [] without expanding the query."""
+    empty_catalog = DatasetCatalog(cache_path=tmp_path / "catalog.json")
+    engine = SearchEngine(empty_catalog)
+
+    results = await engine.search("population", max_results=10)
+
+    assert results == []
+
+
+def test_explain_match_partial_tier(sample_catalog):
+    """Score in [0.3, 0.5) yields the 'partial match' strength tier."""
+    engine = SearchEngine(sample_catalog)
+
+    reason = engine._explain_match(0.3, ["demographic"])
+
+    assert reason.startswith("partial match")
+    assert "demographic" in reason
+
+
+def test_explain_match_more_than_five_keywords(sample_catalog):
+    """More than 5 matched keywords appends the '(and N more)' suffix."""
+    engine = SearchEngine(sample_catalog)
+    keywords = ["k1", "k2", "k3", "k4", "k5", "k6", "k7"]
+
+    reason = engine._explain_match(0.9, keywords)
+
+    assert "strong match" in reason
+    assert "(and 2 more)" in reason
+    # Only the first 5 keywords are listed by name
+    assert "k5" in reason
+    assert "k6" not in reason
+
+
+def test_explain_match_no_keywords_returns_strength_only(sample_catalog):
+    """A score with no matched keywords returns the bare strength string."""
+    engine = SearchEngine(sample_catalog)
+
+    reason = engine._explain_match(0.1, [])
+
+    assert reason == "weak match"

@@ -574,3 +574,59 @@ async def test_export_to_datawrapper_failure_closes_exporter(monkeypatch: pytest
         await export_to_datawrapper([{"x": 1}], "t")
 
     assert exporter.closed is True  # finally still closes on the failure path
+
+
+# ---------------------------------------------------------------------------
+# MCP resources (tools/resources.py)
+#   popular_datasets, topics, format_info are @mcp.resource-decorated plain
+#   functions returning JSON strings; they ship without direct coverage
+#   (only server_info is exercised via the in-process transport).
+# ---------------------------------------------------------------------------
+
+
+def test_popular_datasets_resource_returns_curated_json() -> None:
+    import json
+
+    raw = resources_mod.popular_datasets()
+    payload = json.loads(raw)
+    assert "datasets" in payload
+    items = payload["datasets"]
+    assert len(items) >= 1
+    first = items[0]
+    for key in ("search_term", "description", "org", "format", "use_cases"):
+        assert key in first
+    assert isinstance(first["use_cases"], list) and first["use_cases"]
+    # ensure_ascii=False keeps Serbian Cyrillic readable (org field)
+    assert "РЗС" in raw
+
+
+def test_topics_resource_returns_categories() -> None:
+    import json
+
+    payload = json.loads(resources_mod.topics())
+    assert "topics" in payload
+    topics = payload["topics"]
+    assert len(topics) >= 1
+    sample = topics[0]
+    assert "category" in sample and "search_terms" in sample
+    assert isinstance(sample["search_terms"], list) and sample["search_terms"]
+
+
+def test_format_info_known_and_unknown_formats() -> None:
+    import json
+
+    known = json.loads(resources_mod.format_info("xlsx"))
+    assert known["name"] == "Excel XLSX"
+    assert "parsing" in known and "tip" in known
+
+    # json/csv/xls/xml all map into the known-formats table
+    assert json.loads(resources_mod.format_info("csv"))["name"] == "CSV"
+    assert json.loads(resources_mod.format_info("xml"))["name"] == "XML"
+
+    # unknown format → error envelope listing the supported set
+    unknown = json.loads(resources_mod.format_info("parquet"))
+    assert "error" in unknown and "supported" in unknown
+    assert set(unknown["supported"]) == {"json", "csv", "xlsx", "xls", "xml"}
+
+    # case-insensitive lookup
+    assert json.loads(resources_mod.format_info("JSON"))["name"] == "JSON"

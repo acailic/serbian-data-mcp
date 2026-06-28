@@ -2,7 +2,7 @@
 
 import pytest
 from serbian_data_mcp.catalog.cache import DatasetCatalog
-from serbian_data_mcp.catalog.models import CachedDataset
+from serbian_data_mcp.catalog.models import CachedDataset, SearchResult, Suggestion
 
 
 @pytest.fixture
@@ -94,3 +94,45 @@ def test_catalog_get_all(temp_cache_path, sample_dataset):
     all_datasets = catalog.get_all()
     assert len(all_datasets) == 1
     assert all_datasets[0].id == "test-ds-1"
+
+
+def test_search_result_to_dict(sample_dataset):
+    """Test SearchResult.to_dict serialization, including nested dataset.to_dict()."""
+    result = SearchResult(
+        dataset=sample_dataset,
+        relevance_score=0.75,
+        matched_keywords=["population", "age"],
+        match_reason="title match on: population",
+    )
+
+    payload = result.to_dict()
+
+    assert payload["relevance_score"] == 0.75
+    assert payload["matched_keywords"] == ["population", "age"]
+    assert payload["match_reason"] == "title match on: population"
+    # Nested dataset is serialized via its own to_dict, not the raw dataclass
+    assert payload["dataset"]["id"] == "test-ds-1"
+    assert payload["dataset"]["title"] == "Test Dataset"
+    assert payload["dataset"]["formats"] == ["csv", "json"]
+    assert not isinstance(payload["dataset"], CachedDataset)
+
+
+def test_suggestion_to_dict(sample_dataset):
+    """Test Suggestion.to_dict serialization, including per-result list comprehension."""
+    first = SearchResult(dataset=sample_dataset, relevance_score=0.9, matched_keywords=["a"])
+    second = SearchResult(dataset=sample_dataset, relevance_score=0.4, matched_keywords=["b"])
+
+    suggestion = Suggestion(
+        datasets=[first, second],
+        explanation="No exact match; these are related.",
+        total_alternatives=2,
+    )
+
+    payload = suggestion.to_dict()
+
+    assert payload["explanation"] == "No exact match; these are related."
+    assert payload["total_alternatives"] == 2
+    assert len(payload["datasets"]) == 2
+    assert payload["datasets"][0]["relevance_score"] == 0.9
+    assert payload["datasets"][1]["matched_keywords"] == ["b"]
+    assert payload["datasets"][0]["dataset"]["id"] == "test-ds-1"
