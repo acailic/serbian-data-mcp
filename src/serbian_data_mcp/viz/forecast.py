@@ -74,11 +74,8 @@ def forecast_linear(
     ss_tot = np.sum((y_clean - y_clean.mean()) ** 2)
     r_squared = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
 
-    # Calculate growth rate
-    if len(y_clean) >= 2:
-        avg_growth_rate = ((y_clean[-1] / y_clean[0]) ** (1 / (len(y_clean) - 1)) - 1) * 100
-    else:
-        avg_growth_rate = 0
+    # Calculate growth rate (len(y_clean) >= 2 is guaranteed by the <2 guard above)
+    avg_growth_rate = ((y_clean[-1] / y_clean[0]) ** (1 / (len(y_clean) - 1)) - 1) * 100
 
     # Generate forecast
     last_t = x_clean[-1]
