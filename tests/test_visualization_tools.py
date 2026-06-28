@@ -135,6 +135,7 @@ async def test_create_chart_unsupported_message_lists_all_types() -> None:
             "bar_polar",
             "radar",
             "timeline",
+            "area",
         ):
             assert t in msg
     else:  # pragma: no cover - defensive
@@ -608,6 +609,36 @@ async def test_create_chart_timeline_missing_column_raises(monkeypatch) -> None:
             chart_type="timeline",
             start_column="",
             end_column="end",
+        )
+
+
+async def test_create_chart_area_passthrough(monkeypatch) -> None:
+    sink: dict[str, Any] = {}
+    _wire_builders(monkeypatch, sink)
+    await create_chart(
+        data=[{"year": 2010, "energy": 5, "src": "coal"}],
+        chart_type="area",
+        x_column="year",
+        y_column="energy",
+        color_column="src",
+        theme="professional",
+    )
+    assert sink["builder"] == "adv"
+    assert sink["method"] == "area"
+    assert sink["args"] == ("year", "energy")
+    assert sink["kwargs"]["title"] == ""
+    assert sink["kwargs"]["theme"] == "professional"
+    assert sink["kwargs"]["color_column"] == "src"
+
+
+async def test_create_chart_area_missing_column_raises(monkeypatch) -> None:
+    _wire_builders(monkeypatch, {})
+    with pytest.raises(ToolError, match="area requires x_column and y_column"):
+        await create_chart(
+            data=[{"year": 2010, "energy": 5}],
+            chart_type="area",
+            x_column="",
+            y_column="energy",
         )
 
 

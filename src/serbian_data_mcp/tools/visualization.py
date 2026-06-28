@@ -93,6 +93,7 @@ async def create_chart(
       - "bar_polar": r_column + x_column (angular) → radial bars around a circle (wind rose)
       - "radar": r_column + x_column (angular) → closed polar profile (spider/radar)
       - "timeline": start_column + end_column (+ names_column) → Gantt interval bars (duration/overlap)
+      - "area": x_column + y_column (+ color_column) → stacked composition over an axis (energy/budget mix)
       - "animated_line": x_column + y_column + frame_column → time playback
       - "comparison_bar": x_column + comparison_columns (2 cols) → side-by-side
       - "sparklines": y_column + x_column + trend_column → faceted mini-charts
@@ -152,6 +153,7 @@ async def create_chart(
         "bar_polar",
         "radar",
         "timeline",
+        "area",
         "animated_line",
         "comparison_bar",
         "sparklines",
@@ -428,6 +430,11 @@ def _build_chart(
             name_column=names_column or None,
             color_column=color_column,
         )
+
+    if chart_type == "area":
+        if not x_column or not y_column:
+            raise ToolError("area requires x_column and y_column")
+        return builder.area(x_column, y_column, title=title, theme=theme, color_column=color_column)
 
     if chart_type == "animated_line":
         if not x_column or not y_column or not frame_column:

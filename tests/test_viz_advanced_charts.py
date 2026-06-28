@@ -1056,3 +1056,46 @@ class TestTimeline:
         fig = AdvancedChartBuilder(TIMELINE_DATA[:2]).timeline("start", "end", theme="light")
         # light theme = white paper; apply_theme is timeline-safe with zero changes
         assert fig.layout.paper_bgcolor == "#ffffff"
+
+
+class TestArea:
+    def test_single_stacked_scatter_trace_with_title(self) -> None:
+        fig = AdvancedChartBuilder(ANIM_DATA).area("year", "pop", title="Energy mix")
+        assert isinstance(fig, go.Figure)
+        # px.area emits a go.Scatter trace (no special trace type) whose stackgroup
+        # is set, so plotly stacks/fills it at render; x carries every row's year.
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Scatter)
+        assert fig.data[0].stackgroup == "1"
+        assert list(fig.data[0].y) == [7, 8, 3, 4]
+        assert fig.layout.title.text == "Energy mix"
+
+    def test_color_column_one_trace_per_group(self) -> None:
+        fig = AdvancedChartBuilder(ANIM_DATA).area("year", "pop", color_column="city")
+        # one stacked Scatter band per group value, named after each group
+        assert len(fig.data) == 2
+        assert all(isinstance(t, go.Scatter) and t.stackgroup == "1" for t in fig.data)
+        assert sorted(t.name for t in fig.data) == ["BG", "NS"]
+
+    def test_markers_adds_points_to_bands(self) -> None:
+        fig = AdvancedChartBuilder(ANIM_DATA).area("year", "pop", markers=True)
+        # default mode is 'lines'; markers=True flips it to 'lines+markers'
+        assert fig.data[0].mode == "lines+markers"
+
+    def test_groupnorm_leaves_trace_values_raw(self) -> None:
+        fig = AdvancedChartBuilder(ANIM_DATA).area("year", "pop", color_column="city", groupnorm="percent")
+        # Like the 3D marching-cubes/alphahull family, stackgroup normalization is
+        # applied at JS render time — trace.y keeps its RAW values (not 0-100).
+        bg = next(t for t in fig.data if t.name == "BG")
+        assert list(bg.y) == [7, 8]
+
+    def test_apply_theme_professional_salmon_paper(self) -> None:
+        fig = AdvancedChartBuilder(ANIM_DATA).area("year", "pop", theme="professional")
+        # go.Scatter has a marker WITH a line sub-prop, so apply_theme's marker-polish
+        # loop runs cleanly; professional theme = salmon paper.
+        assert fig.layout.paper_bgcolor == "#fff1e5"
+
+    def test_apply_theme_light_runs(self) -> None:
+        fig = AdvancedChartBuilder(ANIM_DATA).area("year", "pop", theme="light")
+        # light theme = white paper; apply_theme is area-safe with zero changes
+        assert fig.layout.paper_bgcolor == "#ffffff"

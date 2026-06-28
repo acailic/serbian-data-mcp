@@ -1017,3 +1017,56 @@ class AdvancedChartBuilder:
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1], font={"size": 12}))
         apply_theme(fig, theme)
         return fig
+
+    def area(
+        self,
+        x_column: str,
+        y_column: str,
+        title: str = "",
+        theme: str = "dark",
+        color_column: Optional[str] = None,
+        groupnorm: Optional[str] = None,
+        markers: bool = False,
+    ) -> go.Figure:
+        """Create a stacked area chart — composition of a total over a continuous axis.
+
+        The canonical chart for *how the parts of a whole evolve together over time*
+        (energy mix by source across years, budget share by ministry across years,
+        browser market share across months, traffic source mix across weeks). Each
+        series is a filled band stacked on the previous, so the top envelope is the
+        running total AND the band widths show each component's contribution. A
+        genuine register distinct from ``line`` (overlapping lines hide the stack,
+        can't show a total), ``bar`` (discrete categories, not a continuous flow),
+        and ``pie``/``treemap``/``sunburst`` (a single snapshot, no temporal axis).
+
+        Pass ``color_column`` to stack one band per group. Pass
+        ``groupnorm='fraction'`` (0-1) or ``'percent'`` (0-100) to normalize the
+        stack to a constant total — the *share-of-100%* view, when the growing
+        absolute total would otherwise mask relative shifts. Pass ``markers=True``
+        to mark each observation on top of the filled band.
+
+        Args:
+            x_column: Continuous axis column (e.g. year, date)
+            y_column: Numeric value column (the magnitude stacked)
+            title: Chart title
+            theme: 'dark', 'light', 'infographic', or 'professional'
+            color_column: Optional grouping column (one stacked band per group)
+            groupnorm: None (absolute stack) | 'fraction' (0-1) | 'percent' (0-100)
+            markers: Draw a marker at each observation on top of the band
+        """
+        kwargs: dict[str, Any] = {
+            "x": x_column,
+            "y": y_column,
+            "title": title,
+        }
+        if color_column:
+            kwargs["color"] = color_column
+            kwargs["color_discrete_sequence"] = SEMANTIC_COLORS
+        if groupnorm:
+            kwargs["groupnorm"] = groupnorm
+
+        fig = px.area(self.data, **kwargs)
+        if markers:
+            fig.update_traces(mode="lines+markers")
+        apply_theme(fig, theme)
+        return fig
