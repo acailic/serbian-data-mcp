@@ -193,3 +193,66 @@ def test_config_with_invalid_file(tmp_path):
     # Should fall back to defaults for invalid values
     assert test_config.rate_limit == 1.0  # Default value
     assert test_config.api_base == "https://data.gov.rs"
+
+
+def test_load_and_validate_config_missing_file(tmp_path):
+    """load_and_validate_config returns a not-found envelope for a missing path."""
+    from serbian_data_mcp.config_validation import load_and_validate_config
+
+    missing = tmp_path / "does_not_exist.json"
+    is_valid, error_msg, validated = load_and_validate_config(missing)
+
+    assert is_valid is False
+    assert "Configuration file not found" in error_msg
+    assert str(missing) in error_msg
+    assert validated is None
+
+
+def test_load_and_validate_config_valid_file(tmp_path):
+    """load_and_validate_config loads + validates a well-formed config file."""
+    from serbian_data_mcp.config_validation import load_and_validate_config, ServerConfig
+
+    config_file = tmp_path / "valid_config.json"
+    config_file.write_text(
+        json.dumps(
+            {
+                "api_base": "https://data.gov.rs",
+                "rate_limit": 1.0,
+                "timeout": 30,
+                "cache_dir": ".cache",
+                "export_dir": "exports",
+            }
+        )
+    )
+
+    is_valid, error_msg, validated = load_and_validate_config(config_file)
+
+    assert is_valid is True
+    assert error_msg == ""
+    assert isinstance(validated, ServerConfig)
+
+
+def test_load_and_validate_config_invalid_json(tmp_path):
+    """load_and_validate_config maps a JSONDecodeError to the Invalid-JSON envelope."""
+    from serbian_data_mcp.config_validation import load_and_validate_config
+
+    config_file = tmp_path / "broken.json"
+    config_file.write_text("{not valid json")
+
+    is_valid, error_msg, validated = load_and_validate_config(config_file)
+
+    assert is_valid is False
+    assert "Invalid JSON" in error_msg
+    assert validated is None
+
+
+def test_load_and_validate_config_directory_hits_generic_error(tmp_path):
+    """Pointing config_path at a directory makes open() raise IsADirectoryError,
+    which is NOT a JSONDecodeError so it lands in the generic `except Exception` arm."""
+    from serbian_data_mcp.config_validation import load_and_validate_config
+
+    is_valid, error_msg, validated = load_and_validate_config(tmp_path)
+
+    assert is_valid is False
+    assert "Error reading configuration" in error_msg
+    assert validated is None
